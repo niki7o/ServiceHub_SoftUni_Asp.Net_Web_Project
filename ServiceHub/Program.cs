@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using ServiceHub.Data;
+using ServiceHub.Services.Interfaces;
+using ServiceHub.Services.Repository;
 
 namespace ServiceHub
 {
@@ -19,7 +21,7 @@ namespace ServiceHub
             builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
                 .AddEntityFrameworkStores<ServiceHubDbContext>();
             builder.Services.AddControllersWithViews();
-
+            builder.Services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
@@ -40,7 +42,7 @@ namespace ServiceHub
             app.UseRouting();
 
             app.UseAuthorization();
-
+            app.UseAuthentication();
             app.MapControllerRoute(
                 name: "default",
                 pattern: "{controller=Home}/{action=Index}/{id?}");
