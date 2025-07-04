@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ServiceHub.Common
+namespace ServiceHub.Services.Interfaces
 {
-    public class ValidationConstants
+    public interface IServiceService
     {
     }
 }

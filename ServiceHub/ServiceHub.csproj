@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -24,7 +24,7 @@
     <ProjectReference Include="..\ServiceHub.Data.Models\ServiceHub.Data.Models.csproj" />
     <ProjectReference Include="..\ServiceHub.Data\ServiceHub.Data.csproj" />
     <ProjectReference Include="..\ServiceHub.Services\ServiceHub.Services.csproj" />
-    <ProjectReference Include="..\SmartHub.Common\SmartHub.Common.csproj" />
+    <ProjectReference Include="..\SmartHub.Common\ServiceHub.Common.csproj" />
     <ProjectReference Include="..\SmartHub.Core\SmartHub.Core.csproj" />
   </ItemGroup>
 

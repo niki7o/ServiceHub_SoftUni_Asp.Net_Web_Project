@@ -21,7 +21,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServiceHub.Data", "ServiceH
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartHub.Core", "SmartHub.Core\SmartHub.Core.csproj", "{21C1F1AA-1063-4BD0-8FEA-3FA784380B00}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartHub.Common", "SmartHub.Common\SmartHub.Common.csproj", "{E842CCAA-53D9-4A09-A667-DC6ED255658F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServiceHub.Common", "SmartHub.Common\ServiceHub.Common.csproj", "{E842CCAA-53D9-4A09-A667-DC6ED255658F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartHub.Tests", "SmartHub.Tests\SmartHub.Tests.csproj", "{48C5751C-A33A-40A6-92BC-FC42602DDFAC}"
 EndProject

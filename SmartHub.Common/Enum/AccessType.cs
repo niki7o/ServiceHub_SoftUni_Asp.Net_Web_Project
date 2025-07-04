@@ -4,9 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ServiceHub.Common
+namespace ServiceHub.Common.Enum
 {
-    public class ValidationConstants
+   public enum AccessType
     {
+        Free,
+        Partial,
+        Premium
     }
 }

@@ -1,0 +1,72 @@
+﻿[
+  {
+    "Title": "Генератор на Договори",
+    "Description": "Генерира автоматично договори с шаблони (наем, трудов, партньорски).",
+    "Category": "Документи",
+    "AccessType": "Partial",
+    "IsActive": true
+  },
+  {
+    "Title": "Конвертиране на Файлове",
+    "Description": "Конвертира PDF ↔ DOCX, JPG ↔ PNG и др.",
+    "Category": "Инструменти",
+    "AccessType": "Free",
+    "IsActive": true
+  },
+  {
+    "Title": "Обобщение на Документи с AI",
+    "Description": "Обобщава качен текст/документ автоматично с помощта на езиков модел.",
+    "Category": "AI & Анализ",
+    "AccessType": "Partial",
+    "IsActive": true
+  },
+  {
+    "Title": "Автоматично CV/Resume",
+    "Description": "Въвеждаш данни и получаваш готово CV в PDF формат.",
+    "Category": "Документи",
+    "AccessType": "Free",
+    "IsActive": true
+  },
+  {
+    "Title": "Генератор на Инвойси/Фактури",
+    "Description": "Въвеждаш данни и получаваш професионална фактура в PDF с фирмен стил.",
+    "Category": "Документи",
+    "AccessType": "Premium",
+    "IsActive": true
+  },
+  {
+    "Title": "Граматична и стилова проверка с AI",
+    "Description": "Проверява правопис и стил на текстове на български и английски език.",
+    "Category": "AI & Анализ",
+    "AccessType": "Partial",
+    "IsActive": true
+  },
+  {
+    "Title": "Финансов Калкулатор / Анализатор",
+    "Description": "Изчислява ROI, бюджети, прогнозни приходи и разходи.",
+    "Category": "Инструменти",
+    "AccessType": "Premium",
+    "IsActive": true
+  },
+  {
+    "Title": "Генератор на Маркетинг Слогани",
+    "Description": "Създава уникални лозунги на база ключови думи с помощта на AI.",
+    "Category": "AI & Анализ",
+    "AccessType": "Free",
+    "IsActive": true
+  },
+  {
+    "Title": "Конвертор на Кодови Снипети",
+    "Description": "Преобразува код между програмни езици (напр. C# към Python).",
+    "Category": "Инструменти",
+    "AccessType": "Partial",
+    "IsActive": true
+  },
+  {
+    "Title": "Генератор на Уеб Политики",
+    "Description": "Генерира Terms of Service, Privacy Policy и Cookie Policy.",
+    "Category": "Документи",
+    "AccessType": "Premium",
+    "IsActive": true
+  }
+]
