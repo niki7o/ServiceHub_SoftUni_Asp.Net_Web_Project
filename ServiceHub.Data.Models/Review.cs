@@ -21,6 +21,5 @@ namespace ServiceHub.Data.Models
 
         public string UserId { get; set; } = null!;
         public virtual ApplicationUser User { get; set; } = null!;
-
     }
 }

@@ -9,16 +9,14 @@ namespace ServiceHub.Services.Interfaces
 {
     public interface IRepository<T> where T : BaseEntity
     {
-        Task<IEnumerable<T>> GetAllAsync();
+        IQueryable<T> All();
+        IQueryable<T> AllAsNoTracking();
 
-        Task<T?> GetByIdAsync(Guid id);
+        Task<T?> GetByIdAsync(object id);
 
         Task AddAsync(T entity);
-
         void Update(T entity);
-
         void Delete(T entity);
-
         Task<int> SaveChangesAsync();
     }
 }

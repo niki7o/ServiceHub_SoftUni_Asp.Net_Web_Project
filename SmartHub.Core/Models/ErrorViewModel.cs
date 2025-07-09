@@ -1,4 +1,4 @@
-namespace ServiceHub.Models
+namespace ServiceHub.Core.Models
 {
     public class ErrorViewModel
     {

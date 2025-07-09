@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using ServiceHub.Models;
+using ServiceHub.Core.Models;
 using System.Diagnostics;
 
 namespace ServiceHub.Controllers

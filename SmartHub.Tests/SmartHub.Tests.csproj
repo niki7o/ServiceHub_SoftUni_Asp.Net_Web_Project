@@ -13,7 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ServiceHub.Services\ServiceHub.Services.csproj" />
-    <ProjectReference Include="..\SmartHub.Core\SmartHub.Core.csproj" />
+    <ProjectReference Include="..\SmartHub.Core\ServiceHub.Core.csproj" />
   </ItemGroup>
 
 </Project>

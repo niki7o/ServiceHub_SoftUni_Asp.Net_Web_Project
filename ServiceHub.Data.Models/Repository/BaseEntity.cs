@@ -14,5 +14,6 @@ namespace ServiceHub.Data.Models.Repository
 
         [Required]
         public DateTime CreatedOn { get; set; } = DateTime.UtcNow;
+        public DateTime? ModifiedOn { get; set; }
     }
 }

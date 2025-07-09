@@ -11,4 +11,10 @@
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.11" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\ServiceHub.Data.Models\ServiceHub.Data.Models.csproj" />
+    <ProjectReference Include="..\ServiceHub.Data\ServiceHub.Data.csproj" />
+    <ProjectReference Include="..\SmartHub.Common\ServiceHub.Common.csproj" />
+  </ItemGroup>
+
 </Project>

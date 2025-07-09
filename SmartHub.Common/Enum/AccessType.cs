@@ -8,8 +8,8 @@ namespace ServiceHub.Common.Enum
 {
    public enum AccessType
     {
-        Free,
-        Partial,
-        Premium
+        Free = 0,
+        Partial = 1,
+        Premium = 2
     }
 }

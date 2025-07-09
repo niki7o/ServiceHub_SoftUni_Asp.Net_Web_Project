@@ -1,0 +1,94 @@
+﻿
+@using ServiceHub.Data.DataSeeder
+@using ServiceHub.Data.Models
+@model IEnumerable<ServiceSeedModel>
+
+@{
+    ViewData["Title"] = "All Services";
+    var categories = ViewBag.Categories as SelectList;
+    var accessTypes = ViewBag.AccessTypes as SelectList;
+    var currentCategory = ViewBag.CurrentCategory;
+    var currentAccessType = ViewBag.CurrentAccessType;
+}
+
+<h1>All Services</h1>
+
+<p>
+    <a asp-action="Create">Create New Service</a>
+</p>
+
+<div class="filter-section mb-3 p-3 border rounded bg-light">
+    <form asp-action="All" method="get">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label for="categoryFilter" class="form-label">Category:</label>
+                <select name="categoryFilter" id="categoryFilter" class="form-select">
+                    @if (categories != null)
+                    {
+                        @foreach (var item in categories)
+                        {
+                            <option value="@item.Value" selected="@(item.Value == currentCategory)">@item.Text</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="accessTypeFilter" class="form-label">Access Type:</label>
+                <select name="accessTypeFilter" id="accessTypeFilter" class="form-select">
+                    @if (accessTypes != null)
+                    {
+                        @foreach (var item in accessTypes)
+                        {
+                            <option value="@item.Value" selected="@(item.Value == currentAccessType)">@item.Text</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-primary">Filter</button>
+                <a asp-action="All" class="btn btn-secondary ms-2">Clear Filter</a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Title</th>
+            <th>Description</th>
+            <th>Category</th>
+            <th>Access Type</th>
+            <th>Active</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (Model != null && Model.Any())
+        {
+            @foreach (var service in Model)
+            {
+                <tr>
+                    <td>@service.Title</td>
+                    <td>@service.Description</td>
+                    <td>@service.Category</td>
+                    <td>@service.AccessType</td>
+                    
+                    <td>
+                        @if (User.IsInRole("Admin"))
+                        {
+                            <a asp-action="Details" asp-route-id="@service.Id" class="btn btn-info btn-sm">Details</a>
+                            
+                        }
+                    </td>
+                </tr>
+            }
+        }
+        else
+        {
+            <tr>
+                <td colspan="6">No services found matching the criteria.</td> 
+            </tr>
+        }
+    </tbody>
+</table>

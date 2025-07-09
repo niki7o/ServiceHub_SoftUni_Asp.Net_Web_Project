@@ -1,8 +1,18 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+
+using ServiceHub.Common.Enum;
+using ServiceHub.Core.Models.Service;
 using ServiceHub.Data;
+using ServiceHub.Data.DataSeeder;
+using ServiceHub.Data.Models;
 using ServiceHub.Services.Interfaces;
-using ServiceHub.Services.Repository;
+using ServiceHub.Services.Services;
+using ServiceHub.Services.Services.Repository;
+using System.Text.Json;
+
+
+
 
 namespace ServiceHub
 {
@@ -18,12 +28,25 @@ namespace ServiceHub
                 options.UseSqlServer(connectionString));
             builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-            builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
-                .AddEntityFrameworkStores<ServiceHubDbContext>();
-            builder.Services.AddControllersWithViews();
-            builder.Services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
-            var app = builder.Build();
+            builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
+            {
+                
+                options.SignIn.RequireConfirmedAccount = false; 
+                options.Password.RequireDigit = false;
+                options.Password.RequireLowercase = false;
+                options.Password.RequireUppercase = false;
+                options.Password.RequireNonAlphanumeric = false;
+                options.Password.RequiredLength = 6;
+            })
+            .AddRoles<IdentityRole>() 
+            .AddEntityFrameworkStores<ServiceHubDbContext>();
 
+            builder.Services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
+            builder.Services.AddScoped<IServiceService, ServicesService>();
+            builder.Services.AddControllersWithViews();
+
+            var app = builder.Build();
+            DataSeeder.SeedServicesAsync(app.Services);
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
@@ -35,12 +58,15 @@ namespace ServiceHub
                 // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
-
+           
             app.UseHttpsRedirection();
             app.UseStaticFiles();
-
+            
             app.UseRouting();
 
+            app.UseAuthentication();
+            app.UseAuthorization();
+           
             app.MapControllerRoute(
                 name: "default",
                 pattern: "{controller=Home}/{action=Index}/{id?}");

@@ -20,11 +20,10 @@ namespace ServiceHub.Data.Models
         public bool IsBusinessOnly { get; set; }
 
         public Guid CategoryId { get; set; }
-
         public virtual Category Category { get; set; } = null!;
 
         public virtual ICollection<Review> Reviews { get; set; } = new HashSet<Review>();
-
+        public virtual ICollection<Favorite> Favorites { get; set; }
         public AccessType AccessType { get; set; }
 
     }

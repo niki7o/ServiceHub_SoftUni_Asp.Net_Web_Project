@@ -1,0 +1,98 @@
+﻿@using ServiceHub.Common.Enum; 
+@model ServiceHub.Data.Models.Service
+
+@{
+    ViewData["Title"] = "Service Details";
+}
+
+<h1>Service Details</h1>
+
+<div>
+    <h4>@Model.Title</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-3">
+            @Html.DisplayNameFor(model => model.Title)
+        </dt>
+        <dd class="col-sm-9">
+            @Html.DisplayFor(model => model.Title)
+        </dd>
+        <dt class="col-sm-3">
+            @Html.DisplayNameFor(model => model.Description)
+        </dt>
+        <dd class="col-sm-9">
+            @Html.DisplayFor(model => model.Description)
+        </dd>
+        <dt class="col-sm-3">
+            @Html.DisplayNameFor(model => model.IsBusinessOnly)
+        </dt>
+        <dd class="col-sm-9">
+            @Html.DisplayFor(model => model.IsBusinessOnly)
+        </dd>
+        <dt class="col-sm-3">
+            @Html.DisplayNameFor(model => model.AccessType)
+        </dt>
+        <dd class="col-sm-9">
+            @Html.DisplayFor(model => model.AccessType)
+        </dd>
+        <dt class="col-sm-3">
+            Category
+        </dt>
+        <dd class="col-sm-9">
+            @Html.DisplayFor(model => model.Category.Name) @* Assuming Category has a Name property *@
+        </dd>
+        <dt class="col-sm-3">
+            Date Created
+        </dt>
+        <dd class="col-sm-9">
+            @Html.DisplayFor(model => model.CreatedOn)
+        </dd>
+        <dt class="col-sm-3">
+            Last Modified
+        </dt>
+        <dd class="col-sm-9">
+            @Html.DisplayFor(model => model.ModifiedOn)
+        </dd>
+    </dl>
+
+    <h5>Reviews (@Model.Reviews.Count)</h5>
+    @if (Model.Reviews != null && Model.Reviews.Any())
+    {
+        <ul class="list-group mb-3">
+            @foreach (var review in Model.Reviews)
+            {
+                <li class="list-group-item">
+                    Rating: @review.Rating / 5 <br />
+                    Comment: @review.Comment <br />
+                    Reviewed by: @(review.User?.UserName ?? "N/A") @* Assuming User is loaded and has UserName *@
+                </li>
+            }
+        </ul>
+    }
+    else
+    {
+        <p>No reviews yet.</p>
+    }
+
+    <h5>Favorites (@Model.Favorites.Count)</h5>
+    @if (Model.Favorites != null && Model.Favorites.Any())
+    {
+        <ul class="list-group mb-3">
+            @foreach (var favorite in Model.Favorites)
+            {
+                <li class="list-group-item">
+                    Favorited by: @(favorite.User?.UserName ?? "N/A")
+                </li>
+            }
+        </ul>
+    }
+    else
+    {
+        <p>No favorites yet.</p>
+    }
+</div>
+<div>
+
+    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Edit</a> |
+    <a asp-action="All" asp-controller="Service" class="btn btn-secondary">Back to List</a>
+</div>
