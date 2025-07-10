@@ -64,16 +64,14 @@ namespace ServiceHub.Controllers
                 }
                 else
                 {
-                    // Log a warning if an invalid access type filter is provided
-                    // You might want to get ILogger here if you need to log warnings
+                   
                     // For now, it will simply ignore the invalid filter.
                 }
             }
 
-            // 4. Execute the filtered query
             var services = await servicesQuery.ToListAsync();
 
-            // 5. Map the Service entities to ServiceExportDto objects for display
+            
             var serviceDisplayDtos = services.Select(s => new ServiceSeedModel
             {
                 Id = s.Id,
@@ -84,27 +82,56 @@ namespace ServiceHub.Controllers
                
             }).ToList();
 
-            // 6. Pass the list of DTOs to the view
+            
             return View(serviceDisplayDtos);
         }
 
+
+
+
+
+        [AllowAnonymous]
         public async Task<IActionResult> Details(Guid id)
         {
             var service = await serviceRepository.All()
-                                                    .Include(s => s.Category)
-                                                    .Include(s => s.Reviews)
-                                                    .Include(s => s.Favorites) 
-                                                    .FirstOrDefaultAsync(s => s.Id == id);
+                                                  .Include(s => s.Category)
+                                                  .Include(s => s.Reviews).ThenInclude(r => r.User)
+                                                  .Include(s => s.Favorites).ThenInclude(f => f.User)
+                                                  .FirstOrDefaultAsync(s => s.Id == id);
 
             if (service == null)
             {
-                
                 return NotFound();
             }
+
+           
+            bool canUseService = false;
+            if (User.Identity.IsAuthenticated)
+            {
+                var user = await userManager.GetUserAsync(User);
+                if (user != null)
+                {
+                    
+                    if (await userManager.IsInRoleAsync(user, "Admin") || await userManager.IsInRoleAsync(user, "BusinessUser"))
+                    {
+                        canUseService = true;
+                    }
+                    
+                    else if (await userManager.IsInRoleAsync(user, "User"))
+                    {
+                        if (service.AccessType == Common.Enum.AccessType.Free || service.AccessType == Common.Enum.AccessType.Partial)
+                        {
+                            canUseService = true;
+                        }
+                    }
+                }
+            }
+            ViewBag.CanUseService = canUseService;
+
             return View(service);
         }
 
-       
+
         [HttpPost]
         [Authorize]
         public async Task<IActionResult> AddReview(Guid serviceId, ReviewFormModel model)
@@ -140,7 +167,99 @@ namespace ServiceHub.Controllers
             return RedirectToAction(nameof(Details), new { id = serviceId });
         }
 
-    
+
+
+
+
+
+        [Authorize]
+        public async Task<IActionResult> UseService(Guid id)
+        {
+            var service = await serviceRepository.All().FirstOrDefaultAsync(s => s.Id == id);
+
+            if (service == null)
+            {
+                return NotFound();
+            }
+
+            if (!User.Identity.IsAuthenticated)
+            {
+                return RedirectToPage("/Account/Login", new { area = "Identity" });
+            }
+
+            var user = await userManager.GetUserAsync(User);
+            if (user == null)
+            {
+                return RedirectToPage("/Account/Login", new { area = "Identity" });
+            }
+
+           
+            if (await userManager.IsInRoleAsync(user, "Admin") || await userManager.IsInRoleAsync(user, "BusinessUser"))
+            {
+                
+                TempData["ServiceMessage"] = $"You are using the service: {service.Title} (Full Access).";
+                return RedirectToAction("Details", new { id = service.Id });
+            }
+          
+            else if (await userManager.IsInRoleAsync(user, "User"))
+            {
+                if (service.AccessType == Common.Enum.AccessType.Free || service.AccessType == Common.Enum.AccessType.Partial)
+                {
+                    
+                    TempData["ServiceMessage"] = $"You are using the service: {service.Title} (Limited Access).";
+                    return RedirectToAction("Details", new { id = service.Id });
+                }
+                else
+                {
+                    TempData["ServiceMessage"] = $"Access Denied: You need to upgrade to use '{service.Title}'.";
+                    return RedirectToAction("Details", new { id = service.Id });
+                }
+            }
+            else
+            {
+               
+                TempData["ServiceMessage"] = "Access Denied: Your role does not permit this action.";
+                return RedirectToAction("Details", new { id = service.Id });
+            }
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         [HttpPost]
         [Authorize]
         public async Task<IActionResult> ToggleFavorite(Guid serviceId)

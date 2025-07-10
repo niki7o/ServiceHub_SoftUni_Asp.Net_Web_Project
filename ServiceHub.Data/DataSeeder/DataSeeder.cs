@@ -27,14 +27,24 @@ namespace ServiceHub.Data.DataSeeder
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
             var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
-           
             if (!await roleManager.RoleExistsAsync("Admin"))
             {
-                logger.LogInformation("Creating 'Admin' role...");
+                logger.LogInformation("Creating 'Admin' role.");
                 await roleManager.CreateAsync(new IdentityRole("Admin"));
             }
+            if (!await roleManager.RoleExistsAsync("User"))
+            {
+                logger.LogInformation("Creating 'User' role.");
+                await roleManager.CreateAsync(new IdentityRole("User"));
+            }
+           
+            if (!await roleManager.RoleExistsAsync("BusinessUser"))
+            {
+                logger.LogInformation("Creating 'BusinessUser' role.");
+                await roleManager.CreateAsync(new IdentityRole("BusinessUser"));
+            }
 
-          
+
             var adminEmail = "admin@servicehub.com"; 
             var adminPassword = "Admin123";
 

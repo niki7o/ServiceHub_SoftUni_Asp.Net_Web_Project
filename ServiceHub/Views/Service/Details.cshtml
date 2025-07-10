@@ -3,34 +3,42 @@
 
 @{
     ViewData["Title"] = "Service Details";
+    bool canUseService = ViewBag.CanUseService ?? false;
 }
 
 <h1>Service Details</h1>
+
+@if (TempData["ServiceMessage"] != null)
+{
+    <div class="alert alert-info" role="alert">
+        @TempData["ServiceMessage"]
+    </div>
+}
 
 <div>
     <h4>@Model.Title</h4>
     <hr />
     <dl class="row">
         <dt class="col-sm-3">
-            @Html.DisplayNameFor(model => model.Title)
+            Title
         </dt>
         <dd class="col-sm-9">
             @Html.DisplayFor(model => model.Title)
         </dd>
         <dt class="col-sm-3">
-            @Html.DisplayNameFor(model => model.Description)
+            Description
         </dt>
         <dd class="col-sm-9">
             @Html.DisplayFor(model => model.Description)
         </dd>
         <dt class="col-sm-3">
-            @Html.DisplayNameFor(model => model.IsBusinessOnly)
+            Is Business Only
         </dt>
         <dd class="col-sm-9">
             @Html.DisplayFor(model => model.IsBusinessOnly)
         </dd>
         <dt class="col-sm-3">
-            @Html.DisplayNameFor(model => model.AccessType)
+            Access Type
         </dt>
         <dd class="col-sm-9">
             @Html.DisplayFor(model => model.AccessType)
@@ -39,7 +47,7 @@
             Category
         </dt>
         <dd class="col-sm-9">
-            @Html.DisplayFor(model => model.Category.Name) @* Assuming Category has a Name property *@
+            @Html.DisplayFor(model => model.Category.Name)
         </dd>
         <dt class="col-sm-3">
             Date Created
@@ -64,7 +72,7 @@
                 <li class="list-group-item">
                     Rating: @review.Rating / 5 <br />
                     Comment: @review.Comment <br />
-                    Reviewed by: @(review.User?.UserName ?? "N/A") @* Assuming User is loaded and has UserName *@
+                    Reviewed by: @(review.User?.UserName ?? "N/A")
                 </li>
             }
         </ul>
@@ -92,7 +100,22 @@
     }
 </div>
 <div>
-
-    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Edit</a> |
-    <a asp-action="All" asp-controller="Service" class="btn btn-secondary">Back to List</a>
+    @if (User.Identity.IsAuthenticated)
+    {
+        @if (canUseService)
+        {
+            <a asp-action="UseService" asp-route-id="@Model.Id" class="btn btn-success me-2">Use Service</a>
+        }
+        else
+        {
+            <button type="button" class="btn btn-warning me-2" disabled>Upgrade to Use</button>
+            <a asp-controller="Subscription" asp-action="Upgrade" class="btn btn-info">Upgrade Plan</a>
+        }
+    }
+    else
+    {
+        <a asp-page="/Account/Register" asp-area="Identity" class="btn btn-primary me-2">Register to Use</a>
+        <a asp-page="/Account/Login" asp-area="Identity" class="btn btn-secondary">Login</a>
+    }
+    <a asp-action="All" class="btn btn-secondary ms-2">Back to List</a>
 </div>
