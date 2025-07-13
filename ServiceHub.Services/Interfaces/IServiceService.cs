@@ -12,7 +12,7 @@ namespace ServiceHub.Services.Interfaces
     {
 
         Task<IEnumerable<ServiceViewModel>> GetAllAsync(string? filter = null, string? sort = null, string? currentUserId = null);
-        Task<ServiceViewModel> GetByIdAsync(Guid id);
+        Task<ServiceViewModel> GetByIdAsync(Guid id, string? currentUserId);
         Task CreateAsync(ServiceFormModel model);
         Task UpdateAsync(Guid id, ServiceFormModel model);
         Task DeleteAsync(Guid id);

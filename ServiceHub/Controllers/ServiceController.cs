@@ -90,45 +90,44 @@ namespace ServiceHub.Controllers
 
 
 
-        [AllowAnonymous]
         public async Task<IActionResult> Details(Guid id)
         {
-            var service = await serviceRepository.All()
-                                                  .Include(s => s.Category)
-                                                  .Include(s => s.Reviews).ThenInclude(r => r.User)
-                                                  .Include(s => s.Favorites).ThenInclude(f => f.User)
-                                                  .FirstOrDefaultAsync(s => s.Id == id);
+            string? currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            if (service == null)
+            var serviceDetails = await serviceService.GetByIdAsync(id, currentUserId);
+
+            if (serviceDetails == null)
             {
                 return NotFound();
             }
 
-           
             bool canUseService = false;
             if (User.Identity.IsAuthenticated)
             {
                 var user = await userManager.GetUserAsync(User);
                 if (user != null)
                 {
-                    
-                    if (await userManager.IsInRoleAsync(user, "Admin") || await userManager.IsInRoleAsync(user, "BusinessUser"))
+                    bool isAdmin = await userManager.IsInRoleAsync(user, "Admin");
+                    bool isBusinessUser = await userManager.IsInRoleAsync(user, "BusinessUser");
+                    bool isUser = await userManager.IsInRoleAsync(user, "User");
+
+                  
+                    if (isAdmin || isBusinessUser)
                     {
                         canUseService = true;
                     }
-                    
-                    else if (await userManager.IsInRoleAsync(user, "User"))
+                    else if (isUser && (serviceDetails.AccessType == AccessType.Free.ToString() || serviceDetails.AccessType == AccessType.Partial.ToString()))
                     {
-                        if (service.AccessType == Common.Enum.AccessType.Free || service.AccessType == Common.Enum.AccessType.Partial)
-                        {
-                            canUseService = true;
-                        }
+                        canUseService = true;
                     }
                 }
             }
             ViewBag.CanUseService = canUseService;
 
-            return View(service);
+            
+            
+
+            return View(serviceDetails); 
         }
 
 

@@ -43,6 +43,7 @@ namespace ServiceHub
 
             builder.Services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
             builder.Services.AddScoped<IServiceService, ServicesService>();
+            builder.Services.AddScoped<IReviewService, ReviewsService>();
             builder.Services.AddControllersWithViews();
 
             var app = builder.Build();

@@ -86,18 +86,26 @@ namespace ServiceHub.Services.Services
             }).ToList();
         }
 
-        public async Task<ServiceViewModel> GetByIdAsync(Guid id)
+        public async Task<ServiceViewModel> GetByIdAsync(Guid id, string? currentUserId = null)
         {
             var service = await serviceRepo
                 .All()
                 .Include(s => s.Category)
                 .Include(s => s.Reviews)
-                    .ThenInclude(r => r.User) // To get reviewer's username
+                    .ThenInclude(r => r.User)
+                .Include(s => s.Favorites)
                 .FirstOrDefaultAsync(s => s.Id == id);
 
             if (service == null)
             {
+              
                 throw new ArgumentException("Service not found.");
+            }
+
+            bool isFavorite = false;
+            if (!string.IsNullOrEmpty(currentUserId))
+            {
+                isFavorite = service.Favorites.Any(f => f.UserId == currentUserId);
             }
 
             return new ServiceViewModel
@@ -107,10 +115,10 @@ namespace ServiceHub.Services.Services
                 Description = service.Description,
                 IsBusinessOnly = service.IsBusinessOnly,
                 AccessType = service.AccessType.ToString(),
-                CategoryName = service.Category?.Name,
+                CategoryName = service.Category?.Name, 
                 ReviewCount = service.Reviews.Count,
                 AverageRating = service.Reviews.Any() ? service.Reviews.Average(r => r.Rating) : 0,
-               Reviews = service.Reviews.Select(r => new ReviewViewModel
+                Reviews = service.Reviews.Select(r => new ReviewViewModel
                 {
                     Id = r.Id,
                     ServiceId = r.ServiceId,
@@ -118,10 +126,11 @@ namespace ServiceHub.Services.Services
                     Rating = r.Rating,
                     Comment = r.Comment,
                     CreatedOn = r.CreatedOn
-                }).OrderByDescending(r => r.CreatedOn).ToList()
+                }).OrderByDescending(r => r.CreatedOn).ToList(),
+                IsFavorite = isFavorite
             };
         }
-
+      
         public async Task CreateAsync(ServiceFormModel model)
         {
             var category = await categoryRepo.GetByIdAsync(model.CategoryId);

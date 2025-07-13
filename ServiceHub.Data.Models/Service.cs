@@ -26,5 +26,6 @@ namespace ServiceHub.Data.Models
         public virtual ICollection<Favorite> Favorites { get; set; }
         public AccessType AccessType { get; set; }
 
+        
     }
 }

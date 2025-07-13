@@ -1,9 +1,14 @@
-﻿@using ServiceHub.Common.Enum; 
-@model ServiceHub.Data.Models.Service
+﻿@model ServiceHub.Core.Models.Service.ServiceViewModel
+@using ServiceHub.Common.Enum
+@using ServiceHub.Data.Models // For Review entity properties like UserId in conditional checks
+@using System.Security.Claims // For User.FindFirstValue
 
 @{
     ViewData["Title"] = "Service Details";
     bool canUseService = ViewBag.CanUseService ?? false;
+   
+    string? currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+    bool isAdmin = User.IsInRole("Admin"); 
 }
 
 <h1>Service Details</h1>
@@ -12,6 +17,18 @@
 {
     <div class="alert alert-info" role="alert">
         @TempData["ServiceMessage"]
+    </div>
+}
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success" role="alert">
+        @TempData["SuccessMessage"]
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger" role="alert">
+        @TempData["ErrorMessage"]
     </div>
 }
 
@@ -47,32 +64,47 @@
             Category
         </dt>
         <dd class="col-sm-9">
-            @Html.DisplayFor(model => model.Category.Name)
+            @Html.DisplayFor(model => model.CategoryName)
         </dd>
         <dt class="col-sm-3">
-            Date Created
+            Average Rating
         </dt>
         <dd class="col-sm-9">
-            @Html.DisplayFor(model => model.CreatedOn)
-        </dd>
-        <dt class="col-sm-3">
-            Last Modified
-        </dt>
-        <dd class="col-sm-9">
-            @Html.DisplayFor(model => model.ModifiedOn)
+            @Model.AverageRating.ToString("F1") / 5 (@Model.ReviewCount reviews)
         </dd>
     </dl>
 
-    <h5>Reviews (@Model.Reviews.Count)</h5>
+    <h5>Reviews (@Model.ReviewCount)</h5>
     @if (Model.Reviews != null && Model.Reviews.Any())
     {
         <ul class="list-group mb-3">
             @foreach (var review in Model.Reviews)
             {
-                <li class="list-group-item">
-                    Rating: @review.Rating / 5 <br />
-                    Comment: @review.Comment <br />
-                    Reviewed by: @(review.User?.UserName ?? "N/A")
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        Rating: @review.Rating / 5 <br />
+                        Comment: @review.Comment <br />
+                        Reviewed by: @review.UserName (@review.CreatedOn.ToShortDateString())
+                    </div>
+                    @if (User.Identity.IsAuthenticated)
+                    {
+                    
+                        @if (review.UserName == User.Identity.Name || isAdmin)
+                        {
+                            <div class="btn-group" role="group">
+                              
+                                @if (review.UserName == User.Identity.Name)
+                                {
+                                    <a asp-controller="Review" asp-action="EditReview" asp-route-reviewId="@review.Id" class="btn btn-warning btn-sm me-1">Edit</a>
+                                }
+                                
+                                <form asp-controller="Review" asp-action="DeleteReview" asp-route-reviewId="@review.Id" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this review?');">Delete</button>
+                                </form>
+                            </div>
+                        }
+                    }
                 </li>
             }
         </ul>
@@ -81,25 +113,9 @@
     {
         <p>No reviews yet.</p>
     }
-
-    <h5>Favorites (@Model.Favorites.Count)</h5>
-    @if (Model.Favorites != null && Model.Favorites.Any())
-    {
-        <ul class="list-group mb-3">
-            @foreach (var favorite in Model.Favorites)
-            {
-                <li class="list-group-item">
-                    Favorited by: @(favorite.User?.UserName ?? "N/A")
-                </li>
-            }
-        </ul>
-    }
-    else
-    {
-        <p>No favorites yet.</p>
-    }
 </div>
-<div>
+
+<div class="mt-4">
     @if (User.Identity.IsAuthenticated)
     {
         @if (canUseService)
@@ -111,11 +127,41 @@
             <button type="button" class="btn btn-warning me-2" disabled>Upgrade to Use</button>
             <a asp-controller="Subscription" asp-action="Upgrade" class="btn btn-info">Upgrade Plan</a>
         }
+
+        <form asp-controller="Favorite" asp-action="ToggleFavorite" asp-route-serviceId="@Model.Id" method="post" class="d-inline">
+            @Html.AntiForgeryToken()
+            @if (Model.IsFavorite)
+            {
+                <button type="submit" class="btn btn-danger me-2">
+                    <i class="fas fa-heart"></i> Remove from Favorites
+                </button>
+            }
+            else
+            {
+                <button type="submit" class="btn btn-outline-primary me-2">
+                    <i class="far fa-heart"></i> Add to Favorites
+                </button>
+            }
+        </form>
     }
     else
     {
-        <a asp-page="/Account/Register" asp-area="Identity" class="btn btn-primary me-2">Register to Use</a>
-        <a asp-page="/Account/Login" asp-area="Identity" class="btn btn-secondary">Login</a>
+        <p class="text-info">Please log in or register to use or favorite this service.</p>
+        <a asp-area="Identity" asp-page="/Account/Register" class="btn btn-primary me-2">Register</a>
+        <a asp-area="Identity" asp-page="/Account/Login" class="btn btn-outline-primary">Log In</a>
     }
+
     <a asp-action="All" class="btn btn-secondary ms-2">Back to List</a>
+
+    @if (User.Identity.IsAuthenticated)
+    {
+        <h5 class="mt-4">
+            <a asp-controller="Review" asp-action="CreateReview" asp-route-serviceId="@Model.Id" class="btn btn-primary btn-sm">Leave a Review</a>
+        </h5>
+    }
 </div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+}
