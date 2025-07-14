@@ -1,0 +1,51 @@
+﻿@using ServiceHub.Common 
+ 
+
+@{
+    ViewData["Title"] = "Използване на услуга";
+    // serviceIdToUse е GUID-ът на услугата (ServiceIdentifier), подаден от контролера
+    Guid serviceIdToUse = ViewBag.ServiceIdToUse;
+    // serviceTitle е заглавието на услугата, подадено от контролера
+    string serviceTitle = ViewBag.ServiceTitle ?? "Неизвестна услуга";
+    // serviceModelId е int Id на ServiceSeedModel, за бутона "Назад към Детайли"
+    Guid serviceModelId = ViewBag.ServiceModelId;
+}
+
+<h1>Използване на услуга: @serviceTitle</h1>
+<hr />
+
+@* Тук ще се зарежда динамично формата за конкретната услуга на базата на serviceIdToUse (GUID) *@
+<div id="serviceFormContainer">
+    @if (serviceIdToUse == ServiceConstants.FileConverterServiceId)
+    {
+    
+        <partial name="_FileConverterForm" />
+    }
+    // Добавете 'else if' блокове за всяка друга услуга, когато сте готови да я имплементирате
+    // Пример:
+    // else if (serviceIdToUse == ServiceConstants.AiGrammarStyleCheckerServiceId)
+    // {
+    //     <partial name="_AiGrammarStyleCheckerForm" />
+    // }
+    // else if (serviceIdToUse == ServiceConstants.AiDocumentSummarizerServiceId)
+    // {
+    //     <partial name="_AiDocumentSummarizerForm" />
+    // }
+    // и т.н.
+    else
+    {
+        <div class="alert alert-warning" role="alert">
+            Форма за тази услуга не е налична все още или услугата не е разпозната.
+        </div>
+    }
+</div>
+
+<div>
+    @* Бутон "Назад към Детайли" - връща ни към страницата с детайлите на услугата *@
+    <a asp-action="Details" asp-controller="Service" asp-route-id="@serviceModelId" class="btn btn-secondary mt-3">Назад към Детайли</a>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    @* Може да добавите JavaScript скриптове, специфични за формите, ако е необходимо, например за AJAX заявки или динамично зареждане *@
+}

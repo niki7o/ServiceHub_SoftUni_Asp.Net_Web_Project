@@ -1,61 +1,63 @@
 ﻿[
   {
+    "Id": "bedc2d34-60f5-46af-8650-bf94493fc721",
     "Title": "Генератор на Договори",
     "Description": "Генерира автоматично договори с шаблони (наем, трудов, партньорски).",
     "Category": "Документи",
-    "AccessType": "Partial",
-    "IsActive": true
+    "AccessType": "Partial"
+
   },
   {
+    "Id": "a634f288-4f0e-42fa-8215-87e43cf69106",
     "Title": "Конвертиране на Файлове",
     "Description": "Конвертира PDF ↔ DOCX, JPG ↔ PNG и др.",
     "Category": "Инструменти",
-    "AccessType": "Free",
-    "IsActive": true
+    "AccessType": "Free"
   },
   {
+    "Id": "989abc7b-4ccc-459b-8431-4fa04544b586",
     "Title": "Обобщение на Документи с AI",
     "Description": "Обобщава качен текст/документ автоматично с помощта на езиков модел.",
     "Category": "AI & Анализ",
-    "AccessType": "Partial",
-    "IsActive": true
+    "AccessType": "Partial"
   },
   {
+    "Id": "fccc7f25-7d9d-4a97-b1c4-1e5ab733952c",
     "Title": "Автоматично CV/Resume",
     "Description": "Въвеждаш данни и получаваш готово CV в PDF формат.",
     "Category": "Документи",
-    "AccessType": "Free",
-    "IsActive": true
+    "AccessType": "Free"
   },
   {
+    "Id": "b422f696-e7a3-4d3d-b869-79596818007e",
     "Title": "Генератор на Инвойси/Фактури",
     "Description": "Въвеждаш данни и получаваш професионална фактура в PDF с фирмен стил.",
     "Category": "Документи",
-    "AccessType": "Premium",
-    "IsActive": true
+    "AccessType": "Premium"
   },
   {
+    "Id": "abf786e5-8779-425a-bb67-918e3d7276f3",
     "Title": "Граматична и стилова проверка с AI",
     "Description": "Проверява правопис и стил на текстове на български и английски език.",
     "Category": "AI & Анализ",
-    "AccessType": "Partial",
-    "IsActive": true
+    "AccessType": "Partial"
   },
   {
+    "Id": "2ef4d387-1d49-407d-9b18-7c4f5276ea77",
     "Title": "Финансов Калкулатор / Анализатор",
     "Description": "Изчислява ROI, бюджети, прогнозни приходи и разходи.",
     "Category": "Инструменти",
-    "AccessType": "Premium",
-    "IsActive": true
+    "AccessType": "Premium"
   },
   {
+    "Id": "4533a937-3d74-44b6-a6e4-f1a0ad8a6bbc",
     "Title": "Генератор на Маркетинг Слогани",
     "Description": "Създава уникални лозунги на база ключови думи с помощта на AI.",
     "Category": "AI & Анализ",
-    "AccessType": "Free",
-    "IsActive": true
+    "AccessType": "Free"
   },
   {
+    "Id": "e11e539c-8290-4171-868b-1662573b8ab8",
     "Title": "Конвертор на Кодови Снипети",
     "Description": "Преобразува код между програмни езици (напр. C# към Python).",
     "Category": "Инструменти",
@@ -63,10 +65,10 @@
     "IsActive": true
   },
   {
+    "Id": "d1541a79-2a0a-46a7-8ef6-6c5e3de194ff",
     "Title": "Генератор на Уеб Политики",
     "Description": "Генерира Terms of Service, Privacy Policy и Cookie Policy.",
     "Category": "Документи",
-    "AccessType": "Premium",
-    "IsActive": true
+    "AccessType": "Premium"
   }
 ]

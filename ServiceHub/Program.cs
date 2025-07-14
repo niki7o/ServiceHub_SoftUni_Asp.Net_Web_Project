@@ -1,16 +1,13 @@
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-
-using ServiceHub.Common.Enum;
-using ServiceHub.Core.Models.Service;
+using OfficeOpenXml;
+using ServiceHub.Common;
 using ServiceHub.Data;
 using ServiceHub.Data.DataSeeder;
 using ServiceHub.Data.Models;
 using ServiceHub.Services.Interfaces;
 using ServiceHub.Services.Services;
 using ServiceHub.Services.Services.Repository;
-using System.Text.Json;
-
 
 
 
@@ -18,15 +15,17 @@ namespace ServiceHub
 {
     public class Program
     {
+        
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
-
-            // Add services to the container.
+          
+         
             var connectionString = builder.Configuration.GetConnectionString("ServiceHubDbContextConnection") ?? throw new InvalidOperationException("Connection string 'ServiceHubDbContextConnection' not found.");
             builder.Services.AddDbContext<ServiceHubDbContext>(options =>
                 options.UseSqlServer(connectionString));
             builder.Services.AddDatabaseDeveloperPageExceptionFilter();
+         
 
             builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
             {
@@ -40,12 +39,35 @@ namespace ServiceHub
             })
             .AddRoles<IdentityRole>() 
             .AddEntityFrameworkStores<ServiceHubDbContext>();
-
+            builder.Services.AddControllersWithViews();
             builder.Services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
             builder.Services.AddScoped<IServiceService, ServicesService>();
             builder.Services.AddScoped<IReviewService, ReviewsService>();
-            builder.Services.AddControllersWithViews();
 
+
+            builder.Services.AddScoped<IServiceDispatcher, ServiceDispatcher>(sp =>
+            {
+                var logger = sp.GetRequiredService<ILogger<ServiceDispatcher>>();
+                var serviceImplementations = new Dictionary<Guid, Type>
+    {
+        { ServiceConstants.FileConverterServiceId, typeof(IFileConverterService) }
+       
+        // { ServiceConstants.AiGrammarStyleCheckerServiceId, typeof(IAiGrammarStyleCheckerService) },
+        // { ServiceConstants.AiDocumentSummarizerServiceId, typeof(IAiDocumentSummarizerService) },
+        // { ServiceConstants.FinancialCalculatorAnalyzerServiceId, typeof(IFinancialCalculatorAnalyzerService) },
+        // { ServiceConstants.ContractGeneratorServiceId, typeof(IContractGeneratorService) },
+        // { ServiceConstants.WebPolicyGeneratorServiceId, typeof(IWebPolicyGeneratorService) },
+        // { ServiceConstants.InvoiceFactureGeneratorServiceId, typeof(IInvoiceFactureGeneratorService) },
+        // { ServiceConstants.CvResumeGeneratorServiceId, typeof(ICvResumeGeneratorService) },
+        // { ServiceConstants.CodeSnippetConverterServiceId, typeof(ICodeSnippetConverterService) },
+        // { ServiceConstants.MarketingSloganGeneratorServiceId, typeof(IMarketingSloganGeneratorService) }
+    };
+             
+                return new ServiceDispatcher(sp,logger, serviceImplementations); 
+            });
+            builder.Services.AddScoped<IFileConverterService, FileConverterService>();
+
+            
             var app = builder.Build();
             DataSeeder.SeedServicesAsync(app.Services);
             // Configure the HTTP request pipeline.

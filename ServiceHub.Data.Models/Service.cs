@@ -12,6 +12,8 @@ namespace ServiceHub.Data.Models
 {
     public class Service : BaseEntity
     {
+
+        public Guid Id { get; set; }
         [Required]
         public string Title { get; set; } = null!;
 

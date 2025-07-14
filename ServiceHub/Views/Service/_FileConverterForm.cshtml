@@ -1,0 +1,43 @@
+﻿
+@using ServiceHub.Core.Models.Service.FileConverter;
+
+@model FileConvertRequest
+
+<h4>Конвертиране на Файлове</h4>
+
+<form asp-controller="Service" asp-action="ExecuteService" method="post" enctype="multipart/form-data">
+    @Html.AntiForgeryToken()
+
+    <input type="hidden" name="serviceId" value="@ViewBag.ServiceIdToUse" />
+
+    <div class="mb-3">
+        <label for="fileContent" class="form-label">Изберете файл:</label>
+        <input type="file" class="form-control" id="fileContent" name="fileContent" required />
+    </div>
+
+    <div class="mb-3">
+        <label for="targetFormat" class="form-label">Целеви формат:</label>
+        <select class="form-select" id="targetFormat" name="targetFormat" required>
+            @if (ViewBag.SupportedFormats != null)
+            {
+                foreach (var format in ViewBag.SupportedFormats)
+                {
+                    <option value="@format">@format.ToUpper()</option>
+                }
+            }
+            else
+            {
+                <option value="">Няма налични формати</option>
+            }
+        </select>
+    </div>
+
+    <div class="form-check mb-3">
+        <input class="form-check-input" type="checkbox" id="performOCRIfApplicable" name="performOCRIfApplicable" value="true">
+        <label class="form-check-label" for="performOCRIfApplicable">
+            Извърши OCR (ако е приложимо)
+        </label>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Конвертирай</button>
+</form>
