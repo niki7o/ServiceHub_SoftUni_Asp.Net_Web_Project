@@ -13,6 +13,8 @@ namespace ServiceHub.Data.Models
 
         public ApplicationUser() : base() { }
 
+
+       
         public bool IsBusiness { get; set; }
         public DateTime? BusinessExpiresOn { get; set; }
 

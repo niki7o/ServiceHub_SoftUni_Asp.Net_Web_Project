@@ -1,21 +1,22 @@
-﻿using System;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-
-using ServiceHub.Data.Models;
-using Microsoft.AspNetCore.Identity; 
-using ServiceHub.Core.Models.Service;
-using ServiceHub.Common.Enum;
-using ServiceHub.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using ServiceHub.Data.DataSeeder;
-using ServiceHub.Core.Models.Reviews;
-using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
 using ServiceHub.Common;
+using ServiceHub.Common.Enum;
+using ServiceHub.Core.Models;
+using ServiceHub.Core.Models.Reviews;
+using ServiceHub.Core.Models.Service;
 using ServiceHub.Core.Models.Service.FileConverter;
+using ServiceHub.Data.DataSeeder;
+using ServiceHub.Data.Models;
+using ServiceHub.Services.Interfaces;
+using System;
+using System.Diagnostics;
+using System.Linq;
 using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace ServiceHub.Controllers
 {
@@ -23,11 +24,12 @@ namespace ServiceHub.Controllers
     {
         private readonly IServiceService serviceService;
         private readonly UserManager<ApplicationUser> userManager;
-       private readonly IRepository<Favorite> favoriteRepo;
-       private readonly IRepository<Service> serviceRepository;
+        private readonly IRepository<Favorite> favoriteRepo;
+        private readonly IRepository<Service> serviceRepository;
         private readonly IRepository<Category> _categoryRepository;
         private readonly ILogger<ServiceController> _logger;
         private readonly IServiceDispatcher _serviceDispatcher;
+
         public ServiceController(
             IServiceDispatcher serviceDispatcher,
             IServiceService serviceService,
@@ -39,16 +41,14 @@ namespace ServiceHub.Controllers
             this.serviceService = serviceService;
             this.userManager = userManager;
             this.favoriteRepo = favoriteRepo;
-           this.serviceRepository = serviceRepository;
+            this.serviceRepository = serviceRepository;
             _categoryRepository = categoryRepository;
         }
 
-      
         public async Task<IActionResult> All(string? categoryFilter, string? accessTypeFilter)
         {
-          
             var allCategories = await _categoryRepository.All().OrderBy(c => c.Name).ToListAsync();
-            ViewBag.Categories = new SelectList(allCategories, "Name", "Name", categoryFilter); 
+            ViewBag.Categories = new SelectList(allCategories, "Name", "Name", categoryFilter);
 
             var allAccessTypes = Enum.GetNames(typeof(AccessType))
                                      .Select(name => new SelectListItem { Value = name, Text = name })
@@ -58,10 +58,8 @@ namespace ServiceHub.Controllers
             ViewBag.CurrentCategory = categoryFilter;
             ViewBag.CurrentAccessType = accessTypeFilter;
 
-         
             IQueryable<Service> servicesQuery = serviceRepository.All().Include(s => s.Category);
 
-       
             if (!string.IsNullOrEmpty(categoryFilter))
             {
                 servicesQuery = servicesQuery.Where(s => s.Category != null && s.Category.Name == categoryFilter);
@@ -75,39 +73,31 @@ namespace ServiceHub.Controllers
                 }
                 else
                 {
-                   
                     // For now, it will simply ignore the invalid filter.
                 }
             }
 
             var services = await servicesQuery.ToListAsync();
 
-            
             var serviceDisplayDtos = services.Select(s => new ServiceSeedModel
             {
                 Id = s.Id,
-            Title = s.Title,
+                Title = s.Title,
                 Description = s.Description,
                 Category = s.Category != null ? s.Category.Name : "N/A",
                 AccessType = s.AccessType.ToString(),
-               
             }).ToList();
 
-            
             return View(serviceDisplayDtos);
         }
 
-
-
-
-
         public async Task<IActionResult> Details(Guid id)
         {
-            var service = await serviceRepository.All() 
-                                                  .Include(s => s.Category)
-                                                  .Include(s => s.Reviews)
-                                                      .ThenInclude(r => r.User)
-                                                  .FirstOrDefaultAsync(s => s.Id == id);
+            var service = await serviceRepository.All()
+                                                 .Include(s => s.Category)
+                                                 .Include(s => s.Reviews)
+                                                     .ThenInclude(r => r.User)
+                                                 .FirstOrDefaultAsync(s => s.Id == id);
 
             if (service == null)
             {
@@ -120,21 +110,18 @@ namespace ServiceHub.Controllers
                 Title = service.Title,
                 Description = service.Description,
                 IsBusinessOnly = service.IsBusinessOnly,
-                
-                AccessType = service.AccessType, 
+                AccessType = service.AccessType,
                 CategoryName = service.Category.Name,
-                
-                Reviews = service.Reviews.Select(r => new ReviewViewModel 
+                Reviews = service.Reviews.Select(r => new ReviewViewModel
                 {
                     Id = r.Id,
                     Rating = r.Rating,
                     Comment = r.Comment,
-                    UserName = r.User.UserName, 
+                    UserName = r.User.UserName,
                     CreatedOn = r.CreatedOn
                 }).ToList(),
                 AverageRating = service.Reviews.Any() ? service.Reviews.Average(r => r.Rating) : 0,
                 ReviewCount = service.Reviews.Count
-                
             };
             bool canUseService = false;
             if (User.Identity.IsAuthenticated)
@@ -153,12 +140,10 @@ namespace ServiceHub.Controllers
                     else if (isBusinessUser)
                     {
                         canUseService = true;
-                        
-                         canUseService = service.IsBusinessOnly;
+                        canUseService = service.IsBusinessOnly; // This line seems to override the previous `true`
                     }
                     else if (isRegularUser)
                     {
-                      
                         if (service.AccessType == AccessType.Free || service.AccessType == AccessType.Partial)
                         {
                             canUseService = true;
@@ -166,33 +151,25 @@ namespace ServiceHub.Controllers
                     }
                 }
             }
-           
-
-            ViewBag.CanUseService = canUseService; 
+            ViewBag.CanUseService = canUseService;
 
             return View(serviceViewModel);
         }
 
-
-
-
-
-        [HttpGet]
-        [Authorize] 
-        
+        [HttpGet("Service/UseService/{id}")]
         public async Task<IActionResult> UseService(Guid id)
         {
-            
-            var service = await serviceRepository.All().FirstOrDefaultAsync(s => s.Id == id); 
+            // 1. Проверка дали услугата съществува
+            var service = await serviceRepository.All().FirstOrDefaultAsync(s => s.Id == id);
 
             if (service == null)
             {
                 _logger.LogWarning($"Attempted to use non-existent service with ID: {id}");
                 TempData["ErrorMessage"] = "Услугата не е намерена.";
-                return NotFound();
+                return View("~/Views/Shared/Error.cshtml", new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
             }
 
-            
+            // 2. Проверка за удостоверяване на потребителя
             var user = await userManager.GetUserAsync(User);
             if (user == null)
             {
@@ -200,6 +177,7 @@ namespace ServiceHub.Controllers
                 return RedirectToPage("/Account/Login", new { area = "Identity" });
             }
 
+            // 3. Проверка на ролите и достъпа до услугата
             bool isAdmin = await userManager.IsInRoleAsync(user, "Admin");
             bool isBusinessUser = await userManager.IsInRoleAsync(user, "BusinessUser");
             bool isRegularUser = await userManager.IsInRoleAsync(user, "User");
@@ -229,33 +207,65 @@ namespace ServiceHub.Controllers
                 accessMessage = "Достъп отказан: Вашата роля не позволява това действие.";
             }
 
+            // Ако потребителят няма право да използва услугата, пренасочи
             if (!canUse)
             {
+                _logger.LogWarning($"User {user.UserName} (Roles: {string.Join(",", await userManager.GetRolesAsync(user))}) denied access to service {service.Title} ({service.Id}) due to AccessType: {service.AccessType}.");
                 TempData["ErrorMessage"] = accessMessage;
-              
                 return RedirectToAction("Details", "Service", new { id = service.Id });
             }
 
-           
-            ViewBag.ServiceIdToUse = service.Id;
-            ViewBag.ServiceTitle = service.Title;
-            ViewBag.ServiceModelId = service.Id; 
-            if (service.Id == ServiceConstants.FileConverterServiceId)
+            // Ако достъпът е разрешен, логни и подготви ViewBag
+            _logger.LogInformation($"User {user.UserName} is accessing service form for: {service.Title} ({service.Id}). Access type: {service.AccessType}.");
+            TempData["ServiceMessage"] = accessMessage; // Показва съобщение за достъп
+
+            // 4. Мапиране на service.Id към конкретни Views
+            if (id == ServiceConstants.AiGrammarStyleCheckerServiceId)
+            {
+                return View("~/Views/AIGrammar/AiGrammarStyleChecker.cshtml");
+            }
+            else if (id == ServiceConstants.FileConverterServiceId)
             {
                 ViewBag.SupportedFormats = new List<string> { "pdf", "docx", "txt", "jpg", "png", "xlsx", "csv" };
+                return View("~/Views/Service/_FileConverterForm.cshtml");
             }
-         
+            else if (id == ServiceConstants.AiDocumentSummarizerServiceId)
+            {
+                return View("~/Views/Service/DocumentSummarizer.cshtml");
+            }
+            else if (id == ServiceConstants.AutoCvResumeGeneratorServiceId)
+            {
+                return View("~/Views/Service/AutoCvResumeGenerator.cshtml");
+            }
+            else if (id == ServiceConstants.ContractGeneratorServiceId)
+            {
+                return View("~/Views/Service/ContractGenerator.cshtml");
+            }
+            else if (id == ServiceConstants.InvoiceFactureGeneratorServiceId)
+            {
+                return View("~/Views/Service/InvoiceFactureGenerator.cshtml");
+            }
+            else if (id == ServiceConstants.WebPolicyGeneratorServiceId)
+            {
+                return View("~/Views/Service/WebPolicyGenerator.cshtml");
+            }
+            else if (id == ServiceConstants.FinancialCalculatorAnalyzerServiceId)
+            {
+                return View("~/Views/Service/FinancialCalculatorAnalyzer.cshtml");
+            }
+            else if (id == ServiceConstants.MarketingSloganGeneratorServiceId)
+            {
+                return View("~/Views/Service/MarketingSloganGenerator.cshtml");
+            }
+            else if (id == ServiceConstants.CodeSnippetConverterServiceId)
+            {
+                return View("~/Views/Service/CodeSnippetConverter.cshtml");
+            }
 
-            _logger.LogInformation($"User {user.UserName} is accessing service form for: {service.Title} ({service.Id})");
-            TempData["ServiceMessage"] = accessMessage;
-
-            return View(); 
+            _logger.LogWarning($"Service {service.Title} ({service.Id}) found and accessible, but no specific form View is configured.");
+            TempData["ErrorMessage"] = $"Форма за услуга '{service.Title}' не е налична или не е разпозната.";
+            return View("~/Views/Shared/Error.cshtml", new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
-    
-
-
-
-
 
         [HttpPost]
         public async Task<IActionResult> ExecuteService(IFormCollection form)
@@ -268,7 +278,6 @@ namespace ServiceHub.Controllers
 
             BaseServiceRequest? request = null;
 
-            // Логика само за FileConverterService
             if (serviceId == ServiceConstants.FileConverterServiceId)
             {
                 var file = form.Files.GetFile("fileContent");
@@ -289,7 +298,6 @@ namespace ServiceHub.Controllers
                     PerformOCRIfApplicable = bool.TryParse(form["performOCRIfApplicable"], out var ocr) && ocr
                 };
             }
-            // --- Начало на коментирани блокове за други услуги ---
             /*
             else if (serviceId == ServiceConstants.AiGrammarStyleCheckerServiceId)
             {
@@ -428,7 +436,6 @@ namespace ServiceHub.Controllers
                 };
             }
             */
-            // --- Край на коментирани блокове за други услуги ---
             else // Ако ServiceId не е разпознат (тъй като другите са коментирани)
             {
                 _logger.LogWarning($"Attempted to execute an unknown service with ID: {serviceId}");
@@ -455,7 +462,6 @@ namespace ServiceHub.Controllers
             {
                 _logger.LogInformation($"Service execution successful for ID: {request.ServiceId}");
 
-                // Логика за връщане на резултата само за FileConverterService
                 if (response is FileConvertResult fileConvertResult)
                 {
                     return File(fileConvertResult.ConvertedFileContent, fileConvertResult.ContentType, fileConvertResult.ConvertedFileName);
@@ -482,7 +488,6 @@ namespace ServiceHub.Controllers
                     return Ok(webPolicyResult);
                 }
                 */
-                // За всички останали успешни отговори (които обикновено са текстови/JSON), връщаме Ok с обекта.
                 return Ok(response);
             }
             else
@@ -492,9 +497,6 @@ namespace ServiceHub.Controllers
             }
         }
 
-
-
-
         [HttpPost]
         [Authorize]
         public async Task<IActionResult> ToggleFavorite(Guid serviceId)
@@ -503,7 +505,7 @@ namespace ServiceHub.Controllers
             if (userId == null) return Unauthorized();
 
             var existingFavorite = await favoriteRepo.All()
-                                           .FirstOrDefaultAsync(f => f.UserId == userId && f.ServiceId == serviceId);
+                                                     .FirstOrDefaultAsync(f => f.UserId == userId && f.ServiceId == serviceId);
 
             if (existingFavorite != null)
             {
@@ -522,7 +524,7 @@ namespace ServiceHub.Controllers
                 TempData["SuccessMessage"] = "Added to favorites!";
             }
             await favoriteRepo.SaveChangesAsync();
-            return RedirectToAction(nameof(Details), new { id = serviceId }); 
+            return RedirectToAction(nameof(Details), new { id = serviceId });
         }
     }
 }

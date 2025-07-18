@@ -29,22 +29,22 @@ namespace ServiceHub.Data.DataSeeder
 
             if (!await roleManager.RoleExistsAsync("Admin"))
             {
-                logger.LogInformation("Creating 'Admin' role.");
                 await roleManager.CreateAsync(new IdentityRole("Admin"));
             }
-            if (!await roleManager.RoleExistsAsync("User"))
-            {
-                logger.LogInformation("Creating 'User' role.");
-                await roleManager.CreateAsync(new IdentityRole("User"));
-            }
-           
+
+            
             if (!await roleManager.RoleExistsAsync("BusinessUser"))
             {
-                logger.LogInformation("Creating 'BusinessUser' role.");
                 await roleManager.CreateAsync(new IdentityRole("BusinessUser"));
             }
 
+         
+            if (!await roleManager.RoleExistsAsync("User"))
+            {
+                await roleManager.CreateAsync(new IdentityRole("User"));
+            }
 
+            string adminUsername = "Admin";
             var adminEmail = "admin@servicehub.com"; 
             var adminPassword = "Admin123";
 

@@ -21,12 +21,11 @@
     
         <partial name="_FileConverterForm" />
     }
-    // Добавете 'else if' блокове за всяка друга услуга, когато сте готови да я имплементирате
-    // Пример:
-    // else if (serviceIdToUse == ServiceConstants.AiGrammarStyleCheckerServiceId)
-    // {
-    //     <partial name="_AiGrammarStyleCheckerForm" />
-    // }
+  
+     else if (serviceIdToUse == ServiceConstants.AiGrammarStyleCheckerServiceId)
+     {
+        <partial name="AiGrammarStyleChecker" />
+     }
     // else if (serviceIdToUse == ServiceConstants.AiDocumentSummarizerServiceId)
     // {
     //     <partial name="_AiDocumentSummarizerForm" />

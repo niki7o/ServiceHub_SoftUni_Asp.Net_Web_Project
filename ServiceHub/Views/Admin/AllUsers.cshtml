@@ -1,0 +1,71 @@
+﻿@model IEnumerable<ServiceHub.Core.Models.Users.UserViewModel>
+
+@using Microsoft.AspNetCore.Identity 
+@using ServiceHub.Data.Models
+@inject UserManager<ApplicationUser> UserManager 
+
+@{
+    ViewData["Title"] = "Управление на потребители";
+}
+
+<h1>@ViewData["Title"]</h1>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+}
+@if (TempData["WarningMessage"] != null)
+{
+    <div class="alert alert-warning">@TempData["WarningMessage"]</div>
+}
+
+
+<table class="table table-striped table-bordered">
+    <thead class="thead-dark">
+        <tr>
+            <th>@Html.DisplayNameFor(model => model.UserName)</th>
+            <th>@Html.DisplayNameFor(model => model.Email)</th>
+            <th>@Html.DisplayNameFor(model => model.Roles)</th>
+            <th>Действия</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var user in Model)
+        {
+            <tr>
+                <td>@Html.DisplayFor(modelItem => user.UserName)</td>
+                <td>@Html.DisplayFor(modelItem => user.Email)</td>
+                <td>@string.Join(", ", user.Roles)</td> 
+                <td>
+                  
+                    <form asp-controller="Admin" asp-action="DeleteUser" asp-route-id="@user.Id" method="post" class="d-inline me-1">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Сигурни ли сте, че искате да изтриете потребител @user.UserName?');">Изтрий</button>
+                    </form>
+
+                   
+                    @if (user.Roles.Contains("BusinessUser") && user.Id != UserManager.GetUserId(User))
+                    {
+                        <form asp-controller="Admin" asp-action="DemoteBusinessUser" asp-route-id="@user.Id" method="post" class="d-inline me-1">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-sm btn-warning" onclick="return confirm('Сигурни ли сте, че искате да демоутнете потребител @user.UserName до User?');">Демоут</button>
+                        </form>
+                    }
+                 
+                    @if (!user.Roles.Contains("BusinessUser") && !user.Roles.Contains("Admin") && user.Id != UserManager.GetUserId(User))
+                    {
+                        <form asp-controller="Admin" asp-action="PromoteToBusinessUser" asp-route-id="@user.Id" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('Сигурни ли сте, че искате да промоутнете потребител @user.UserName до Business User?');">Промоут</button>
+                        </form>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
