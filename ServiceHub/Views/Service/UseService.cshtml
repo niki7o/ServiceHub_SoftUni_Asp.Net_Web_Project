@@ -3,18 +3,16 @@
 
 @{
     ViewData["Title"] = "Използване на услуга";
-    // serviceIdToUse е GUID-ът на услугата (ServiceIdentifier), подаден от контролера
+    
     Guid serviceIdToUse = ViewBag.ServiceIdToUse;
-    // serviceTitle е заглавието на услугата, подадено от контролера
+    
     string serviceTitle = ViewBag.ServiceTitle ?? "Неизвестна услуга";
-    // serviceModelId е int Id на ServiceSeedModel, за бутона "Назад към Детайли"
+   
     Guid serviceModelId = ViewBag.ServiceModelId;
 }
 
 <h1>Използване на услуга: @serviceTitle</h1>
 <hr />
-
-@* Тук ще се зарежда динамично формата за конкретната услуга на базата на serviceIdToUse (GUID) *@
 <div id="serviceFormContainer">
     @if (serviceIdToUse == ServiceConstants.FileConverterServiceId)
     {
@@ -22,15 +20,8 @@
         <partial name="_FileConverterForm" />
     }
   
-     else if (serviceIdToUse == ServiceConstants.AiGrammarStyleCheckerServiceId)
-     {
-        <partial name="AiGrammarStyleChecker" />
-     }
-    // else if (serviceIdToUse == ServiceConstants.AiDocumentSummarizerServiceId)
-    // {
-    //     <partial name="_AiDocumentSummarizerForm" />
-    // }
-    // и т.н.
+   
+   
     else
     {
         <div class="alert alert-warning" role="alert">
