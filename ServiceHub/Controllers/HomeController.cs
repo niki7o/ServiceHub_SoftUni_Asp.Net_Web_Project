@@ -18,7 +18,7 @@ namespace ServiceHub.Controllers
             return View();
         }
 
-        public IActionResult Privacy()
+        public IActionResult Plans()
         {
             return View();
         }
