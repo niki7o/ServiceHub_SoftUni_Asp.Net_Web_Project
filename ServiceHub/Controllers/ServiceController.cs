@@ -159,7 +159,6 @@ namespace ServiceHub.Controllers
         [HttpGet("Service/UseService/{id}")]
         public async Task<IActionResult> UseService(Guid id)
         {
-            // 1. Проверка дали услугата съществува
             var service = await serviceRepository.All().FirstOrDefaultAsync(s => s.Id == id);
 
             if (service == null)
@@ -169,7 +168,6 @@ namespace ServiceHub.Controllers
                 return View("~/Views/Shared/Error.cshtml", new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
             }
 
-            // 2. Проверка за удостоверяване на потребителя
             var user = await userManager.GetUserAsync(User);
             if (user == null)
             {
@@ -177,7 +175,6 @@ namespace ServiceHub.Controllers
                 return RedirectToPage("/Account/Login", new { area = "Identity" });
             }
 
-            // 3. Проверка на ролите и достъпа до услугата
             bool isAdmin = await userManager.IsInRoleAsync(user, "Admin");
             bool isBusinessUser = await userManager.IsInRoleAsync(user, "BusinessUser");
             bool isRegularUser = await userManager.IsInRoleAsync(user, "User");
@@ -207,7 +204,6 @@ namespace ServiceHub.Controllers
                 accessMessage = "Достъп отказан: Вашата роля не позволява това действие.";
             }
 
-            // Ако потребителят няма право да използва услугата, пренасочи
             if (!canUse)
             {
                 _logger.LogWarning($"User {user.UserName} (Roles: {string.Join(",", await userManager.GetRolesAsync(user))}) denied access to service {service.Title} ({service.Id}) due to AccessType: {service.AccessType}.");
@@ -215,56 +211,38 @@ namespace ServiceHub.Controllers
                 return RedirectToAction("Details", "Service", new { id = service.Id });
             }
 
-            // Ако достъпът е разрешен, логни и подготви ViewBag
             _logger.LogInformation($"User {user.UserName} is accessing service form for: {service.Title} ({service.Id}). Access type: {service.AccessType}.");
-            TempData["ServiceMessage"] = accessMessage; // Показва съобщение за достъп
+            TempData["ServiceMessage"] = accessMessage;
 
-            // 4. Мапиране на service.Id към конкретни Views
-            if (id == ServiceConstants.AiGrammarStyleCheckerServiceId)
-            {
-                return View("~/Views/AIGrammar/AiGrammarStyleChecker.cshtml");
-            }
-            else if (id == ServiceConstants.FileConverterServiceId)
+            if (id == ServiceConstants.FileConverterServiceId)
             {
                 ViewBag.SupportedFormats = new List<string> { "pdf", "docx", "txt", "jpg", "png", "xlsx", "csv" };
                 return View("~/Views/Service/_FileConverterForm.cshtml");
             }
-            else if (id == ServiceConstants.AiDocumentSummarizerServiceId)
+            else if (id == ServiceConstants.WordCharacterCounterServiceId)
             {
-                return View("~/Views/Service/DocumentSummarizer.cshtml");
+                return View("~/Views/Service/_WordCharacterCounter.cshtml");
             }
-            else if (id == ServiceConstants.AutoCvResumeGeneratorServiceId)
+            else if (id == ServiceConstants.TextCaseConverterServiceId)
             {
-                return View("~/Views/Service/AutoCvResumeGenerator.cshtml");
+                return View("~/Views/Service/_TextCaseConverter.cshtml");
             }
-            else if (id == ServiceConstants.ContractGeneratorServiceId)
+            else if (id == ServiceConstants.RandomPasswordGeneratorServiceId)
             {
-                return View("~/Views/Service/ContractGenerator.cshtml");
-            }
-            else if (id == ServiceConstants.InvoiceFactureGeneratorServiceId)
-            {
-                return View("~/Views/Service/InvoiceFactureGenerator.cshtml");
-            }
-            else if (id == ServiceConstants.WebPolicyGeneratorServiceId)
-            {
-                return View("~/Views/Service/WebPolicyGenerator.cshtml");
-            }
-            else if (id == ServiceConstants.FinancialCalculatorAnalyzerServiceId)
-            {
-                return View("~/Views/Service/FinancialCalculatorAnalyzer.cshtml");
-            }
-            else if (id == ServiceConstants.MarketingSloganGeneratorServiceId)
-            {
-                return View("~/Views/Service/MarketingSloganGenerator.cshtml");
+                return View("~/Views/Service/_RandomPasswordGenerator.cshtml");
             }
             else if (id == ServiceConstants.CodeSnippetConverterServiceId)
             {
-                return View("~/Views/Service/CodeSnippetConverter.cshtml");
+                // UPDATED: Supported languages for Code Snippet Converter
+                ViewBag.SupportedLanguages = new List<string> { "C#", "Python", "JavaScript", "PHP" };
+                return View("~/Views/Service/_CodeSnippetConverter.cshtml");
             }
-
-            _logger.LogWarning($"Service {service.Title} ({service.Id}) found and accessible, but no specific form View is configured.");
-            TempData["ErrorMessage"] = $"Форма за услуга '{service.Title}' не е налична или не е разпозната.";
-            return View("~/Views/Shared/Error.cshtml", new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+            else
+            {
+                _logger.LogWarning($"Service {service.Title} ({service.Id}) found and accessible, but no specific form View is configured.");
+                TempData["ErrorMessage"] = $"Форма за услуга '{service.Title}' не е налична или не е разпозната.";
+                return View("~/Views/Shared/Error.cshtml", new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+            }
         }
 
         [HttpPost]

@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace ServiceHub.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class Rebuild : Migration
+    public partial class CorrectedServiceGuidsAndAccessTypes : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

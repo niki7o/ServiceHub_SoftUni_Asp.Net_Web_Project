@@ -1,0 +1,114 @@
+﻿@{
+    ViewData["Title"] = "Конвертор на Кодови Снипети";
+    var supportedLanguages = ViewBag.SupportedLanguages as List<string> ?? new List<string>();
+}
+
+<h2 class="text-center my-4">Конвертор на Кодови Снипети</h2>
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-6">
+            <div class="form-group">
+                <label for="sourceCode">Въведете изходен код:</label>
+                <textarea class="form-control" id="sourceCode" rows="15" placeholder="Въведете вашия код тук..."></textarea>
+            </div>
+            <div class="form-group mt-3">
+                <label for="sourceLanguage">Изходен език:</label>
+                <select class="form-control" id="sourceLanguage">
+                    @foreach (var lang in supportedLanguages)
+                    {
+                        <option value="@lang">@lang</option>
+                    }
+                </select>
+            </div>
+            <div class="form-group mt-3">
+                <label for="targetLanguage">Целеви език:</label>
+                <select class="form-control" id="targetLanguage">
+                    @foreach (var lang in supportedLanguages)
+                    {
+                        <option value="@lang">@lang</option>
+                    }
+                </select>
+            </div>
+            <button id="convertCodeButton" class="btn btn-primary mt-3">Конвертирай Код</button>
+        </div>
+        <div class="col-md-6">
+            <div class="form-group">
+                <label for="convertedCode">Конвертиран код:</label>
+                <textarea class="form-control" id="convertedCode" rows="15" readonly style="background-color: #e9ecef;"></textarea>
+            </div>
+            <div id="conversionMessage" class="mt-2 text-info" style="display:none;"></div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('convertCodeButton').addEventListener('click', async () => {
+            const sourceCode = document.getElementById('sourceCode').value;
+            const sourceLanguage = document.getElementById('sourceLanguage').value;
+            const targetLanguage = document.getElementById('targetLanguage').value;
+            const convertedCodeOutput = document.getElementById('convertedCode');
+            const conversionMessage = document.getElementById('conversionMessage');
+
+            convertedCodeOutput.value = ''; 
+            conversionMessage.style.display = 'none';
+            conversionMessage.textContent = '';
+
+            if (!sourceCode.trim()) {
+                conversionMessage.textContent = 'Моля, въведете изходен код.';
+                conversionMessage.className = 'mt-2 text-danger';
+                conversionMessage.style.display = 'block';
+                return;
+            }
+
+            if (sourceLanguage === targetLanguage) {
+                conversionMessage.textContent = 'Изходният и целевият език не могат да бъдат еднакви.';
+                conversionMessage.className = 'mt-2 text-warning';
+                conversionMessage.style.display = 'block';
+                convertedCodeOutput.value = sourceCode; 
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/CodeSnippetConverter/convert', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        sourceCode: sourceCode,
+                        sourceLanguage: sourceLanguage,
+                        targetLanguage: targetLanguage
+                    })
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    convertedCodeOutput.value = result.convertedCode;
+                    conversionMessage.textContent = result.message || 'Конвертирането е успешно.';
+                    conversionMessage.className = 'mt-2 text-success';
+                    conversionMessage.style.display = 'block';
+                } else {
+                    let errorMessage = `Грешка: ${response.status} ${response.statusText}`;
+                    try {
+                        const errorData = await response.json();
+                        errorMessage = errorData.errors ? Object.values(errorData.errors).flat().join('; ') : (errorData.message || errorData.title || errorMessage);
+                    } catch (jsonError) {
+                        errorMessage = `Грешка: ${response.status} ${response.statusText}. Невалиден отговор от сървъра.`;
+                        console.error('Failed to parse error response as JSON:', jsonError);
+                    }
+                    conversionMessage.textContent = errorMessage;
+                    conversionMessage.className = 'mt-2 text-danger';
+                    conversionMessage.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Fetch error:', error);
+                conversionMessage.textContent = `Възникна мрежова грешка: ${error.message}.`;
+                conversionMessage.className = 'mt-2 text-danger';
+                conversionMessage.style.display = 'block';
+            }
+        });
+    </script>
+}

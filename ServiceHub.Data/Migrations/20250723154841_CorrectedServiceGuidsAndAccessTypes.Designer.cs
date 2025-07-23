@@ -12,8 +12,8 @@ using ServiceHub.Data;
 namespace ServiceHub.Data.Migrations
 {
     [DbContext(typeof(ServiceHubDbContext))]
-    [Migration("20250718120459_UserName")]
-    partial class UserName
+    [Migration("20250723154841_CorrectedServiceGuidsAndAccessTypes")]
+    partial class CorrectedServiceGuidsAndAccessTypes
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -217,7 +217,6 @@ namespace ServiceHub.Data.Migrations
                         .HasColumnType("bit");
 
                     b.Property<string>("UserName")
-                        .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
