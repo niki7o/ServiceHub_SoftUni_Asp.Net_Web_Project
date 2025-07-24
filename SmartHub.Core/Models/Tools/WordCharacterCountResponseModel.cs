@@ -6,7 +6,8 @@ namespace ServiceHub.Core.Models.Tools
     {
 
         public int WordCount { get; set; }
-        public int CharacterCount { get; set; }
+        public int CharCount { get; set; } 
         public int LineCount { get; set; }
+        public string? Message { get; set; }
     }
 }

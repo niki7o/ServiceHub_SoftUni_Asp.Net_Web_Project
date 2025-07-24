@@ -1,0 +1,127 @@
+﻿@using ServiceHub.Common
+@{
+    ViewData["Title"] = "Автоматично CV/Резюме";
+    // serviceId вече не е нужен тук, тъй като формата изпраща директно към CvGeneratorController
+    // var serviceId = ViewBag.ServiceId ?? Guid.Empty;
+}
+
+<h2 class="text-center my-4">Автоматично CV/Резюме</h2>
+
+<div class="container mt-4">
+    <form id="cvGeneratorForm" asp-controller="CvGenerator" asp-action="GenerateCv" method="post" enctype="multipart/form-data">
+        @* NEW: asp-controller и asp-action *@
+        @* <input type="hidden" name="serviceId" value="@serviceId" /> *@ @* REMOVED: serviceId вече не е нужен *@
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group mb-3">
+                    <label for="name">Име:</label>
+                    <input type="text" class="form-control" id="name" name="Name" required placeholder="Вашето пълно име">
+                </div>
+                <div class="form-group mb-3">
+                    <label for="email">Имейл:</label>
+                    <input type="email" class="form-control" id="email" name="Email" required placeholder="example@domain.com">
+                </div>
+                <div class="form-group mb-3">
+                    <label for="phone">Телефон (по избор):</label>
+                    <input type="text" class="form-control" id="phone" name="Phone" placeholder="+359 888 123 456">
+                </div>
+                <div class="form-group mb-3">
+                    <label for="education">Образование:</label>
+                    <textarea class="form-control" id="education" name="Education" rows="5" placeholder="Пример: Бакалавър по Компютърни науки, СУ 'Св. Климент Охридски', 2020"></textarea>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group mb-3">
+                    <label for="experience">Професионален Опит:</label>
+                    <textarea class="form-control" id="experience" name="Experience" rows="10" placeholder="Пример: Софтуерен Инженер в [Компания], [Дати] - [Описание на отговорностите]"></textarea>
+                </div>
+                <div class="form-group mb-3">
+                    <label for="skills">Умения:</label>
+                    <textarea class="form-control" id="skills" name="Skills" rows="5" placeholder="Пример: C#, .NET, SQL, JavaScript, HTML, CSS"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary mt-3">Генерирай CV</button>
+            </div>
+        </div>
+    </form>
+    <div id="messageArea" class="mt-4"></div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('cvGeneratorForm').addEventListener('submit', async function (event) {
+            event.preventDefault(); // Предотвратява стандартното изпращане на формата
+
+            const form = event.target;
+            const formData = new FormData(form);
+            const messageArea = document.getElementById('messageArea');
+
+            messageArea.innerHTML = ''; // Изчиства предишни съобщения
+
+            // Показване на индикатор за зареждане
+            messageArea.innerHTML = '<div class="alert alert-info">Генерирането на CV е в ход... Моля, изчакайте.</div>';
+
+            // Събираме данните ръчно, тъй като FormData не работи директно с [FromBody]
+            const requestData = {
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
+                education: document.getElementById('education').value,
+                experience: document.getElementById('experience').value,
+                skills: document.getElementById('skills').value
+            };
+
+            try {
+                // NEW: URL сочи към новия контролер и екшън
+                const response = await fetch('/api/CvGenerator/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json', // Важно за [FromBody]
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(requestData) // Изпращаме JSON
+                });
+
+                if (response.ok) {
+                    // Trigger file download directly
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+
+                    // Извличане на името на файла от Content-Disposition хедъра
+                    const contentDisposition = response.headers.get('Content-Disposition');
+                    let filename = "generated_cv.pdf"; // Default filename for PDF
+                    if (contentDisposition && contentDisposition.indexOf('filename=') !== -1) {
+                        const filenameMatch = /filename\*?=['"]?(?:UTF-8'')?([^;"]+)/i.exec(contentDisposition);
+                        if (filenameMatch && filenameMatch[1]) {
+                            filename = decodeURIComponent(filenameMatch[1].replace(/\+/g, ' '));
+                        }
+                    }
+
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    a.remove();
+
+                    messageArea.innerHTML = `<div class="alert alert-success">CV файлът '${filename}' е успешно генериран и изтеглен!</div>`;
+                } else {
+                    // Обработка на грешки от API
+                    let errorText = await response.text();
+                    try {
+                        const errorJson = JSON.parse(errorText);
+                        // Показваме грешките от 'errors' масива, ако са налични
+                        errorText = errorJson.errors ? Object.values(errorJson.errors).flat().join('; ') : (errorJson.message || response.statusText);
+                    } catch (e) {
+                        
+                    }
+                    messageArea.innerHTML = `<div class="alert alert-danger">Грешка при генериране на CV: ${errorText}</div>`;
+                }
+            } catch (error) {
+                console.error('Fetch error:', error);
+                messageArea.innerHTML = `<div class="alert alert-danger">Възникна мрежова грешка: ${error.message}.</div>`;
+            }
+        });
+    </script>
+}

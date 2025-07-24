@@ -9,7 +9,7 @@ namespace ServiceHub.Core.Models.Tools
 {
     public class WordCharacterCountRequestModel
     {
-        [Required(ErrorMessage = "Текстът е задължителен.")]
+        [Required(ErrorMessage = "Текстът е задължителен.", AllowEmptyStrings = false)]
         public string Text { get; set; } = null!;
     }
 }

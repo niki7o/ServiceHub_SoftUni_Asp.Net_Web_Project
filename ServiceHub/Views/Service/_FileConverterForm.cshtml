@@ -1,43 +1,121 @@
-﻿
-@using ServiceHub.Core.Models.Service.FileConverter;
+﻿@using ServiceHub.Common
+@{
+    ViewData["Title"] = "Конвертор на Файлове";
+    var supportedFormats = ViewBag.SupportedFormats as List<string> ?? new List<string>();
+    var serviceId = ViewBag.ServiceId ?? Guid.Empty; // Get ServiceId from ViewBag
+}
 
-@model FileConvertRequest
+<h2 class="text-center my-4">Конвертор на Файлове</h2>
 
-<h4>Конвертиране на Файлове</h4>
+<div class="container mt-4">
+    <form id="fileConverterForm" asp-controller="Service" asp-action="ExecuteService" method="post" enctype="multipart/form-data">
+        <input type="hidden" name="serviceId" value="@serviceId" /> @* IMPORTANT: Hidden field for serviceId *@
 
-<form asp-controller="Service" asp-action="ExecuteService" method="post" enctype="multipart/form-data">
-    @Html.AntiForgeryToken()
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="fileContent">Изберете файл:</label>
+                    <input type="file" class="form-control" id="fileContent" name="fileContent" required />
+                </div>
+                <div class="form-group mt-3">
+                    <label for="targetFormat">Целеви формат:</label>
+                    <select class="form-control" id="targetFormat" name="targetFormat" required>
+                        <option value="">Изберете формат</option>
+                        <option value="pdf">PDF</option>
+                        <option value="docx">DOCX</option>
+                        <option value="xlsx">XLSX</option>
+                    </select>
+                </div>
+                <div class="form-check mt-3">
+                    <input type="checkbox" class="form-check-input" id="performOCRIfApplicable" name="performOCRIfApplicable" value="true" />
+                    <label class="form-check-label" for="performOCRIfApplicable">Извърши OCR (ако е приложимо)</label>
+                </div>
+                <button type="submit" class="btn btn-primary mt-3">Конвертирай Файл</button>
+            </div>
+            <div class="col-md-6">
+                @* Премахнато е текстовото поле за резултат *@
+                <div id="messageArea" class="mt-2"></div>
+            </div>
+        </div>
+    </form>
+</div>
 
-    <input type="hidden" name="serviceId" value="@ViewBag.ServiceIdToUse" />
+@section Scripts {
+    <script>
+        document.getElementById('fileConverterForm').addEventListener('submit', async function (event) {
+            event.preventDefault(); 
 
-    <div class="mb-3">
-        <label for="fileContent" class="form-label">Изберете файл:</label>
-        <input type="file" class="form-control" id="fileContent" name="fileContent" required />
-    </div>
+            const form = event.target;
+            const formData = new FormData(form);
+            const messageArea = document.getElementById('messageArea');
 
-    <div class="mb-3">
-        <label for="targetFormat" class="form-label">Целеви формат:</label>
-        <select class="form-select" id="targetFormat" name="targetFormat" required>
-            @if (ViewBag.SupportedFormats != null)
-            {
-                foreach (var format in ViewBag.SupportedFormats)
-                {
-                    <option value="@format">@format.ToUpper()</option>
+            messageArea.innerHTML = ''; =
+
+            // Basic client-side validation
+            const fileInput = document.getElementById('fileContent');
+            if (fileInput.files.length === 0) {
+                messageArea.innerHTML = '<div class="alert alert-danger">Моля, изберете файл за качване.</div>';
+                return;
+            }
+            if (document.getElementById('targetFormat').value === "") {
+                messageArea.innerHTML = '<div class="alert alert-danger">Моля, изберете целеви формат.</div>';
+                return;
+            }
+
+            // Show loading indicator
+            messageArea.innerHTML = '<div class="alert alert-info">Конвертирането е в ход... Моля, изчакайте.</div>';
+
+            try {
+                const response = await fetch(form.action, {
+                    method: form.method,
+                    body: formData // FormData handles multipart/form-data correctly
+                });
+
+                if (response.ok) {
+                   
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    
+                    const contentDisposition = response.headers.get('Content-Disposition');
+                    let filename = "converted_file"; 
+                    if (contentDisposition && contentDisposition.indexOf('filename=') !== -1) {
+                      
+                        const filenameMatch = /filename\*?=['"]?(?:UTF-8'')?([^;"]+)/i.exec(contentDisposition);
+                        if (filenameMatch && filenameMatch[1]) {
+                            filename = decodeURIComponent(filenameMatch[1].replace(/\+/g, ' '));
+                        }
+                    } else {
+                        
+                        const originalFileName = fileInput.files[0].name;
+                        const originalExtension = originalFileName.split('.').pop();
+                        const newExtension = document.getElementById('targetFormat').value;
+                        filename = originalFileName.replace(new RegExp(`\\.${originalExtension}$`), `.${newExtension}`);
+                    }
+
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    a.remove();
+
+                    messageArea.innerHTML = `<div class="alert alert-success">Файлът '${filename}' е успешно конвертиран и изтеглен!</div>`;
+                } else {
+                   
+                    let errorText = await response.text();
+                    try {
+                        const errorJson = JSON.parse(errorText);
+                        errorText = errorJson.message || (errorJson.errors ? Object.values(errorJson.errors).flat().join('; ') : 'Неизвестна грешка.');
+                    } catch (e) {
+                     
+                    }
+                    messageArea.innerHTML = `<div class="alert alert-danger">Грешка при конвертиране: ${errorText}</div>`;
                 }
+            } catch (error) {
+                console.error('Fetch error:', error);
+                messageArea.innerHTML = `<div class="alert alert-danger">Възникна мрежова грешка: ${error.message}.</div>`;
             }
-            else
-            {
-                <option value="">Няма налични формати</option>
-            }
-        </select>
-    </div>
-
-    <div class="form-check mb-3">
-        <input class="form-check-input" type="checkbox" id="performOCRIfApplicable" name="performOCRIfApplicable" value="true">
-        <label class="form-check-label" for="performOCRIfApplicable">
-            Извърши OCR (ако е приложимо)
-        </label>
-    </div>
-
-    <button type="submit" class="btn btn-primary">Конвертирай</button>
-</form>
+        });
+    </script>
+}

@@ -12,7 +12,8 @@ namespace ServiceHub.Core.Models.Service.FileConverter
         public byte[] ConvertedFileContent { get; set; } = null!; 
         public string ConvertedFileName { get; set; } = null!;
         public string ContentType { get; set; } = null!;
-
+        public string OriginalFileName { get; set; }
+        public string TargetFormat { get; set; }
     }
     
 }

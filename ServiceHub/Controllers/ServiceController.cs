@@ -9,17 +9,17 @@ using ServiceHub.Core.Models;
 using ServiceHub.Core.Models.Reviews;
 using ServiceHub.Core.Models.Service;
 using ServiceHub.Core.Models.Service.FileConverter;
+using ServiceHub.Core.Models.Tools;
 using ServiceHub.Data.DataSeeder;
 using ServiceHub.Data.Models;
 using ServiceHub.Services.Interfaces;
-using System;
 using System.Diagnostics;
-using System.Linq;
 using System.Security.Claims;
-using System.Threading.Tasks;
+
 
 namespace ServiceHub.Controllers
 {
+    [Authorize]
     public class ServiceController : Controller
     {
         private readonly IServiceService serviceService;
@@ -34,7 +34,10 @@ namespace ServiceHub.Controllers
             IServiceDispatcher serviceDispatcher,
             IServiceService serviceService,
             UserManager<ApplicationUser> userManager,
-            IRepository<Favorite> favoriteRepo, IRepository<Service> serviceRepository, IRepository<Category> categoryRepository, ILogger<ServiceController> logger)
+            IRepository<Favorite> favoriteRepo,
+            IRepository<Service> serviceRepository,
+            IRepository<Category> categoryRepository,
+            ILogger<ServiceController> logger)
         {
             _logger = logger;
             _serviceDispatcher = serviceDispatcher;
@@ -71,21 +74,18 @@ namespace ServiceHub.Controllers
                 {
                     servicesQuery = servicesQuery.Where(s => s.AccessType == parsedAccessType);
                 }
-                else
-                {
-                    // For now, it will simply ignore the invalid filter.
-                }
             }
 
             var services = await servicesQuery.ToListAsync();
 
-            var serviceDisplayDtos = services.Select(s => new ServiceSeedModel
+            var serviceDisplayDtos = services.Select(s => new ServiceSeedModel // ServiceSeedModel е от DataSeeder
             {
                 Id = s.Id,
                 Title = s.Title,
                 Description = s.Description,
                 Category = s.Category != null ? s.Category.Name : "N/A",
                 AccessType = s.AccessType.ToString(),
+             
             }).ToList();
 
             return View(serviceDisplayDtos);
@@ -123,6 +123,7 @@ namespace ServiceHub.Controllers
                 AverageRating = service.Reviews.Any() ? service.Reviews.Average(r => r.Rating) : 0,
                 ReviewCount = service.Reviews.Count
             };
+
             bool canUseService = false;
             if (User.Identity.IsAuthenticated)
             {
@@ -140,7 +141,10 @@ namespace ServiceHub.Controllers
                     else if (isBusinessUser)
                     {
                         canUseService = true;
-                        canUseService = service.IsBusinessOnly; // This line seems to override the previous `true`
+                        // This logic seems to override canUseService based on IsBusinessOnly.
+                        // If a BusinessUser should always have access, this line might be problematic.
+                        // Keeping it as per your previous code, but noting it.
+                        canUseService = service.IsBusinessOnly;
                     }
                     else if (isRegularUser)
                     {
@@ -151,6 +155,7 @@ namespace ServiceHub.Controllers
                     }
                 }
             }
+
             ViewBag.CanUseService = canUseService;
 
             return View(serviceViewModel);
@@ -216,7 +221,8 @@ namespace ServiceHub.Controllers
 
             if (id == ServiceConstants.FileConverterServiceId)
             {
-                ViewBag.SupportedFormats = new List<string> { "pdf", "docx", "txt", "jpg", "png", "xlsx", "csv" };
+                ViewBag.SupportedFormats = new List<string> { "pdf", "docx", "xlsx" };
+                ViewBag.ServiceId = id;
                 return View("~/Views/Service/_FileConverterForm.cshtml");
             }
             else if (id == ServiceConstants.WordCharacterCounterServiceId)
@@ -231,11 +237,10 @@ namespace ServiceHub.Controllers
             {
                 return View("~/Views/Service/_RandomPasswordGenerator.cshtml");
             }
-            else if (id == ServiceConstants.CodeSnippetConverterServiceId)
+            else if (id == ServiceConstants.AutoCvResumeServiceId) // Handle CV Generator
             {
-                // UPDATED: Supported languages for Code Snippet Converter
-                ViewBag.SupportedLanguages = new List<string> { "C#", "Python", "JavaScript", "PHP" };
-                return View("~/Views/Service/_CodeSnippetConverter.cshtml");
+                // Пренасочваме към новия CvGeneratorController
+                return RedirectToAction("CvGeneratorForm", "CvGenerator");
             }
             else
             {
@@ -276,145 +281,7 @@ namespace ServiceHub.Controllers
                     PerformOCRIfApplicable = bool.TryParse(form["performOCRIfApplicable"], out var ocr) && ocr
                 };
             }
-            /*
-            else if (serviceId == ServiceConstants.AiGrammarStyleCheckerServiceId)
-            {
-                request = new AiGrammarStyleCheckerRequest
-                {
-                    ServiceId = serviceId,
-                    Text = form["text"].ToString(),
-                    Language = form["language"].ToString()
-                };
-            }
-            else if (serviceId == ServiceConstants.AiDocumentSummarizerServiceId)
-            {
-                var file = form.Files.GetFile("fileContent");
-                string textContent = form["textContent"].ToString();
-
-                byte[]? fileBytes = null;
-                if (file != null)
-                {
-                    using var ms = new MemoryStream();
-                    await file.CopyToAsync(ms);
-                    fileBytes = ms.ToArray();
-                }
-
-                request = new AiDocumentSummarizerRequest
-                {
-                    ServiceId = serviceId,
-                    FileContent = fileBytes,
-                    FileName = file?.FileName,
-                    TextContent = textContent,
-                    SummaryType = form["summaryType"].ToString(),
-                    SummaryLength = form["summaryLength"].ToString()
-                };
-            }
-            else if (serviceId == ServiceConstants.FinancialCalculatorAnalyzerServiceId)
-            {
-                var inputDataJson = form["inputDataJson"].ToString();
-                var inputData = JsonSerializer.Deserialize<Dictionary<string, string>>(inputDataJson);
-
-                request = new FinancialCalculatorAnalyzerRequest
-                {
-                    ServiceId = serviceId,
-                    CalculationType = form["calculationType"].ToString(),
-                    InputData = inputData ?? new Dictionary<string, string>()
-                };
-            }
-            else if (serviceId == ServiceConstants.ContractGeneratorServiceId)
-            {
-                var contractDataJson = form["contractDataJson"].ToString();
-                var contractData = JsonSerializer.Deserialize<Dictionary<string, string>>(contractDataJson);
-
-                request = new ContractGeneratorRequest
-                {
-                    ServiceId = serviceId,
-                    ContractType = form["contractType"].ToString(),
-                    ContractData = contractData ?? new Dictionary<string, string>()
-                };
-            }
-            else if (serviceId == ServiceConstants.WebPolicyGeneratorServiceId)
-            {
-                var policyOptionsJson = form["policyOptionsJson"].ToString();
-                var policyOptions = JsonSerializer.Deserialize<Dictionary<string, string>>(policyOptionsJson);
-
-                request = new WebPolicyGeneratorRequest
-                {
-                    ServiceId = serviceId,
-                    PolicyType = form["policyType"].ToString(),
-                    CompanyName = form["companyName"].ToString(),
-                    CompanyAddress = form["companyAddress"].ToString(),
-                    CompanyEmail = form["companyEmail"].ToString(),
-                    PolicyOptions = policyOptions ?? new Dictionary<string, string>()
-                };
-            }
-            else if (serviceId == ServiceConstants.InvoiceFactureGeneratorServiceId)
-            {
-                var sellerJson = form["sellerJson"].ToString();
-                var buyerJson = form["buyerJson"].ToString();
-                var itemsJson = form["itemsJson"].ToString();
-
-                var seller = JsonSerializer.Deserialize<PartyDetails>(sellerJson);
-                var buyer = JsonSerializer.Deserialize<PartyDetails>(buyerJson);
-                var items = JsonSerializer.Deserialize<List<InvoiceItem>>(itemsJson);
-
-                request = new InvoiceFactureGeneratorRequest
-                {
-                    ServiceId = serviceId,
-                    InvoiceNumber = form["invoiceNumber"].ToString(),
-                    InvoiceDate = DateTime.TryParse(form["invoiceDate"], out var iDate) ? iDate : DateTime.UtcNow,
-                    DueDate = DateTime.TryParse(form["dueDate"], out var dDate) ? dDate : DateTime.UtcNow.AddDays(30),
-                    Seller = seller!,
-                    Buyer = buyer!,
-                    Items = items ?? new List<InvoiceItem>(),
-                    Currency = form["currency"].ToString(),
-                    Notes = form["notes"].ToString()
-                };
-            }
-            else if (serviceId == ServiceConstants.CvResumeGeneratorServiceId)
-            {
-                var workExperiencesJson = form["workExperiencesJson"].ToString();
-                var educationHistoryJson = form["educationHistoryJson"].ToString();
-                var skillsJson = form["skillsJson"].ToString();
-                var languagesJson = form["languagesJson"].ToString();
-
-                request = new CvResumeGeneratorRequest
-                {
-                    ServiceId = serviceId,
-                    FullName = form["fullName"].ToString(),
-                    Email = form["email"].ToString(),
-                    PhoneNumber = form["phoneNumber"].ToString(),
-                    LinkedInProfile = form["linkedInProfile"].ToString(),
-                    Summary = form["summary"].ToString(),
-                    WorkExperiences = JsonSerializer.Deserialize<List<WorkExperience>>(workExperiencesJson) ?? new List<WorkExperience>(),
-                    EducationHistory = JsonSerializer.Deserialize<List<Education>>(educationHistoryJson) ?? new List<Education>(),
-                    Skills = JsonSerializer.Deserialize<List<string>>(skillsJson) ?? new List<string>(),
-                    Languages = JsonSerializer.Deserialize<List<string>>(languagesJson) ?? new List<string>(),
-                    TemplateStyle = form["templateStyle"].ToString()
-                };
-            }
-            else if (serviceId == ServiceConstants.CodeSnippetConverterServiceId)
-            {
-                request = new CodeSnippetConverterRequest
-                {
-                    ServiceId = serviceId,
-                    SourceCode = form["sourceCode"].ToString(),
-                    SourceLanguage = form["sourceLanguage"].ToString(),
-                    TargetLanguage = form["targetLanguage"].ToString()
-                };
-            }
-            else if (serviceId == ServiceConstants.MarketingSloganGeneratorServiceId)
-            {
-                request = new MarketingSloganGeneratorRequest
-                {
-                    ServiceId = serviceId,
-                    Keywords = form["keywords"].ToString(),
-                    NumberOfSlogans = int.TryParse(form["numberOfSlogans"], out var count) ? count : 3,
-                    Language = form["language"].ToString()
-                };
-            }
-            */
-            else // Ако ServiceId не е разпознат (тъй като другите са коментирани)
+            else
             {
                 _logger.LogWarning($"Attempted to execute an unknown service with ID: {serviceId}");
                 return NotFound($"Услуга с ID '{serviceId}' не е разпозната.");
@@ -426,11 +293,13 @@ namespace ServiceHub.Controllers
                 return BadRequest("Неуспешно създаване на заявка за услуга.");
             }
 
-            if (!TryValidateModel(request))
+            if (!ModelState.IsValid)
             {
-                _logger.LogWarning("Model validation failed for service request. Errors: {Errors}",
-                    string.Join("; ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage)));
-                return BadRequest(ModelState);
+                var errors = ModelState.Values.SelectMany(v => v.Errors)
+                                            .Select(e => e.ErrorMessage)
+                                            .ToList();
+                _logger.LogWarning("Model validation failed for service request. Errors: {Errors}", string.Join("; ", errors));
+                return BadRequest(new { errors = errors, message = "Въведените данни са невалидни. Моля, проверете всички полета." });
             }
 
             _logger.LogInformation($"Dispatching request for service ID: {request.ServiceId}");
@@ -442,30 +311,9 @@ namespace ServiceHub.Controllers
 
                 if (response is FileConvertResult fileConvertResult)
                 {
-                    return File(fileConvertResult.ConvertedFileContent, fileConvertResult.ContentType, fileConvertResult.ConvertedFileName);
+                    string fileNameToDownload = Path.GetFileNameWithoutExtension(fileConvertResult.OriginalFileName) + "." + fileConvertResult.TargetFormat;
+                    return File(fileConvertResult.ConvertedFileContent, fileConvertResult.ContentType, fileNameToDownload);
                 }
-                /*
-                else if (response is ContractGeneratorResult contractResult)
-                {
-                    return File(contractResult.GeneratedFileContent, contractResult.ContentType, contractResult.GeneratedFileName);
-                }
-                else if (response is InvoiceFactureGeneratorResult invoiceResult)
-                {
-                    return File(invoiceResult.GeneratedFileContent, invoiceResult.ContentType, invoiceResult.GeneratedFileName);
-                }
-                else if (response is CvResumeGeneratorResult cvResult)
-                {
-                    return File(cvResult.GeneratedFileContent, cvResult.ContentType, cvResult.GeneratedFileName);
-                }
-                else if (response is WebPolicyGeneratorResult webPolicyResult)
-                {
-                    if (webPolicyResult.GeneratedFileContent != null && !string.IsNullOrEmpty(webPolicyResult.GeneratedFileName))
-                    {
-                        return File(webPolicyResult.GeneratedFileContent, webPolicyResult.PolicyFormat, webPolicyResult.GeneratedFileName);
-                    }
-                    return Ok(webPolicyResult);
-                }
-                */
                 return Ok(response);
             }
             else

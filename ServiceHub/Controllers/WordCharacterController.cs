@@ -8,34 +8,30 @@ namespace ServiceHub.Controllers
     [Route("api/[controller]")]
     public class WordCharacterController : ControllerBase
     {
+        private readonly ILogger<WordCharacterController> _logger;
+        private readonly IWordCharacterCounterService _wordCharacterCounterService;
 
-        
-            private readonly ILogger<WordCharacterController> _logger;
-            private readonly IWordCharacterCounterService _wordCharacterCounterService; 
+        public WordCharacterController(
+            ILogger<WordCharacterController> logger,
+            IWordCharacterCounterService wordCharacterCounterService)
+        {
+            _logger = logger;
+            _wordCharacterCounterService = wordCharacterCounterService;
+        }
 
-            public WordCharacterController(
-                ILogger<WordCharacterController> logger,
-                IWordCharacterCounterService wordCharacterCounterService) 
+        [HttpPost("count")]
+        public async Task<IActionResult> CountText([FromBody] WordCharacterCountRequestModel request)
+        {
+            if (!ModelState.IsValid)
             {
-                _logger = logger;
-                _wordCharacterCounterService = wordCharacterCounterService;
+                _logger.LogWarning("Invalid model state for WordCharacterCountRequestModel: {Errors}",
+                    string.Join("; ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage)));
+                return BadRequest(ModelState);
             }
 
-            [HttpPost("count")] 
-            public async Task<IActionResult> CountText([FromBody] WordCharacterCountRequestModel request) { 
-                if (!ModelState.IsValid)
-                {
-                    _logger.LogWarning("Invalid model state for WordCharacterCountRequestModel: {Errors}",
-                        string.Join("; ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage)));
-                    return BadRequest(ModelState);
-                }
+            var response = await _wordCharacterCounterService.CountTextAsync(request);
 
-            
-                var response = await _wordCharacterCounterService.CountTextAsync(request);
-
-               
-                return Ok(response);
-            }
-        
+            return Ok(response);
+        }
     }
 }

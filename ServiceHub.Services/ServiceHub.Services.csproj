@@ -12,6 +12,7 @@
     <PackageReference Include="DocX" Version="4.0.25105.5786" />
     <PackageReference Include="EPPlus" Version="8.0.7" />
     <PackageReference Include="itext7" Version="9.2.0" />
+    <PackageReference Include="itext7.pdfhtml" Version="6.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="8.0.10" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.11" />
   </ItemGroup>
