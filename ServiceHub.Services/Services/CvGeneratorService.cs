@@ -1,19 +1,19 @@
 ﻿using Microsoft.Extensions.Logging;
 using ServiceHub.Common;
+using ServiceHub.Core.Models;
 using ServiceHub.Core.Models.Tools;
 using ServiceHub.Services.Interfaces;
 using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.IO;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-using Xceed.Words.NET;
-
 using iText.Kernel.Pdf;
 using iText.Layout;
 using iText.Layout.Element;
 using iText.Html2pdf;
+using iText.Html2pdf.Exceptions;
+using iText.Bouncycastleconnector;
 
 
 namespace ServiceHub.Services.Services
@@ -27,53 +27,45 @@ namespace ServiceHub.Services.Services
             _logger = logger;
         }
 
-        public async Task<BaseServiceResponse> ExecuteAsync(BaseServiceRequest request)
-        {
-            if (request is not CvGenerateRequestModel cvRequest)
-            {
-                _logger.LogError("Invalid request type for CvGeneratorService. Expected CvGenerateRequestModel.");
-                return new CvGenerateResult
-                {
-                    IsSuccess = false,
-                    ErrorMessage = "Невалиден тип заявка за услугата за генериране на CV."
-                };
-            }
-
-            return await GenerateCvAsync(cvRequest);
-        }
-
+        
         public async Task<CvGenerateResult> GenerateCvAsync(CvGenerateRequestModel request)
         {
             _logger.LogInformation("Attempting to generate CV for {Name} from HTML template to PDF.", request.Name);
 
             try
             {
-                // Генериране на HTML съдържанието
                 string htmlContent = GenerateCvHtml(request);
+                _logger.LogDebug("Generated HTML Content (first 500 chars): {HtmlSnippet}", htmlContent.Substring(0, Math.Min(htmlContent.Length, 500)));
 
                 using (MemoryStream generatedCvStream = new MemoryStream())
                 {
-                    // Конвертиране на HTML в PDF
-                    HtmlConverter.ConvertToPdf(htmlContent, generatedCvStream);
+                    ConverterProperties converterProperties = new ConverterProperties();
+                    // converterProperties.SetBaseUri("http://localhost:7185/"); // Може да помогне за зареждане на външни ресурси, ако има такива
+
+                    HtmlConverter.ConvertToPdf(htmlContent, generatedCvStream, converterProperties);
 
                     _logger.LogInformation("CV successfully generated as PDF from HTML for {Name}.", request.Name);
                     return new CvGenerateResult
                     {
                         IsSuccess = true,
                         GeneratedFileContent = generatedCvStream.ToArray(),
-                        GeneratedFileName = $"{request.Name}_CV.pdf", // Променяме разширението на .pdf
-                        ContentType = "application/pdf" // Променяме ContentType на application/pdf
+                        GeneratedFileName = $"{request.Name}_CV.pdf",
+                        ContentType = "application/pdf"
                     };
                 }
             }
+            catch (Html2PdfException htmlEx)
+            {
+                _logger.LogError(htmlEx, "Html2PdfException occurred during CV generation for {Name}: {Message}", request.Name, htmlEx.Message);
+                return new CvGenerateResult { IsSuccess = false, ErrorMessage = $"Грешка при конвертиране на HTML в PDF: {htmlEx.Message}" };
+            }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error generating CV from HTML template for {Name}.", request.Name);
-                return new CvGenerateResult { IsSuccess = false, ErrorMessage = $"Грешка при генериране на CV: {ex.Message}" };
+                _logger.LogError(ex, "General error occurred during CV generation for {Name}: {Message}", request.Name, ex.Message);
+                return new CvGenerateResult { IsSuccess = false, ErrorMessage = $"Възникна грешка при генериране на CV: {ex.Message}" };
             }
         }
 
-  
         private string GenerateCvHtml(CvGenerateRequestModel request)
         {
             StringBuilder htmlBuilder = new StringBuilder();
@@ -85,7 +77,7 @@ namespace ServiceHub.Services.Services
                 <meta charset='utf-8'>
                 <title>CV на " + (request.Name ?? "Кандидат") + @"</title>
                 <style>
-                    body { font-family: 'Arial', sans-serif; line-height: 1.6; color: #333; margin: 20px; background-color: #f4f4f4; }
+                    body { font-family: 'Arial', sans-serif; line-height: 1.6; color: #333; margin: 20px; background-color: #ffffff; }
                     .container { max-width: 800px; margin: auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
                     h1, h2, h3 { color: #0056b3; }
                     .header { text-align: center; margin-bottom: 20px; }
@@ -99,7 +91,6 @@ namespace ServiceHub.Services.Services
                     .contact-info { display: flex; justify-content: center; gap: 20px; margin-top: 10px; }
                     .contact-info div { display: flex; align-items: center; }
                     .contact-info i { margin-right: 8px; color: #0056b3; }
-                    /* Добавени стилове за по-добър дизайн, базиран на снимката */
                     .summary { margin-top: 20px; font-style: italic; color: #666; }
                     .experience-item, .education-item { margin-bottom: 10px; }
                     .job-title, .degree-title { font-weight: bold; color: #0056b3; }
@@ -122,13 +113,12 @@ namespace ServiceHub.Services.Services
                     </div>
             ");
 
-           
             htmlBuilder.Append(@"
-                 <div class='section summary'>
-                    <h2>Резюме</h2>
-                   <p>Кратко обобщение на вашия опит и умения.</p>
-                </div>
-             ");
+                    <div class='section summary'>
+                        <h2>Резюме</h2>
+                        <p>Кратко обобщение на вашия опит и умения.</p>
+                    </div>
+            ");
 
             if (!string.IsNullOrWhiteSpace(request.Experience))
             {
@@ -136,8 +126,8 @@ namespace ServiceHub.Services.Services
                     <div class='section'>
                         <h2>ПРОФЕСИОНАЛЕН ОПИТ</h2>
                         <div class='experience-item'>
-                            <div class='job-title'>Длъжност / Позиция</div>
-                            <div class='company-city'>Компания, Град</div>
+                            <div class='job-title'>Примерна Длъжност</div>
+                            <div class='company-city'>Примерна Компания, Град</div>
                             <div class='dates'>Ян 2023 - Дек 2023</div>
                             <p>" + (request.Experience ?? "") + @"</p>
                         </div>
@@ -151,8 +141,8 @@ namespace ServiceHub.Services.Services
                     <div class='section'>
                         <h2>ОБРАЗОВАНИЕ</h2>
                         <div class='education-item'>
-                            <div class='degree-title'>Степен / Специалност</div>
-                            <div class='university-city'>Университет, Град</div>
+                            <div class='degree-title'>Примерна Степен / Специалност</div>
+                            <div class='university-city'>Примерен Университет, Град</div>
                             <div class='dates'>Ян 2023 - Дек 2023</div>
                             <p>" + (request.Education ?? "") + @"</p>
                         </div>
@@ -166,7 +156,6 @@ namespace ServiceHub.Services.Services
                     <div class='section'>
                         <h2>УМЕНИЯ</h2>
                         <div class='skills-list'>");
-
                 foreach (var skill in request.Skills.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries))
                 {
                     htmlBuilder.Append($"<span class='skill-item'>{skill.Trim()}</span>");

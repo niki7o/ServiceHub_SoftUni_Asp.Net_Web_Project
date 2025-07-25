@@ -78,14 +78,14 @@ namespace ServiceHub.Controllers
 
             var services = await servicesQuery.ToListAsync();
 
-            var serviceDisplayDtos = services.Select(s => new ServiceSeedModel // ServiceSeedModel е от DataSeeder
+            var serviceDisplayDtos = services.Select(s => new ServiceSeedModel
             {
                 Id = s.Id,
                 Title = s.Title,
                 Description = s.Description,
                 Category = s.Category != null ? s.Category.Name : "N/A",
                 AccessType = s.AccessType.ToString(),
-             
+              
             }).ToList();
 
             return View(serviceDisplayDtos);
@@ -141,9 +141,6 @@ namespace ServiceHub.Controllers
                     else if (isBusinessUser)
                     {
                         canUseService = true;
-                        // This logic seems to override canUseService based on IsBusinessOnly.
-                        // If a BusinessUser should always have access, this line might be problematic.
-                        // Keeping it as per your previous code, but noting it.
                         canUseService = service.IsBusinessOnly;
                     }
                     else if (isRegularUser)
@@ -221,8 +218,7 @@ namespace ServiceHub.Controllers
 
             if (id == ServiceConstants.FileConverterServiceId)
             {
-                ViewBag.SupportedFormats = new List<string> { "pdf", "docx", "xlsx" };
-                ViewBag.ServiceId = id;
+                ViewBag.SupportedFormats = new List<string> { "pdf", "docx", "txt", "jpg", "png", "xlsx", "csv" };
                 return View("~/Views/Service/_FileConverterForm.cshtml");
             }
             else if (id == ServiceConstants.WordCharacterCounterServiceId)
@@ -237,10 +233,18 @@ namespace ServiceHub.Controllers
             {
                 return View("~/Views/Service/_RandomPasswordGenerator.cshtml");
             }
-            else if (id == ServiceConstants.AutoCvResumeServiceId) // Handle CV Generator
+            else if (id == ServiceConstants.AutoCvResumeServiceId)
             {
-                // Пренасочваме към новия CvGeneratorController
-                return RedirectToAction("CvGeneratorForm", "CvGenerator");
+                return Redirect("/CvGenerator/CvGeneratorForm");
+            }
+            else if (id == ServiceConstants.ContractGeneratorServiceId) 
+            {
+                return Redirect("/ContractGenerator/ContractGeneratorForm");
+            }
+            else if (id == ServiceConstants.CodeSnippetConverterServiceId)
+            {
+                ViewBag.SupportedLanguages = new List<string> { "C#", "Python", "JavaScript", "PHP" };
+                return View("~/Views/Service/_CodeSnippetConverter.cshtml");
             }
             else
             {
@@ -298,8 +302,9 @@ namespace ServiceHub.Controllers
                 var errors = ModelState.Values.SelectMany(v => v.Errors)
                                             .Select(e => e.ErrorMessage)
                                             .ToList();
-                _logger.LogWarning("Model validation failed for service request. Errors: {Errors}", string.Join("; ", errors));
-                return BadRequest(new { errors = errors, message = "Въведените данни са невалидни. Моля, проверете всички полета." });
+                _logger.LogWarning("Model validation failed for service request. Errors: {Errors}",
+                    string.Join("; ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage)));
+                return BadRequest(ModelState);
             }
 
             _logger.LogInformation($"Dispatching request for service ID: {request.ServiceId}");
@@ -311,8 +316,7 @@ namespace ServiceHub.Controllers
 
                 if (response is FileConvertResult fileConvertResult)
                 {
-                    string fileNameToDownload = Path.GetFileNameWithoutExtension(fileConvertResult.OriginalFileName) + "." + fileConvertResult.TargetFormat;
-                    return File(fileConvertResult.ConvertedFileContent, fileConvertResult.ContentType, fileNameToDownload);
+                    return File(fileConvertResult.ConvertedFileContent, fileConvertResult.ContentType, fileConvertResult.ConvertedFileName);
                 }
                 return Ok(response);
             }

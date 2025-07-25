@@ -10,6 +10,7 @@ using ServiceHub.Services.Services;
 using ServiceHub.Services.Services.Repository;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Microsoft.Extensions.Logging;
 
 
 
@@ -48,19 +49,20 @@ builder.Services.AddControllersWithViews()
     });
 builder.Services.AddRazorPages();
 
-// Register Repositories
+
 builder.Services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
 
-// Register Services
+
 builder.Services.AddScoped<IServiceService, ServicesService>();
 builder.Services.AddScoped<IReviewService, ReviewsService>();
 builder.Services.AddScoped<IFileConverterService, FileConverterService>();
 
-// Register the new services
+
 builder.Services.AddScoped<IWordCharacterCounterService, WordCharacterCounterService>();
 builder.Services.AddScoped<ITextCaseConverterService, TextCaseConverterService>();
 builder.Services.AddScoped<IRandomPasswordGeneratorService, RandomPasswordGeneratorService>();
- builder.Services.AddScoped<ICvGeneratorService, CvGeneratorService>();
+            builder.Services.AddScoped<IContractGeneratorService, ContractGeneratorService>();
+            builder.Services.AddScoped<ICvGeneratorService, CvGeneratorService>();
 
             builder.Services.AddScoped<IServiceDispatcher, ServiceDispatcher>(sp =>
 {
@@ -75,7 +77,7 @@ builder.Services.AddScoped<IRandomPasswordGeneratorService, RandomPasswordGenera
 
 var app = builder.Build();
 
-// IMPORTANT: Execute DataSeeder in a separate scope to ensure dependencies are resolved
+
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;

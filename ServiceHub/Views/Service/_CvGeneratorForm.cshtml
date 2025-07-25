@@ -1,44 +1,45 @@
 ﻿@using ServiceHub.Common
 @{
     ViewData["Title"] = "Автоматично CV/Резюме";
-    // serviceId вече не е нужен тук, тъй като формата изпраща директно към CvGeneratorController
-    // var serviceId = ViewBag.ServiceId ?? Guid.Empty;
 }
 
 <h2 class="text-center my-4">Автоматично CV/Резюме</h2>
 
 <div class="container mt-4">
     <form id="cvGeneratorForm" asp-controller="CvGenerator" asp-action="GenerateCv" method="post" enctype="multipart/form-data">
-        @* NEW: asp-controller и asp-action *@
-        @* <input type="hidden" name="serviceId" value="@serviceId" /> *@ @* REMOVED: serviceId вече не е нужен *@
-
         <div class="row">
             <div class="col-md-6">
                 <div class="form-group mb-3">
                     <label for="name">Име:</label>
-                    <input type="text" class="form-control" id="name" name="Name" required placeholder="Вашето пълно име">
+                    <input type="text" class="form-control" id="name" name="Name" required maxlength="100" placeholder="Вашето пълно име">
+                    <div class="text-danger" id="nameError"></div> @* Място за грешка за името *@
                 </div>
                 <div class="form-group mb-3">
                     <label for="email">Имейл:</label>
-                    <input type="email" class="form-control" id="email" name="Email" required placeholder="example@domain.com">
+                    <input type="email" class="form-control" id="email" name="Email" required maxlength="100" placeholder="example@domain.com">
+                    <div class="text-danger" id="emailError"></div> @* Място за грешка за имейла *@
                 </div>
                 <div class="form-group mb-3">
                     <label for="phone">Телефон (по избор):</label>
-                    <input type="text" class="form-control" id="phone" name="Phone" placeholder="+359 888 123 456">
+                    <input type="text" class="form-control" id="phone" name="Phone" maxlength="50" placeholder="+359 888 123 456">
+                    <div class="text-danger" id="phoneError"></div> @* Място за грешка за телефона *@
                 </div>
                 <div class="form-group mb-3">
                     <label for="education">Образование:</label>
-                    <textarea class="form-control" id="education" name="Education" rows="5" placeholder="Пример: Бакалавър по Компютърни науки, СУ 'Св. Климент Охридски', 2020"></textarea>
+                    <textarea class="form-control" id="education" name="Education" rows="5" maxlength="2000" placeholder="Пример: Бакалавър по Компютърни науки, СУ 'Св. Климент Охридски', 2020"></textarea>
+                    <div class="text-danger" id="educationError"></div> @* Място за грешка за образованието *@
                 </div>
             </div>
             <div class="col-md-6">
                 <div class="form-group mb-3">
                     <label for="experience">Професионален Опит:</label>
-                    <textarea class="form-control" id="experience" name="Experience" rows="10" placeholder="Пример: Софтуерен Инженер в [Компания], [Дати] - [Описание на отговорностите]"></textarea>
+                    <textarea class="form-control" id="experience" name="Experience" rows="10" maxlength="4000" placeholder="Пример: Софтуерен Инженер в [Компания], [Дати] - [Описание на отговорностите]"></textarea>
+                    <div class="text-danger" id="experienceError"></div> @* Място за грешка за опита *@
                 </div>
                 <div class="form-group mb-3">
                     <label for="skills">Умения:</label>
-                    <textarea class="form-control" id="skills" name="Skills" rows="5" placeholder="Пример: C#, .NET, SQL, JavaScript, HTML, CSS"></textarea>
+                    <textarea class="form-control" id="skills" name="Skills" rows="5" maxlength="2000" placeholder="Пример: C#, .NET, SQL, JavaScript, HTML, CSS"></textarea>
+                    <div class="text-danger" id="skillsError"></div> @* Място за грешка за уменията *@
                 </div>
                 <button type="submit" class="btn btn-primary mt-3">Генерирай CV</button>
             </div>
@@ -53,15 +54,21 @@
             event.preventDefault(); // Предотвратява стандартното изпращане на формата
 
             const form = event.target;
-            const formData = new FormData(form);
             const messageArea = document.getElementById('messageArea');
 
-            messageArea.innerHTML = ''; // Изчиства предишни съобщения
+            // Изчиства предишни съобщения и грешки
+            messageArea.innerHTML = '';
+            document.getElementById('nameError').textContent = '';
+            document.getElementById('emailError').textContent = '';
+            document.getElementById('phoneError').textContent = '';
+            document.getElementById('educationError').textContent = '';
+            document.getElementById('experienceError').textContent = '';
+            document.getElementById('skillsError').textContent = '';
 
             // Показване на индикатор за зареждане
             messageArea.innerHTML = '<div class="alert alert-info">Генерирането на CV е в ход... Моля, изчакайте.</div>';
 
-            // Събираме данните ръчно, тъй като FormData не работи директно с [FromBody]
+            // Събираме данните ръчно в JSON обект
             const requestData = {
                 name: document.getElementById('name').value,
                 email: document.getElementById('email').value,
@@ -71,8 +78,58 @@
                 skills: document.getElementById('skills').value
             };
 
+            // Клиентска валидация за дължина
+            let isValid = true;
+            if (requestData.name.length > 100) {
+                document.getElementById('nameError').textContent = 'Името не може да надвишава 100 символа.';
+                isValid = false;
+            }
+            if (requestData.email.length > 100) {
+                document.getElementById('emailError').textContent = 'Имейлът не може да надвишава 100 символа.';
+                isValid = false;
+            }
+            if (requestData.phone.length > 50) {
+                document.getElementById('phoneError').textContent = 'Телефонният номер не може да надвишава 50 символа.';
+                isValid = false;
+            }
+            if (requestData.education.length > 2000) {
+                document.getElementById('educationError').textContent = 'Образованието не може да надвишава 2000 символа.';
+                isValid = false;
+            }
+            if (requestData.experience.length > 4000) {
+                document.getElementById('experienceError').textContent = 'Опитът не може да надвишава 4000 символа.';
+                isValid = false;
+            }
+            if (requestData.skills.length > 2000) {
+                document.getElementById('skillsError').textContent = 'Уменията не могат да надвишават 2000 символа.';
+                isValid = false;
+            }
+
+            
+            const emailRegex = /^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/; 
+            if (requestData.email && !emailRegex.test(requestData.email)) {
+                document.getElementById('emailError').textContent = 'Невалиден формат на имейл адрес.';
+                isValid = false;
+            }
+            
+            // Проверка за задължителни полета
+            if (!requestData.name.trim()) {
+                document.getElementById('nameError').textContent = 'Името е задължително.';
+                isValid = false;
+            }
+            if (!requestData.email.trim()) {
+                document.getElementById('emailError').textContent = 'Имейлът е задължителен.';
+                isValid = false;
+            }
+
+
+            if (!isValid) {
+                messageArea.innerHTML = '<div class="alert alert-danger">Моля, коригирайте грешките във формата.</div>';
+                return; // Спира изпълнението, ако има грешки във валидацията
+            }
+
+
             try {
-                // NEW: URL сочи към новия контролер и екшън
                 const response = await fetch('/api/CvGenerator/generate', {
                     method: 'POST',
                     headers: {
@@ -111,10 +168,32 @@
                     let errorText = await response.text();
                     try {
                         const errorJson = JSON.parse(errorText);
-                        // Показваме грешките от 'errors' масива, ако са налични
-                        errorText = errorJson.errors ? Object.values(errorJson.errors).flat().join('; ') : (errorJson.message || response.statusText);
+                        // Показваме грешките от 'errors' обекта под съответните полета
+                        if (errorJson.errors) {
+                            if (errorJson.errors.Name) {
+                                document.getElementById('nameError').textContent = errorJson.errors.Name.join('; ');
+                            }
+                            if (errorJson.errors.Email) {
+                                document.getElementById('emailError').textContent = errorJson.errors.Email.join('; ');
+                            }
+                            if (errorJson.errors.Phone) {
+                                document.getElementById('phoneError').textContent = errorJson.errors.Phone.join('; ');
+                            }
+                            if (errorJson.errors.Education) {
+                                document.getElementById('educationError').textContent = errorJson.errors.Education.join('; ');
+                            }
+                            if (errorJson.errors.Experience) {
+                                document.getElementById('experienceError').textContent = errorJson.errors.Experience.join('; ');
+                            }
+                            if (errorJson.errors.Skills) {
+                                document.getElementById('skillsError').textContent = errorJson.errors.Skills.join('; ');
+                            }
+                            // Можете да добавите и други полета тук
+                        }
+                        errorText = errorJson.message || response.statusText; // Общо съобщение
                     } catch (e) {
-                        
+                        // Ако отговорът не е JSON, използваме суровия текст
+                        console.error("Failed to parse error response as JSON:", e);
                     }
                     messageArea.innerHTML = `<div class="alert alert-danger">Грешка при генериране на CV: ${errorText}</div>`;
                 }

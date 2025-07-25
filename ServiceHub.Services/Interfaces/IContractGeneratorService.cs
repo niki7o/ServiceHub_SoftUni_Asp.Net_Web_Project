@@ -7,8 +7,8 @@ using System.Threading.Tasks;
 
 namespace ServiceHub.Services.Interfaces
 {
-    public interface ICvGeneratorService
+    public interface IContractGeneratorService
     {
-        Task<CvGenerateResult> GenerateCvAsync(CvGenerateRequestModel request);
+        Task<ContractGenerateResult> GenerateContractAsync(ContractGenerateRequestModel request);
     }
 }

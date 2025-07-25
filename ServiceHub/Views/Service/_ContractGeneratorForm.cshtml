@@ -1,0 +1,200 @@
+﻿@using ServiceHub.Common
+@{
+    ViewData["Title"] = "Генератор на Договори";
+}
+
+<h2 class="text-center my-4">Генератор на Договори</h2>
+
+<div class="container mt-4">
+    <form id="contractGeneratorForm" method="post" enctype="multipart/form-data" action="/api/ContractGenerator/generate">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group mb-3">
+                    <label for="contractType">Тип на Договора:</label>
+                    <input type="text" class="form-control" id="contractType" name="ContractType" required maxlength="100" placeholder="Напр. Трудов договор, Договор за наем">
+                    <div class="text-danger" id="contractTypeError"></div>
+                </div>
+                <div class="form-group mb-3">
+                    <label for="partyA">Страна А (Име/Фирма):</label>
+                    <input type="text" class="form-control" id="partyA" name="PartyA" required maxlength="200" placeholder="Напр. Иван Иванов, ЕТ 'Пример'">
+                    <div class="text-danger" id="partyAError"></div>
+                </div>
+                <div class="form-group mb-3">
+                    <label for="partyB">Страна Б (Име/Фирма):</label>
+                    <input type="text" class="form-control" id="partyB" name="PartyB" required maxlength="200" placeholder="Напр. Петър Петров, ООД 'Решения'">
+                    <div class="text-danger" id="partyBError"></div>
+                </div>
+                <div class="form-group mb-3">
+                    <label for="contractDate">Дата на Договора:</label>
+                    <input type="date" class="form-control" id="contractDate" name="ContractDate" required>
+                    <div class="text-danger" id="contractDateError"></div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group mb-3">
+                    <label for="contractTerms">Условия на Договора:</label>
+                    <textarea class="form-control" id="contractTerms" name="ContractTerms" rows="10" required maxlength="8000" placeholder="Въведете пълните условия на договора тук."></textarea>
+                    <div class="text-danger" id="contractTermsError"></div>
+                </div>
+                <div class="form-group mb-3">
+                    <label for="additionalInfo">Допълнителна Информация (по избор):</label>
+                    <textarea class="form-control" id="additionalInfo" name="AdditionalInfo" rows="5" maxlength="500" placeholder="Всякакви допълнителни клаузи или бележки."></textarea>
+                    <div class="text-danger" id="additionalInfoError"></div>
+                </div>
+                <button type="submit" class="btn btn-primary mt-3">Генерирай Договор</button>
+            </div>
+        </div>
+    </form>
+    <div id="messageArea" class="mt-4"></div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('contractGeneratorForm').addEventListener('submit', async function (event) {
+            event.preventDefault(); // Предотвратява стандартното изпращане на формата
+
+            const form = event.target;
+            const messageArea = document.getElementById('messageArea');
+
+            // Изчиства предишни съобщения и грешки
+            messageArea.innerHTML = '';
+            document.getElementById('contractTypeError').textContent = '';
+            document.getElementById('partyAError').textContent = '';
+            document.getElementById('partyBError').textContent = '';
+            document.getElementById('contractDateError').textContent = '';
+            document.getElementById('contractTermsError').textContent = '';
+            document.getElementById('additionalInfoError').textContent = '';
+
+            // Показване на индикатор за зареждане
+            messageArea.innerHTML = '<div class="alert alert-info">Генерирането на договор е в ход... Моля, изчакайте.</div>';
+
+            // Събираме данните ръчно в JSON обект
+            const requestData = {
+                contractType: document.getElementById('contractType').value,
+                partyA: document.getElementById('partyA').value,
+                partyB: document.getElementById('partyB').value,
+                contractDate: document.getElementById('contractDate').value, // Датата ще бъде изпратена като string
+                contractTerms: document.getElementById('contractTerms').value,
+                additionalInfo: document.getElementById('additionalInfo').value
+            };
+
+            // Клиентска валидация за дължина и задължителни полета
+            let isValid = true;
+
+            // Валидация за задължителни полета
+            if (!requestData.contractType.trim()) {
+                document.getElementById('contractTypeError').textContent = 'Типът на договора е задължителен.';
+                isValid = false;
+            } else if (requestData.contractType.length > 100) {
+                document.getElementById('contractTypeError').textContent = 'Типът на договора не може да надвишава 100 символа.';
+                isValid = false;
+            }
+
+            if (!requestData.partyA.trim()) {
+                document.getElementById('partyAError').textContent = 'Име на страна А е задължително.';
+                isValid = false;
+            } else if (requestData.partyA.length > 200) {
+                document.getElementById('partyAError').textContent = 'Името на страна А не може да надвишава 200 символа.';
+                isValid = false;
+            }
+
+            if (!requestData.partyB.trim()) {
+                document.getElementById('partyBError').textContent = 'Име на страна Б е задължително.';
+                isValid = false;
+            } else if (requestData.partyB.length > 200) {
+                document.getElementById('partyBError').textContent = 'Името на страна Б не може да надвишава 200 символа.';
+                isValid = false;
+            }
+
+            if (!requestData.contractDate) {
+                document.getElementById('contractDateError').textContent = 'Дата на договора е задължителна.';
+                isValid = false;
+            }
+
+            if (!requestData.contractTerms.trim()) {
+                document.getElementById('contractTermsError').textContent = 'Условията на договора са задължителни.';
+                isValid = false;
+            } else if (requestData.contractTerms.length > 8000) {
+                document.getElementById('contractTermsError').textContent = 'Условията на договора не могат да надвишават 8000 символа.';
+                isValid = false;
+            }
+
+            if (requestData.additionalInfo.length > 500) {
+                document.getElementById('additionalInfoError').textContent = 'Допълнителна информация не може да надвишава 500 символа.';
+                isValid = false;
+            }
+
+            if (!isValid) {
+                messageArea.innerHTML = '<div class="alert alert-danger">Моля, коригирайте грешките във формата.</div>';
+                return; // Спира изпълнението, ако има грешки във валидацията
+            }
+
+            try {
+                const response = await fetch('/api/ContractGenerator/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+
+                    const contentDisposition = response.headers.get('Content-Disposition');
+                    let filename = "generated_contract.pdf";
+                    if (contentDisposition && contentDisposition.indexOf('filename=') !== -1) {
+                        const filenameMatch = /filename\*?=['"]?(?:UTF-8'')?([^;"]+)/i.exec(contentDisposition);
+                        if (filenameMatch && filenameMatch[1]) {
+                            filename = decodeURIComponent(filenameMatch[1].replace(/\+/g, ' '));
+                        }
+                    }
+
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    a.remove();
+
+                    messageArea.innerHTML = `<div class="alert alert-success">Файлът на договора '${filename}' е успешно генериран и изтеглен!</div>`;
+                } else {
+                    let errorText = await response.text();
+                    try {
+                        const errorJson = JSON.parse(errorText);
+                        if (errorJson.errors) {
+                            if (errorJson.errors.ContractType) {
+                                document.getElementById('contractTypeError').textContent = errorJson.errors.ContractType.join('; ');
+                            }
+                            if (errorJson.errors.PartyA) {
+                                document.getElementById('partyAError').textContent = errorJson.errors.PartyA.join('; ');
+                            }
+                            if (errorJson.errors.PartyB) {
+                                document.getElementById('partyBError').textContent = errorJson.errors.PartyB.join('; ');
+                            }
+                            if (errorJson.errors.ContractDate) {
+                                document.getElementById('contractDateError').textContent = errorJson.errors.ContractDate.join('; ');
+                            }
+                            if (errorJson.errors.ContractTerms) {
+                                document.getElementById('contractTermsError').textContent = errorJson.errors.ContractTerms.join('; ');
+                            }
+                            if (errorJson.errors.AdditionalInfo) {
+                                document.getElementById('additionalInfoError').textContent = errorJson.errors.AdditionalInfo.join('; ');
+                            }
+                        }
+                        errorText = errorJson.message || response.statusText;
+                    } catch (e) {
+                        console.error("Failed to parse error response as JSON:", e);
+                    }
+                    messageArea.innerHTML = `<div class="alert alert-danger">Грешка при генериране на договор: ${errorText}</div>`;
+                }
+            } catch (error) {
+                console.error('Fetch error:', error);
+                messageArea.innerHTML = `<div class="alert alert-danger">Възникна мрежова грешка: ${error.message}.</div>`;
+            }
+        });
+    </script>
+}
