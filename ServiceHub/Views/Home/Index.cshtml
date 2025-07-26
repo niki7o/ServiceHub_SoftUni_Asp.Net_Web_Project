@@ -1,9 +1,170 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+﻿
+<link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+@{
+    ViewData["Title"] = "Добре дошли в ServiceHub";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+
+
+<div class="container-fluid p-0">
+  
+    <section class="hero-section">
+        <h1 class="animate__animated animate__fadeInDown">Добре дошли в <span style="color:#28a745;">ServiceHub</span></h1>
+        <p class="lead animate__animated animate__fadeIn">
+            Вашият център за дигитални услуги.
+            <span class="hero-text-dynamic"></span>
+        </p>
+        <a asp-controller="Service" asp-action="All" class="btn btn-custom-primary animate__animated animate__fadeInUp">Разгледай Услугите</a>
+    </section>
+
+ 
+    <section class="container my-5">
+        <h2 class="section-title">Нашите Услуги</h2>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="service-card">
+                    <div class="icon"><i class="fas fa-file-alt"></i></div>
+                    <h3>Документни Инструменти</h3>
+                    <p>Конвертиране на файлове, броячи на думи, генератори на договори и CV-та.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="service-card">
+                    <div class="icon"><i class="fas fa-code"></i></div>
+                    <h3>Разработка и Анализ</h3>
+                    <p>Инструменти за програмисти и анализатори на данни.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="service-card">
+                    <div class="icon"><i class="fas fa-shield-alt"></i></div>
+                    <h3>Инструменти за Сигурност</h3>
+                    <p>Генериране на силни пароли и други помощни средства за сигурност.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+ 
+    <section class="container my-5">
+        <h2 class="section-title">Защо да изберете ServiceHub?</h2>
+        <div class="row">
+            <div class="col-md-6 col-lg-4">
+                <div class="why-us-item d-flex align-items-center">
+                    <div class="icon"><i class="fas fa-tachometer-alt"></i></div>
+                    <div>
+                        <h4>Бързина и Ефективност</h4>
+                        <p class="mb-0">Изпълнявайте задачите си мигновено с нашите оптимизирани инструменти.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="why-us-item d-flex align-items-center">
+                    <div class="icon"><i class="fas fa-cogs"></i></div>
+                    <div>
+                        <h4>Разнообразие от Инструменти</h4>
+                        <p class="mb-0">Широка гама от услуги на едно място, за всякакви нужди.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="why-us-item d-flex align-items-center">
+                    <div class="icon"><i class="fas fa-lock"></i></div>
+                    <div>
+                        <h4>Сигурност на Данните</h4>
+                        <p class="mb-0">Вашата информация е защитена и обработвана с най-висок приоритет.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="why-us-item d-flex align-items-center">
+                    <div class="icon"><i class="fas fa-user-friends"></i></div>
+                    <div>
+                        <h4>Удобен за Потребителя</h4>
+                        <p class="mb-0">Интуитивен интерфейс, който прави използването на услугите лесно.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="why-us-item d-flex align-items-center">
+                    <div class="icon"><i class="fas fa-dollar-sign"></i></div>
+                    <div>
+                        <h4>Гъвкави Планове</h4>
+                        <p class="mb-0">Безплатни и платени опции, съобразени с вашите изисквания.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="why-us-item d-flex align-items-center">
+                    <div class="icon"><i class="fas fa-headset"></i></div>
+                    <div>
+                        <h4>Отлична Поддръжка</h4>
+                        <p class="mb-0">Ние сме тук, за да ви помогнем с всякакви въпроси или проблеми.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+ 
+    <section class="call-to-action">
+        <div class="container">
+            <h2>Готови ли сте да опростите ежедневието си?</h2>
+            <p>Присъединете се към ServiceHub днес и отключете свят от удобни дигитални инструменти.</p>
+           
+             @if (!User.Identity.IsAuthenticated) {
+            <a asp-area="Identity" asp-page="/Account/Register" class="btn btn-lg btn-outline-light me-3">Започни Сега!</a>
+            }
+            <a asp-controller="Service" asp-action="All" class="btn btn-lg btn-light">Разгледай Всички Услуги</a>
+        </div>
+    </section>
 </div>
-<a asp-controller="Service" asp-action="All">Go to Target Page</a>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const dynamicTextElement = document.querySelector('.hero-text-dynamic');
+            const texts = [
+                "Генерирайте CV-та и договори.",
+                "Конвертирайте файлове лесно.",
+                "Бройте символи и думи.",
+                "Създавайте сигурни пароли.",
+                "Анализирайте кодови фрагменти."
+            ];
+            let textIndex = 0;
+            let charIndex = 0;
+            let isDeleting = false;
+            let typingSpeed = 100; 
+            let delayBeforeDelete = 1500; 
+            let delayBeforeType = 500; 
+
+            function typeWriter() {
+                const currentText = texts[textIndex];
+                if (isDeleting) {
+                    dynamicTextElement.textContent = currentText.substring(0, charIndex--);
+                } else {
+                    dynamicTextElement.textContent = currentText.substring(0, charIndex++);
+                }
+
+                let speed = typingSpeed;
+                if (isDeleting) {
+                    speed /= 2; 
+                }
+
+                if (!isDeleting && charIndex === currentText.length + 1) {
+                    speed = delayBeforeDelete; 
+                    isDeleting = true;
+                } else if (isDeleting && charIndex === 0) {
+                    isDeleting = false;
+                    textIndex = (textIndex + 1) % texts.length;
+                    speed = delayBeforeType;
+                }
+
+                setTimeout(typeWriter, speed);
+            }
+
+            typeWriter(); 
+        });
+    </script>
+}
+

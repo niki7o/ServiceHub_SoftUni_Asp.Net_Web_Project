@@ -8,6 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Remove="wwwroot\json\quotes.json" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="8.0.10" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.11" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="8.0.11" />
@@ -26,6 +30,14 @@
     <ProjectReference Include="..\ServiceHub.Services\ServiceHub.Services.csproj" />
     <ProjectReference Include="..\SmartHub.Common\ServiceHub.Common.csproj" />
     <ProjectReference Include="..\SmartHub.Core\ServiceHub.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="wwwroot\Images\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="wwwroot\json\quotes.json" />
   </ItemGroup>
 
 </Project>

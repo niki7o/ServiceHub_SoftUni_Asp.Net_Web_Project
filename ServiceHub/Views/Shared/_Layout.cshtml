@@ -6,8 +6,12 @@
     <title>@ViewData["Title"] - ServiceHub</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="shortlink" href="~/json/quotes.json" asp-append-version="true" />
     <link rel="stylesheet" href="~/ServiceHub.styles.css" asp-append-version="true" />
-    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" xintegrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 </head>
 <body>
     <header>
@@ -21,53 +25,66 @@
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <ul class="navbar-nav flex-grow-1">
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Начало</a>
                         </li>
-                      
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Service" asp-action="All">Services</a>
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Service" asp-action="All">Услуги</a>
                         </li>
-                       
+
                         @if (User.IsInRole("Admin"))
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Admin" asp-action="AllUsers">Admin Dashboard</a>
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Admin" asp-action="AllUsers">Админ Панел</a>
                             </li>
                         }
-                      
+
                         @if (!User.Identity.IsAuthenticated)
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-page="/Account/Register" asp-area="Identity">Upgrade</a>
+                                <a class="nav-link text-dark" asp-page="/Account/Register" asp-area="Identity">Регистрация</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-page="/Account/Login" asp-area="Identity">Вход</a>
                             </li>
                         }
-                        else if (User.IsInRole("User"))
+                        else if (User.IsInRole("User") || User.IsInRole("BusinessUser") || User.IsInRole("Admin"))
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="Home" asp-action="Plans">Upgrade</a>
+                                <a class="nav-link text-dark" asp-controller="Home" asp-action="Plans">Ъпгрейд</a>
                             </li>
                         }
-                       
+
                     </ul>
                     <partial name="_LoginPartial" />
                 </div>
             </div>
         </nav>
     </header>
-    <div class="container">
+    <div class="container main-content-wrapper">
         <main role="main" class="pb-3">
             @RenderBody()
         </main>
     </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2025 - ServiceHub - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+    <footer class="dynamic-footer bg-dark text-white py-3">
+        <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center">
+            <span class="mb-2 mb-md-0">&copy; @DateTime.Now.Year - ServiceHub</span>
+            <div class="d-flex flex-column flex-md-row align-items-center">
+                <span id="footer-quote" class="me-md-3 mb-2 mb-md-0 text-center text-md-start">Loading a wise quote...</span>
+                <button id="new-quote-btn" class="btn btn-outline-light btn-sm">
+                    <i class="fas fa-sync-alt"></i> Нов Цитат
+                </button>
+            </div>
         </div>
     </footer>
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/js/footer-quotes.js" asp-append-version="true"></script>
+        
     @await RenderSectionAsync("Scripts", required: false)
+
+   
 </body>
 </html>
