@@ -1,121 +1,165 @@
 ﻿@using ServiceHub.Common
+@using ServiceHub.Core.Models.Service.FileConverter
+
 @{
-    ViewData["Title"] = "Конвертор на Файлове";
-    var supportedFormats = ViewBag.SupportedFormats as List<string> ?? new List<string>();
-    var serviceId = ViewBag.ServiceId ?? Guid.Empty; // Get ServiceId from ViewBag
+    Guid serviceId = ViewBag.ServiceId as Guid? ?? ServiceConstants.FileConverterServiceId;
+
+    if (serviceId == Guid.Empty)
+    {
+        <div class="max-w-md mx-auto bg-white p-8 rounded-xl shadow-lg mt-10 font-inter">
+            <p class="text-red-500 text-center font-bold text-lg">
+                Грешка: Идентификаторът на услугата не е зададен правилно.
+                Моля, проверете ServiceConstants.cs и FileConverterController.cs.
+            </p>
+        </div>
+        return;
+    }
 }
 
-<h2 class="text-center my-4">Конвертор на Файлове</h2>
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Конвертор на Файлове</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+       
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
 
-<div class="container mt-4">
-    <form id="fileConverterForm" asp-controller="Service" asp-action="ExecuteService" method="post" enctype="multipart/form-data">
-        <input type="hidden" name="serviceId" value="@serviceId" /> @* IMPORTANT: Hidden field for serviceId *@
+        input[type="file"]::-webkit-file-upload-button {
+            cursor: pointer;
+        }
 
-        <div class="row">
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label for="fileContent">Изберете файл:</label>
-                    <input type="file" class="form-control" id="fileContent" name="fileContent" required />
-                </div>
-                <div class="form-group mt-3">
-                    <label for="targetFormat">Целеви формат:</label>
-                    <select class="form-control" id="targetFormat" name="targetFormat" required>
-                        <option value="">Изберете формат</option>
-                        <option value="pdf">PDF</option>
-                        <option value="docx">DOCX</option>
-                        <option value="xlsx">XLSX</option>
-                    </select>
-                </div>
-                <div class="form-check mt-3">
-                    <input type="checkbox" class="form-check-input" id="performOCRIfApplicable" name="performOCRIfApplicable" value="true" />
-                    <label class="form-check-label" for="performOCRIfApplicable">Извърши OCR (ако е приложимо)</label>
-                </div>
-                <button type="submit" class="btn btn-primary mt-3">Конвертирай Файл</button>
+        input[type="file"]::file-selector-button {
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="max-w-md w-full bg-white p-8 rounded-xl shadow-2xl mt-10 border border-gray-200">
+        <h2 class="text-4xl font-extrabold text-gray-900 mb-8 text-center">Конвертор на Файлове</h2>
+
+        <form id="fileConvertForm" action="/FileConverter/Convert" method="post" enctype="multipart/form-data" class="space-y-7">
+            <input type="hidden" name="ServiceId" value="@serviceId.ToString()" />
+
+            <div>
+                <label for="fileContent" class="block text-base font-semibold text-gray-800 mb-2">Изберете файл:</label>
+                <input type="file" id="fileContent" name="FileContent" class="block w-full text-lg text-gray-900
+                       file:mr-4 file:py-3 file:px-6
+                       file:rounded-full file:border-0
+                       file:text-base file:font-semibold
+                       file:bg-indigo-50 file:text-indigo-700
+                       hover:file:bg-indigo-100 cursor:pointer transition duration-150 ease-in-out" required />
             </div>
-            <div class="col-md-6">
-                @* Премахнато е текстовото поле за резултат *@
-                <div id="messageArea" class="mt-2"></div>
-            </div>
-        </div>
-    </form>
-</div>
 
-@section Scripts {
+            <div>
+                <label for="originalFileName" class="block text-base font-semibold text-gray-800 mb-2">Оригинално име на файла (по избор):</label>
+                <input type="text" id="originalFileName" name="OriginalFileName" placeholder="Пример: МоятДокумент.pdf"
+                       class="mt-1 block w-full px-5 py-3 border border-gray-300 rounded-lg shadow-sm
+                              focus:ring-indigo-500 focus:border-indigo-500 sm:text-base transition duration-150 ease-in-out" />
+            </div>
+
+            <div>
+                <label for="targetFormat" class="block text-base font-semibold text-gray-800 mb-2">Целеви формат:</label>
+                <select id="targetFormat" name="TargetFormat"
+                        class="mt-1 block w-full px-5 py-3 border border-gray-300 rounded-lg shadow-sm
+                               focus:ring-indigo-500 focus:border-indigo-500 sm:text-base transition duration-150 ease-in-out" required>
+                    <option value="">Изберете формат</option>
+                    <option value="pdf">PDF</option>
+                    <option value="docx">DOCX</option>
+                    <option value="xlsx">XLSX</option>
+                    <option value="txt">TXT</option>
+                    <option value="csv">CSV</option>
+                    <option value="jpg">JPG</option>
+                    <option value="png">PNG</option>
+                </select>
+            </div>
+
+            <div class="flex items-center">
+                <input type="checkbox" id="performOCRIfApplicable" name="PerformOCRIfApplicable"
+                       class="h-5 w-5 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded-md cursor:pointer" />
+                <label for="performOCRIfApplicable" class="ml-3 block text-base text-gray-900">Извърши OCR, ако е приложимо (Само за изображения към текст)</label>
+            </div>
+
+            <button type="submit"
+                    class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-lg
+                           text-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700
+                           focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500
+                           transition duration-200 ease-in-out transform hover:scale-105">
+                Конвертирай
+            </button>
+        </form>
+
+        <div id="messageBox" class="hidden mt-6 p-4 rounded-lg text-base font-medium" role="alert"></div>
+    </div>
+
     <script>
-        document.getElementById('fileConverterForm').addEventListener('submit', async function (event) {
-            event.preventDefault(); 
+        document.getElementById('fileConvertForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
 
             const form = event.target;
             const formData = new FormData(form);
-            const messageArea = document.getElementById('messageArea');
+            const messageBox = document.getElementById('messageBox');
 
-            messageArea.innerHTML = ''; =
+            messageBox.classList.add('hidden');
+            messageBox.classList.remove('bg-red-100', 'text-red-700', 'bg-green-100', 'text-green-700', 'bg-blue-100', 'text-blue-700');
 
-            // Basic client-side validation
-            const fileInput = document.getElementById('fileContent');
-            if (fileInput.files.length === 0) {
-                messageArea.innerHTML = '<div class="alert alert-danger">Моля, изберете файл за качване.</div>';
-                return;
-            }
-            if (document.getElementById('targetFormat').value === "") {
-                messageArea.innerHTML = '<div class="alert alert-danger">Моля, изберете целеви формат.</div>';
-                return;
-            }
-
-            // Show loading indicator
-            messageArea.innerHTML = '<div class="alert alert-info">Конвертирането е в ход... Моля, изчакайте.</div>';
+            messageBox.textContent = 'Конвертирането започна... Моля, изчакайте.';
+            messageBox.classList.remove('hidden');
+            messageBox.classList.add('bg-blue-100', 'text-blue-700');
 
             try {
                 const response = await fetch(form.action, {
                     method: form.method,
-                    body: formData // FormData handles multipart/form-data correctly
+                    body: formData
                 });
 
                 if (response.ok) {
-                   
+                    const contentDisposition = response.headers.get('Content-Disposition');
+                    let filename = 'converted_file';
+                    if (contentDisposition && contentDisposition.indexOf('attachment') !== -1) {
+                        const filenameRegex = /filename\*?=['"]?(?:UTF-\d['"]*)?([^;\n\r"']*)['"]?;?/;
+                        const matches = filenameRegex.exec(contentDisposition);
+                        if (matches != null && matches[1]) {
+                            filename = decodeURIComponent(matches[1].replace(/^utf-8'''/, ''));
+                        }
+                    }
+
                     const blob = await response.blob();
                     const url = window.URL.createObjectURL(blob);
                     const a = document.createElement('a');
+                    a.style.display = 'none';
                     a.href = url;
-                    
-                    const contentDisposition = response.headers.get('Content-Disposition');
-                    let filename = "converted_file"; 
-                    if (contentDisposition && contentDisposition.indexOf('filename=') !== -1) {
-                      
-                        const filenameMatch = /filename\*?=['"]?(?:UTF-8'')?([^;"]+)/i.exec(contentDisposition);
-                        if (filenameMatch && filenameMatch[1]) {
-                            filename = decodeURIComponent(filenameMatch[1].replace(/\+/g, ' '));
-                        }
-                    } else {
-                        
-                        const originalFileName = fileInput.files[0].name;
-                        const originalExtension = originalFileName.split('.').pop();
-                        const newExtension = document.getElementById('targetFormat').value;
-                        filename = originalFileName.replace(new RegExp(`\\.${originalExtension}$`), `.${newExtension}`);
-                    }
-
                     a.download = filename;
                     document.body.appendChild(a);
                     a.click();
                     window.URL.revokeObjectURL(url);
-                    a.remove();
 
-                    messageArea.innerHTML = `<div class="alert alert-success">Файлът '${filename}' е успешно конвертиран и изтеглен!</div>`;
+                    messageBox.textContent = 'Файлът е успешно конвертиран и изтеглен!';
+                    messageBox.classList.remove('hidden');
+                    messageBox.classList.add('bg-green-100', 'text-green-700');
                 } else {
-                   
-                    let errorText = await response.text();
-                    try {
-                        const errorJson = JSON.parse(errorText);
-                        errorText = errorJson.message || (errorJson.errors ? Object.values(errorJson.errors).flat().join('; ') : 'Неизвестна грешка.');
-                    } catch (e) {
-                     
-                    }
-                    messageArea.innerHTML = `<div class="alert alert-danger">Грешка при конвертиране: ${errorText}</div>`;
+                    const errorData = await response.json();
+                    messageBox.textContent = `Грешка: ${errorData.message || 'Неизвестна грешка.'}`;
+                    messageBox.classList.remove('hidden');
+                    messageBox.classList.add('bg-red-100', 'text-red-700');
                 }
             } catch (error) {
                 console.error('Fetch error:', error);
-                messageArea.innerHTML = `<div class="alert alert-danger">Възникна мрежова грешка: ${error.message}.</div>`;
+                messageBox.textContent = `Възникна мрежова грешка: ${error.message || 'Не може да се свърже със сървъра.'}`;
+                messageBox.classList.remove('hidden');
+                messageBox.classList.add('bg-red-100', 'text-red-700');
             }
         });
     </script>
-}
+</body>
+</html>

@@ -1,12 +1,15 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using DinkToPdf;
+using DinkToPdf.Contracts;
+using DocumentFormat.OpenXml.Packaging;
+using Microsoft.Extensions.Logging;
+using OfficeOpenXml;
+using OfficeOpenXml.Style;
 using ServiceHub.Common;
 using ServiceHub.Core.Models.Service.FileConverter;
 using ServiceHub.Services.Interfaces;
 using System.Text;
-using Xceed.Words.NET; 
-using OfficeOpenXml; 
-using OfficeOpenXml.Style; 
-using DocumentFormat.OpenXml.Packaging;
+using UglyToad.PdfPig;
+using Xceed.Words.NET;
 
 
 
@@ -15,17 +18,19 @@ namespace ServiceHub.Services.Services
     public class FileConverterService : IFileConverterService
     {
         private readonly ILogger<FileConverterService> _logger;
+        private readonly IConverter _pdfConverter;
 
-        public FileConverterService(ILogger<FileConverterService> logger)
+        public FileConverterService(ILogger<FileConverterService> logger, IConverter pdfConverter)
         {
             _logger = logger;
+            _pdfConverter = pdfConverter;
         }
 
         public async Task<BaseServiceResponse> ExecuteAsync(BaseServiceRequest request)
         {
             if (request is not FileConvertRequest fileConvertRequest)
             {
-                _logger.LogError("Invalid request type for FileConverterService.");
+                _logger.LogError("Invalid request type for FileConverterService. Expected FileConvertRequest.");
                 return new FileConvertResult
                 {
                     IsSuccess = false,
@@ -41,9 +46,8 @@ namespace ServiceHub.Services.Services
 
         public async Task<FileConvertResult> ConvertFileSpecificAsync(FileConvertRequest request)
         {
-            byte[] convertedContent = null;
-            // НЕ ПРОМЕНЯМЕ ИМЕТО НА ФАЙЛА, ИЗПОЛЗВАМЕ ОРИГИНАЛНОТО ИМЕ С НОВИЯ ФОРМАТ
-            string newFileName = $"{Path.GetFileNameWithoutExtension(request.OriginalFileName)}.{request.TargetFormat}";
+            byte[]? convertedContent = null;
+            string newFileName = $"{Path.GetFileNameWithoutExtension(request.OriginalFileName)}.{request.TargetFormat.ToLowerInvariant()}";
             string contentType = GetContentType(request.TargetFormat);
 
             FileContentData originalFileParsedContent = ExtractContentFromOriginalFile(request.FileContent, request.OriginalFileName);
@@ -54,7 +58,7 @@ namespace ServiceHub.Services.Services
                 return new FileConvertResult { IsSuccess = false, ErrorMessage = originalFileParsedContent.ErrorMessage };
             }
 
-            switch (request.TargetFormat.ToLower())
+            switch (request.TargetFormat.ToLowerInvariant())
             {
                 case "docx":
                     convertedContent = GenerateDocxFromContent(originalFileParsedContent.TextContent, originalFileParsedContent.ImageBytes, request.OriginalFileName, request.PerformOCRIfApplicable);
@@ -65,19 +69,39 @@ namespace ServiceHub.Services.Services
                 case "xlsx":
                     convertedContent = GenerateXlsxFromContent(originalFileParsedContent.TextContent, request.OriginalFileName);
                     break;
+                case "txt":
+                    convertedContent = Encoding.UTF8.GetBytes(originalFileParsedContent.TextContent ?? string.Empty);
+                    contentType = "text/plain";
+                    break;
+                case "csv":
+                    convertedContent = Encoding.UTF8.GetBytes(originalFileParsedContent.TextContent ?? string.Empty);
+                    contentType = "text/csv";
+                    break;
+                case "jpg":
+                case "png":
+                    if (originalFileParsedContent.ImageBytes != null && originalFileParsedContent.ImageBytes.Length > 0)
+                    {
+                        convertedContent = originalFileParsedContent.ImageBytes;
+                        contentType = GetContentType(request.TargetFormat);
+                    }
+                    else
+                    {
+                        _logger.LogWarning($"Cannot convert non-image content to {request.TargetFormat}.");
+                        return new FileConvertResult { IsSuccess = false, ErrorMessage = $"Не може да се конвертира не-изображение към '{request.TargetFormat}'." };
+                    }
+                    break;
                 default:
-                    // Only DOCX, PDF, XLSX are now supported
-                    _logger.LogWarning($"Unsupported target format: '{request.TargetFormat}'. Only DOCX, PDF, XLSX are supported.");
+                    _logger.LogWarning($"Unsupported target format: '{request.TargetFormat}'.");
                     return new FileConvertResult
                     {
                         IsSuccess = false,
-                        ErrorMessage = $"Целевият формат '{request.TargetFormat}' не се поддържа. Моля, изберете DOCX, PDF или XLSX."
+                        ErrorMessage = $"Целевият формат '{request.TargetFormat}' не се поддържа."
                     };
             }
 
             if (convertedContent == null || convertedContent.Length == 0)
             {
-                _logger.LogError($"Failed to generate content for target format: {request.TargetFormat}.");
+                _logger.LogError($"Failed to generate content for target format: {request.TargetFormat}. Converted content is null or empty.");
                 return new FileConvertResult { IsSuccess = false, ErrorMessage = $"Неуспешно генериране на съдържание за '{request.TargetFormat}'." };
             }
 
@@ -85,18 +109,18 @@ namespace ServiceHub.Services.Services
             {
                 IsSuccess = true,
                 ConvertedFileContent = convertedContent,
-                ConvertedFileName = newFileName, 
+                ConvertedFileName = newFileName,
                 ContentType = contentType,
-                OriginalFileName = request.OriginalFileName, 
-                TargetFormat = request.TargetFormat 
+                OriginalFileName = request.OriginalFileName,
+                TargetFormat = request.TargetFormat
             };
         }
 
         private FileContentData ExtractContentFromOriginalFile(byte[] fileContent, string fileName)
         {
-            string originalFileExtension = Path.GetExtension(fileName)?.ToLower();
+            string originalFileExtension = Path.GetExtension(fileName)?.ToLowerInvariant() ?? string.Empty;
             string textContent = string.Empty;
-            byte[] imageBytes = null;
+            byte[]? imageBytes = null;
 
             if (fileContent == null || fileContent.Length == 0)
             {
@@ -136,9 +160,9 @@ namespace ServiceHub.Services.Services
                 case ".docx":
                     try
                     {
-                        using (DocumentFormat.OpenXml.Packaging.WordprocessingDocument wordDocument = DocumentFormat.OpenXml.Packaging.WordprocessingDocument.Open(new MemoryStream(fileContent), false))
+                        using (WordprocessingDocument wordDocument = WordprocessingDocument.Open(new MemoryStream(fileContent), false))
                         {
-                            textContent = wordDocument.MainDocumentPart.Document.Body.InnerText;
+                            textContent = wordDocument.MainDocumentPart?.Document?.Body?.InnerText ?? string.Empty;
                         }
                         _logger.LogInformation("Successfully extracted text from DOCX using Open XML SDK.");
                     }
@@ -152,37 +176,36 @@ namespace ServiceHub.Services.Services
                 case ".pdf":
                     try
                     {
-                        // Извличане на текст от PDF с iText7
-                        using (var pdfReader = new iText.Kernel.Pdf.PdfReader(new MemoryStream(fileContent)))
-                        using (var pdfDocument = new iText.Kernel.Pdf.PdfDocument(pdfReader))
+                        using (var document = PdfDocument.Open(fileContent))
                         {
                             StringBuilder pdfText = new StringBuilder();
-                            for (int pageNum = 1; pageNum <= pdfDocument.GetNumberOfPages(); pageNum++)
+                            foreach (var page in document.GetPages())
                             {
-                                pdfText.Append(iText.Kernel.Pdf.Canvas.Parser.PdfTextExtractor.GetTextFromPage(pdfDocument.GetPage(pageNum)));
+                                pdfText.Append(page.Text);
                             }
                             textContent = pdfText.ToString();
                         }
-                        _logger.LogInformation($"Successfully extracted text from PDF: {fileName}");
+                        _logger.LogInformation($"Successfully extracted text from PDF using PdfPig: {fileName}");
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, $"Error extracting text from PDF file: {fileName}");
-                        return new FileContentData { IsSuccess = false, ErrorMessage = $"Грешка при извличане на текст от PDF файл." };
+                        _logger.LogError(ex, $"Error extracting text from PDF file with PdfPig: {fileName}");
+                        return new FileContentData { IsSuccess = false, ErrorMessage = $"Грешка при извличане на текст от PDF файл (PdfPig)." };
                     }
                     break;
 
                 case ".jpg":
                 case ".png":
+                case ".jpeg":
                     imageBytes = fileContent;
-                    textContent = $"--- Изображение '{fileName}' (OCR изисква специализирана библиотека) ---"; // OCR не е имплементирано
+                    textContent = $"--- Изображение '{fileName}' (OCR изисква специализирана библиотека) ---";
                     _logger.LogWarning($"Image content from {originalFileExtension} used. OCR not implemented. Placeholder text used.");
                     break;
 
                 case ".xlsx":
                     try
                     {
-                        using (var package = new OfficeOpenXml.ExcelPackage(new MemoryStream(fileContent)))
+                        using (var package = new ExcelPackage(new MemoryStream(fileContent)))
                         {
                             var worksheet = package.Workbook.Worksheets.FirstOrDefault();
                             if (worksheet != null)
@@ -195,15 +218,15 @@ namespace ServiceHub.Services.Services
                                     {
                                         for (int col = dimension.Start.Column; col <= dimension.End.Column; col++)
                                         {
-                                            var cellValue = worksheet.Cells[row, col].Text; // Използваме .Text за форматирана стойност
+                                            var cellValue = worksheet.Cells[row, col].Text;
                                             if (!string.IsNullOrEmpty(cellValue))
                                             {
-                                                stringBuilder.Append(cellValue).Append("\t"); // Разделител с таб
+                                                stringBuilder.Append(cellValue).Append("\t");
                                             }
                                         }
-                                        stringBuilder.AppendLine(); // Нов ред за всеки ред в Excel
+                                        stringBuilder.AppendLine();
                                     }
-                                    textContent = stringBuilder.ToString().Trim(); // Премахваме излишните празни места
+                                    textContent = stringBuilder.ToString().Trim();
                                 }
                                 else
                                 {
@@ -232,63 +255,94 @@ namespace ServiceHub.Services.Services
             return new FileContentData { IsSuccess = true, TextContent = textContent, ImageBytes = imageBytes };
         }
 
-        private byte[] GenerateDocxFromContent(string textContent, byte[] imageBytes, string originalFileName, bool performOCR)
+        private byte[] GenerateDocxFromContent(string textContent, byte[]? imageBytes, string originalFileName, bool performOCR)
         {
             using (MemoryStream stream = new MemoryStream())
             {
-                using (Xceed.Words.NET.DocX document = Xceed.Words.NET.DocX.Create(stream))
+                using (DocX document = DocX.Create(stream))
                 {
                     document.InsertParagraph(textContent);
+
+                    if (imageBytes != null && imageBytes.Length > 0)
+                    {
+                        _logger.LogWarning("Adding images to DOCX directly from byte array is complex with DocX. Skipping image insertion for simplicity.");
+                        document.InsertParagraph("--- Изображение (не е вградено, вижте логовете за подробности) ---");
+                    }
+
                     document.Save();
                 }
                 return stream.ToArray();
             }
         }
 
-        private byte[] GeneratePdfFromContent(string textContent, byte[] imageBytes, string originalFileName)
+        private byte[] GeneratePdfFromContent(string textContent, byte[]? imageBytes, string originalFileName)
         {
             try
             {
-                using (MemoryStream ms = new MemoryStream())
+                StringBuilder htmlBuilder = new StringBuilder();
+                htmlBuilder.Append(@"
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset='utf-8'>
+                    <title>Конвертиран файл</title>
+                    <style>
+                        body { font-family: 'Inter', sans-serif; line-height: 1.6; color: #333; margin: 20px; }
+                        .content-section { margin-bottom: 20px; }
+                        img { max-width: 100%; height: auto; display: block; margin: 10px 0; }
+                    </style>
+                </head>
+                <body>
+                    <div class='content-section'>");
+
+                if (!string.IsNullOrEmpty(textContent))
                 {
-                    iText.Kernel.Pdf.PdfWriter writer = new iText.Kernel.Pdf.PdfWriter(ms);
-                    iText.Kernel.Pdf.PdfDocument pdf = new iText.Kernel.Pdf.PdfDocument(writer);
-                    iText.Layout.Document document = new iText.Layout.Document(pdf);
-
-                    document.Add(new iText.Layout.Element.Paragraph("Конвертирано съдържание:"));
-                    if (!string.IsNullOrEmpty(textContent))
-                    {
-                        document.Add(new iText.Layout.Element.Paragraph(textContent));
-                    }
-                    else
-                    {
-                        document.Add(new iText.Layout.Element.Paragraph("Няма наличен текст за конвертиране."));
-                    }
-
-                    // Ако имате изображения, можете да ги добавите така
-                    if (imageBytes != null && imageBytes.Length > 0)
-                    {
-                        try
-                        {
-                            iText.IO.Image.ImageData imageData = iText.IO.Image.ImageDataFactory.Create(imageBytes);
-                            iText.Layout.Element.Image image = new iText.Layout.Element.Image(imageData);
-                            document.Add(image);
-                        }
-                        catch (Exception imgEx)
-                        {
-                            _logger.LogError(imgEx, "Failed to add image to PDF.");
-                            document.Add(new iText.Layout.Element.Paragraph("Грешка при добавяне на изображение към PDF."));
-                        }
-                    }
-
-                    document.Close();
-                    return ms.ToArray();
+                    htmlBuilder.Append($"<p>{textContent.Replace(Environment.NewLine, "<br/>")}</p>");
                 }
+                else
+                {
+                    htmlBuilder.Append("<p>Няма наличен текст за конвертиране.</p>");
+                }
+
+                if (imageBytes != null && imageBytes.Length > 0)
+                {
+                    string base64Image = Convert.ToBase64String(imageBytes);
+                    string imageMimeType = GetContentType(Path.GetExtension(originalFileName)?.TrimStart('.') ?? "png");
+                    htmlBuilder.Append($"<img src='data:{imageMimeType};base64,{base64Image}' alt='Изображение' />");
+                }
+
+                htmlBuilder.Append(@"
+                    </div>
+                </body>
+                </html>");
+
+                string htmlContent = htmlBuilder.ToString();
+                _logger.LogInformation($"Generated HTML for PDF (DinkToPdf): {htmlContent.Substring(0, Math.Min(htmlContent.Length, 500))}...");
+
+                var doc = new HtmlToPdfDocument()
+                {
+                    GlobalSettings = {
+                        ColorMode = ColorMode.Color,
+                        Orientation = Orientation.Portrait,
+                        PaperSize = PaperKind.A4,
+                        Margins = new MarginSettings() { Top = 10, Bottom = 10, Left = 10, Right = 10 },
+                    },
+                    Objects = {
+                        new ObjectSettings() {
+                            HtmlContent = htmlContent,
+                            WebSettings = { DefaultEncoding = "utf-8" }
+                        }
+                    }
+                };
+
+                byte[] pdf = _pdfConverter.Convert(doc);
+                _logger.LogInformation($"PDF generation result (DinkToPdf): {(pdf != null && pdf.Length > 0 ? "Success" : "Failed")}. Length: {pdf?.Length ?? 0}");
+                return pdf;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error generating PDF from content for '{originalFileName}'.");
-                return Encoding.UTF8.GetBytes($"Грешка при генериране на PDF: {ex.Message}");
+                _logger.LogError(ex, $"Error generating PDF from content for '{originalFileName}' using DinkToPdf.");
+                return Encoding.UTF8.GetBytes($"Грешка при генериране на PDF (DinkToPdf): {ex.Message}");
             }
         }
 
@@ -296,25 +350,21 @@ namespace ServiceHub.Services.Services
         {
             try
             {
-                // Задайте лицензния контекст за EPPlus, ако е необходимо (веднъж при стартиране на приложението)
-                // ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
-
                 using (MemoryStream ms = new MemoryStream())
                 {
-                    using (OfficeOpenXml.ExcelPackage package = new OfficeOpenXml.ExcelPackage(ms))
+                    using (ExcelPackage package = new ExcelPackage(ms))
                     {
-                        OfficeOpenXml.ExcelWorksheet worksheet = package.Workbook.Worksheets.Add("Sheet1");
+                        ExcelWorksheet worksheet = package.Workbook.Worksheets.Add("Sheet1");
 
                         if (!string.IsNullOrEmpty(textContent))
                         {
-                            // Разделяме текста на редове и колони (ако е CSV-подобен)
                             string[] lines = textContent.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
                             for (int row = 0; row < lines.Length; row++)
                             {
-                                string[] cells = lines[row].Split(new[] { '\t' }, StringSplitOptions.None); // Използваме таб като разделител
+                                string[] cells = lines[row].Split(new[] { '\t', ',' }, StringSplitOptions.None);
                                 for (int col = 0; col < cells.Length; col++)
                                 {
-                                    worksheet.Cells[row + 1, col + 1].Value = cells[col];
+                                    worksheet.Cells[row + 1, col + 1].Value = cells[col].Trim();
                                 }
                             }
                         }
@@ -323,8 +373,14 @@ namespace ServiceHub.Services.Services
                             worksheet.Cells["A1"].Value = "Няма наличен текст за конвертиране.";
                         }
 
-                        // Автоматично нагласяне на ширината на колоните
                         worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+
+                        if (!string.IsNullOrEmpty(textContent) && textContent.Contains(Environment.NewLine))
+                        {
+                            worksheet.Cells["A1:" + worksheet.Dimension.End.Address.Substring(0, 1) + "1"].Style.Font.Bold = true;
+                            worksheet.Cells["A1:" + worksheet.Dimension.End.Address.Substring(0, 1) + "1"].Style.Fill.PatternType = ExcelFillStyle.Solid;
+                            worksheet.Cells["A1:" + worksheet.Dimension.End.Address.Substring(0, 1) + "1"].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGray);
+                        }
 
                         package.Save();
                     }
@@ -340,21 +396,25 @@ namespace ServiceHub.Services.Services
 
         private string GetContentType(string targetFormat)
         {
-            return targetFormat.ToLower() switch
+            return targetFormat.ToLowerInvariant() switch
             {
                 "pdf" => "application/pdf",
                 "docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                 "xlsx" => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                _ => "application/octet-stream" // Default for unsupported types
+                "txt" => "text/plain",
+                "csv" => "text/csv",
+                "jpg" or "jpeg" => "image/jpeg",
+                "png" => "image/png",
+                _ => "application/octet-stream"
             };
         }
 
         private class FileContentData
         {
             public bool IsSuccess { get; set; } = true;
-            public string ErrorMessage { get; set; }
+            public string? ErrorMessage { get; set; }
             public string TextContent { get; set; } = string.Empty;
-            public byte[] ImageBytes { get; set; }
+            public byte[]? ImageBytes { get; set; }
         }
     }
 

@@ -7,8 +7,7 @@ using System.Threading.Tasks;
 
 namespace ServiceHub.Services.Interfaces
 {
-    public interface IFileConverterService:IExecutableService
-
+    public interface IFileConverterService : IExecutableService
     {
         Task<FileConvertResult> ConvertFileSpecificAsync(FileConvertRequest request);
     }

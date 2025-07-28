@@ -5,9 +5,8 @@ using ServiceHub.Services.Interfaces;
 
 namespace ServiceHub.Controllers
 {
-    [ApiController]
-    [Route("api/[controller]")] 
-    public class FileConverterController : ControllerBase
+    [Route("FileConverter")]
+    public class FileConverterController : Controller
     {
         private readonly ILogger<FileConverterController> _logger;
         private readonly IServiceDispatcher _serviceDispatcher;
@@ -18,66 +17,103 @@ namespace ServiceHub.Controllers
             _serviceDispatcher = serviceDispatcher;
         }
 
-        [HttpPost("convert")] // Full route: /api/FileConverter/convert
-        [Consumes("multipart/form-data")] // Important for file uploads
-        public async Task<IActionResult> ConvertFile([FromForm] FileConvertRequest request)
+        [HttpGet("")]
+        public IActionResult Index()
         {
-            // The FileConvertRequest model should handle basic validation (e.g., [Required])
-            if (!ModelState.IsValid)
+            try
             {
-                _logger.LogWarning("Invalid model state for FileConvertRequest: {Errors}",
-                    string.Join("; ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage)));
-                return BadRequest(ModelState);
+                ViewBag.ServiceId = ServiceConstants.FileConverterServiceId;
+                _logger.LogInformation($"Loading File Converter Index view with ServiceId: {ServiceConstants.FileConverterServiceId}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error accessing ServiceConstants.FileConverterServiceId. Ensure it is a valid GUID.");
+                return View("Error", new { RequestId = "Invalid ServiceId Configuration" });
             }
 
-            // Ensure the file is provided in the form data
-            if (Request.Form.Files == null || !Request.Form.Files.Any())
+            return View("~/Views/Service/_FileConverterForm.cshtml");
+        }
+
+        [HttpPost("Convert")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> Convert(
+            [FromForm(Name = "ServiceId")] Guid serviceId,
+            [FromForm(Name = "FileContent")] IFormFile fileContent,
+            [FromForm(Name = "OriginalFileName")] string? originalFileName,
+            [FromForm(Name = "TargetFormat")] string targetFormat,
+            [FromForm(Name = "PerformOCRIfApplicable")] bool performOCRIfApplicable)
+        {
+            if (serviceId == Guid.Empty)
             {
-                _logger.LogWarning("No file uploaded for conversion.");
-                return BadRequest(new { message = "Моля, качете файл за конвертиране." });
+                _logger.LogWarning("Липсва ServiceId в заявката.");
+                return BadRequest(new { message = "Идентификаторът на услугата е задължителен." });
             }
 
-            var file = Request.Form.Files[0]; // Get the first file
-
-            if (file.Length == 0)
+            if (serviceId != ServiceConstants.FileConverterServiceId)
             {
-                _logger.LogWarning("Uploaded file is empty.");
-                return BadRequest(new { message = "Каченият файл е празен." });
+                _logger.LogWarning($"Невалиден ServiceId: {serviceId}. Очакван: {ServiceConstants.FileConverterServiceId}");
+                return BadRequest(new { message = "Невалиден идентификатор на услугата." });
             }
 
-            // Read file content into a byte array
-            using var memoryStream = new MemoryStream();
-            await file.CopyToAsync(memoryStream);
-            request.FileContent = memoryStream.ToArray();
-            request.OriginalFileName = file.FileName; // Ensure original filename is set
-            request.ServiceId = ServiceConstants.FileConverterServiceId; // Ensure correct service ID
+            if (fileContent == null || fileContent.Length == 0)
+            {
+                _logger.LogWarning("Липсва съдържание на файл.");
+                return BadRequest(new { message = "Моля, изберете файл за конвертиране." });
+            }
 
-            _logger.LogInformation("Received file '{FileName}' for conversion to '{TargetFormat}'. Size: {FileSize} bytes.",
-                                   request.OriginalFileName, request.TargetFormat, request.FileContent.Length);
+            if (string.IsNullOrWhiteSpace(targetFormat))
+            {
+                _logger.LogWarning("Липсва целеви формат.");
+                return BadRequest(new { message = "Моля, изберете целеви формат." });
+            }
 
-            // Dispatch the request to the appropriate service handler
-            var response = await _serviceDispatcher.DispatchAsync(request);
+            byte[] fileBytes;
+            using (var memoryStream = new MemoryStream())
+            {
+                await fileContent.CopyToAsync(memoryStream);
+                fileBytes = memoryStream.ToArray();
+            }
+
+            var serviceRequest = new FileConvertRequest
+            {
+                ServiceId = serviceId,
+                FileContent = fileBytes,
+                OriginalFileName = originalFileName ?? fileContent.FileName,
+                TargetFormat = targetFormat,
+                PerformOCRIfApplicable = performOCRIfApplicable
+            };
+
+            _logger.LogInformation($"Dispatching request for file conversion: ServiceId={serviceRequest.ServiceId}, FileName={serviceRequest.OriginalFileName}, TargetFormat={serviceRequest.TargetFormat}, OCR={serviceRequest.PerformOCRIfApplicable}");
+
+            BaseServiceResponse response = await _serviceDispatcher.DispatchAsync(serviceRequest);
 
             if (response.IsSuccess)
             {
-                _logger.LogInformation("File conversion successful for '{FileName}'.", request.OriginalFileName);
-                var fileConvertResult = response as FileConvertResult;
-                if (fileConvertResult != null && fileConvertResult.ConvertedFileContent != null)
+                if (response is FileConvertResult fileConvertResult)
                 {
-                    // Return the converted file as a downloadable file
-                    return File(fileConvertResult.ConvertedFileContent, fileConvertResult.ContentType ?? "application/octet-stream", fileConvertResult.ConvertedFileName ?? "converted_file");
+                    _logger.LogInformation($"File conversion successful for '{fileConvertResult.ConvertedFileName}'.");
+                    if (fileConvertResult.ConvertedFileContent != null && fileConvertResult.ConvertedFileContent.Length > 0)
+                    {
+                        return File(fileConvertResult.ConvertedFileContent, fileConvertResult.ContentType ?? "application/octet-stream", fileConvertResult.ConvertedFileName);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Conversion was successful, but no file content was returned.");
+                        return StatusCode(500, new { message = "Файлът е успешно конвертиран, но не бе получено съдържание за изтегляне." });
+                    }
                 }
                 else
                 {
-                    _logger.LogError("File conversion reported success but no converted content was returned for '{FileName}'.", request.OriginalFileName);
-                    return StatusCode(500, new { message = "Конвертирането е успешно, но не беше получен конвертиран файл." });
+                    _logger.LogError("ServiceDispatcher returned success, but response was not FileConvertResult.");
+                    return StatusCode(500, new { message = "Вътрешна грешка: Неочакван отговор от услугата." });
                 }
             }
             else
             {
-                _logger.LogError("File conversion failed for '{FileName}'. Error: {ErrorMessage}", request.OriginalFileName, response.ErrorMessage);
-                return BadRequest(new { message = response.ErrorMessage ?? "Възникна грешка при конвертиране на файла." });
+                _logger.LogError($"Service execution failed for ID: {serviceRequest.ServiceId}. Error: {response.ErrorMessage}");
+                return BadRequest(new { message = $"Грешка при конвертиране на файла: {response.ErrorMessage ?? "Неизвестна грешка."}" });
             }
         }
+    
     }
 }

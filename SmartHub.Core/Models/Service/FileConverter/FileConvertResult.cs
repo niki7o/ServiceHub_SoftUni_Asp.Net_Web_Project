@@ -7,13 +7,13 @@ using System.Threading.Tasks;
 
 namespace ServiceHub.Core.Models.Service.FileConverter
 {
-    public class FileConvertResult: BaseServiceResponse
+    public class FileConvertResult : BaseServiceResponse
     {
-        public byte[] ConvertedFileContent { get; set; } = null!; 
-        public string ConvertedFileName { get; set; } = null!;
-        public string ContentType { get; set; } = null!;
-        public string OriginalFileName { get; set; }
-        public string TargetFormat { get; set; }
+        public byte[]? ConvertedFileContent { get; set; }
+        public string? ConvertedFileName { get; set; }
+        public string? ContentType { get; set; }
+        public string OriginalFileName { get; set; } = null!;
+        public string TargetFormat { get; set; } = null!;
     }
-    
+
 }

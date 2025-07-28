@@ -25,7 +25,7 @@ namespace ServiceHub.Controllers
             return View("~/Views/Service/_CvGeneratorForm.cshtml");
         }
 
-        [HttpPost("/api/CvGenerator/generate")] // Пълен API маршрут
+        [HttpPost("/api/CvGenerator/generate")] 
         public async Task<IActionResult> GenerateCv([FromBody] CvGenerateRequestModel request)
         {
             _logger.LogDebug("Incoming CvGenerateRequestModel: {@Request}", request);

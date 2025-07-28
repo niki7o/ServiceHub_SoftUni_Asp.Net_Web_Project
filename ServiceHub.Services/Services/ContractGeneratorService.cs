@@ -1,4 +1,6 @@
-﻿using iText.Html2pdf;
+﻿using DinkToPdf;
+using DinkToPdf.Contracts;
+using iText.Html2pdf;
 using iText.Html2pdf.Exceptions;
 using Microsoft.Extensions.Logging;
 using ServiceHub.Core.Models.Tools;
@@ -14,10 +16,12 @@ namespace ServiceHub.Services.Services
     public class ContractGeneratorService : IContractGeneratorService
     {
         private readonly ILogger<ContractGeneratorService> _logger;
+        private readonly IConverter _converter;
 
-        public ContractGeneratorService(ILogger<ContractGeneratorService> logger)
+        public ContractGeneratorService(ILogger<ContractGeneratorService> logger, IConverter converter)
         {
             _logger = logger;
+            _converter = converter;
         }
 
         public async Task<ContractGenerateResult> GenerateContractAsync(ContractGenerateRequestModel request)
@@ -29,25 +33,34 @@ namespace ServiceHub.Services.Services
                 string htmlContent = GenerateContractHtml(request);
                 _logger.LogDebug("Generated HTML Content (first 500 chars): {HtmlSnippet}", htmlContent.Substring(0, Math.Min(htmlContent.Length, 500)));
 
-                using (MemoryStream generatedContractStream = new MemoryStream())
+                var doc = new HtmlToPdfDocument()
                 {
-                    ConverterProperties converterProperties = new ConverterProperties();
-                    HtmlConverter.ConvertToPdf(htmlContent, generatedContractStream, converterProperties);
+                    GlobalSettings = {
+                        ColorMode = ColorMode.Color,
+                        Orientation = Orientation.Portrait,
+                        PaperSize = PaperKind.A4,
+                        Margins = new MarginSettings() { Top = 10, Bottom = 10, Left = 10, Right = 10 },
+                        // Ако wkhtmltopdf.exe не е в PATH, може да се наложи да посочите пътя тук.
+                        // Пример: "C:\\Program Files\\wkhtmltopdf\\bin\\wkhtmltopdf.exe"
+                    },
+                    Objects = {
+                        new ObjectSettings() {
+                            HtmlContent = htmlContent,
+                            WebSettings = { DefaultEncoding = "utf-8" }
+                        }
+                    }
+                };
 
-                    _logger.LogInformation("Contract successfully generated as PDF for {ContractType}.", request.ContractType);
-                    return new ContractGenerateResult
-                    {
-                        IsSuccess = true,
-                        GeneratedFileContent = generatedContractStream.ToArray(),
-                        GeneratedFileName = $"{request.ContractType}_{request.PartyA}_{request.PartyB}_{DateTime.Now:yyyyMMdd}.pdf",
-                        ContentType = "application/pdf"
-                    };
-                }
-            }
-            catch (Html2PdfException htmlEx)
-            {
-                _logger.LogError(htmlEx, "Html2PdfException occurred during contract generation for {ContractType}: {Message}", request.ContractType, htmlEx.Message);
-                return new ContractGenerateResult { IsSuccess = false, ErrorMessage = $"Грешка при конвертиране на HTML в PDF за договор: {htmlEx.Message}" };
+                byte[] pdf = _converter.Convert(doc);
+
+                _logger.LogInformation("Contract successfully generated as PDF for {ContractType}.", request.ContractType);
+                return new ContractGenerateResult
+                {
+                    IsSuccess = true,
+                    GeneratedFileContent = pdf,
+                    GeneratedFileName = $"{request.ContractType}_{request.PartyA}_{request.PartyB}_{DateTime.Now:yyyyMMdd}.pdf",
+                    ContentType = "application/pdf"
+                };
             }
             catch (Exception ex)
             {
@@ -67,7 +80,7 @@ namespace ServiceHub.Services.Services
                 <meta charset='utf-8'>
                 <title>Договор за {request.ContractType ?? "Услуга"}</title>
                 <style>
-                    body {{ font-family: 'Arial', sans-serif; line-height: 1.6; color: #333; margin: 40px; background-color: #f9f9f9; }}
+                    body {{ font-family: 'Inter', sans-serif; line-height: 1.6; color: #333; margin: 40px; background-color: #f9f9f9; }}
                     .container {{ max-width: 800px; margin: auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }}
                     h1, h2, h3 {{ color: #0056b3; text-align: center; }}
                     .header {{ text-align: center; margin-bottom: 30px; }}

@@ -15,7 +15,7 @@ namespace ServiceHub.Services.Services
         private readonly IRepository<Category> categoryRepo;
         private readonly IRepository<Review> reviewRepo;
         private readonly IRepository<Favorite> favoriteRepo;
-        private readonly UserManager<ApplicationUser> userManager; 
+        private readonly UserManager<ApplicationUser> userManager;
 
         public ServicesService(
             IRepository<Service> serviceRepo,
@@ -28,7 +28,7 @@ namespace ServiceHub.Services.Services
             this.categoryRepo = categoryRepo;
             this.reviewRepo = reviewRepo;
             this.favoriteRepo = favoriteRepo;
-            this.userManager = userManager; 
+            this.userManager = userManager;
         }
 
         public async Task<IEnumerable<ServiceViewModel>> GetAllAsync(string? filter = null, string? sort = null, string? currentUserId = null)
@@ -56,7 +56,7 @@ namespace ServiceHub.Services.Services
                     case "favorite":
                         if (!string.IsNullOrEmpty(currentUserId))
                         {
-                           servicesQuery = servicesQuery.Where(s => s.Favorites.Any(f => f.UserId == currentUserId));
+                            servicesQuery = servicesQuery.Where(s => s.Favorites.Any(f => f.UserId == currentUserId));
                         }
                         break;
                 }
@@ -98,7 +98,7 @@ namespace ServiceHub.Services.Services
 
             if (service == null)
             {
-              
+
                 throw new ArgumentException("Service not found.");
             }
 
@@ -115,7 +115,7 @@ namespace ServiceHub.Services.Services
                 Description = service.Description,
                 IsBusinessOnly = service.IsBusinessOnly,
                 AccessType = service.AccessType,
-                CategoryName = service.Category?.Name, 
+                CategoryName = service.Category?.Name,
                 ReviewCount = service.Reviews.Count,
                 AverageRating = service.Reviews.Any() ? service.Reviews.Average(r => r.Rating) : 0,
                 Reviews = service.Reviews.Select(r => new ReviewViewModel
@@ -130,7 +130,7 @@ namespace ServiceHub.Services.Services
                 IsFavorite = isFavorite
             };
         }
-      
+
         public async Task CreateAsync(ServiceFormModel model)
         {
             var category = await categoryRepo.GetByIdAsync(model.CategoryId);
@@ -236,4 +236,3 @@ namespace ServiceHub.Services.Services
         }
     }
 }
-

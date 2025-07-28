@@ -85,7 +85,7 @@ namespace ServiceHub.Controllers
                 Description = s.Description,
                 Category = s.Category != null ? s.Category.Name : "N/A",
                 AccessType = s.AccessType.ToString(),
-              
+
             }).ToList();
 
             return View(serviceDisplayDtos);
@@ -237,7 +237,7 @@ namespace ServiceHub.Controllers
             {
                 return Redirect("/CvGenerator/CvGeneratorForm");
             }
-            else if (id == ServiceConstants.ContractGeneratorServiceId) 
+            else if (id == ServiceConstants.ContractGeneratorServiceId)
             {
                 return Redirect("/ContractGenerator/ContractGeneratorForm");
             }

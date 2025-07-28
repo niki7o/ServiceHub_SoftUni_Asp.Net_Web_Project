@@ -12,13 +12,13 @@ namespace ServiceHub.Core.Models.Service.FileConverter
     {
 
         [Required(ErrorMessage = "File content is required.")]
-        public byte[] FileContent { get; set; } = null!; 
+        public byte[] FileContent { get; set; } = null!;
 
         [Required(ErrorMessage = "Original file name (with extension) is required.")]
-        public string OriginalFileName { get; set; } = null!; 
+        public string OriginalFileName { get; set; } = null!;
 
         [Required(ErrorMessage = "Target format is required.")]
-        public string TargetFormat { get; set; } = null!; 
+        public string TargetFormat { get; set; } = null!;
 
         public bool PerformOCRIfApplicable { get; set; } = false;
     }

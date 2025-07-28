@@ -7,13 +7,12 @@ namespace ServiceHub.Services.Services
 {
     public class ServiceDispatcher : IServiceDispatcher
     {
-        private readonly IServiceProvider _serviceProvider; 
+        private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<ServiceDispatcher> _logger;
         private readonly Dictionary<Guid, Type> _serviceImplementations;
 
-        
         public ServiceDispatcher(
-            IServiceProvider serviceProvider, 
+            IServiceProvider serviceProvider,
             ILogger<ServiceDispatcher> logger,
             Dictionary<Guid, Type> serviceImplementations)
         {
@@ -24,14 +23,12 @@ namespace ServiceHub.Services.Services
 
         public async Task<BaseServiceResponse> DispatchAsync(BaseServiceRequest request)
         {
-            // Вашият съществуващ код тук, без промяна:
             if (!_serviceImplementations.TryGetValue(request.ServiceId, out var serviceInterfaceType))
             {
                 _logger.LogWarning($"Service with ID '{request.ServiceId}' not found in dispatcher mapping.");
                 return new ServiceErrorResponse { IsSuccess = false, ErrorMessage = $"Услуга с ID '{request.ServiceId}' не е намерена." };
             }
 
-            // Сега _serviceProvider е Scoped IServiceProvider и може да резолва Scoped услуги
             var service = _serviceProvider.GetRequiredService(serviceInterfaceType) as IExecutableService;
 
             if (service == null)
