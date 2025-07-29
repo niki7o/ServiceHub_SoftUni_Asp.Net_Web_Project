@@ -1,0 +1,595 @@
+﻿@using ServiceHub.Common
+@{
+    ViewData["Title"] = "Финансов Калкулатор / Анализатор";
+    var serviceId = ViewData["ServiceId"] ?? ViewBag.ServiceId ?? "2EF43D87-D749-4D7D-9B7D-F7C4F527BEA7";
+}
+
+<head>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+            color: #343a40;
+        }
+
+        .calculator-form-container {
+            background-color: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 15px 45px rgba(0, 0, 0, 0.1);
+            padding: 50px;
+            margin-top: 30px;
+            margin-bottom: 60px;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+       
+
+        h2 {
+            color: #1a202c;
+            font-weight: 800;
+            margin-bottom: 40px;
+            position: relative;
+            padding-bottom: 15px;
+            font-size: 2.5rem;
+        }
+
+            h2::after {
+                content: '';
+                position: absolute;
+                left: 50%;
+                bottom: 0;
+                transform: translateX(-50%);
+                width: 100px;
+                height: 5px;
+                background-color: #007bff;
+                border-radius: 3px;
+            }
+
+        h3 {
+            color: #0056b3;
+            margin-top: 30px;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            border-bottom: 1px dashed #ccc;
+            padding-bottom: 5px;
+        }
+
+        .form-group label {
+            font-weight: 700;
+            color: #495057;
+            margin-bottom: 10px;
+            display: block;
+            font-size: 1.05rem;
+        }
+
+        .form-control, .form-select {
+            border-radius: 10px;
+            border: 1px solid #ced4da;
+            padding: 14px 18px;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            font-size: 1rem;
+        }
+
+            .form-control:focus, .form-select:focus {
+                border-color: #007bff;
+                box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.25);
+            }
+
+        textarea.form-control {
+            resize: vertical;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+            border-radius: 10px;
+            padding: 14px 35px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+            box-shadow: 0 6px 15px rgba(0, 123, 255, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+            .btn-primary:hover {
+                background-color: #0056b3;
+                border-color: #0056b3;
+                transform: translateY(-3px);
+                box-shadow: 0 8px 20px rgba(0, 123, 255, 0.4);
+            }
+
+        .btn-back-custom {
+            background-color: #6c757d;
+            border-color: #6c757d;
+            border-radius: 10px;
+            padding: 10px 20px;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 10px rgba(108, 117, 125, 0.2);
+            color: #fff;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+            .btn-back-custom:hover {
+                background-color: #5a6268;
+                border-color: #5a6268;
+                transform: translateY(-2px);
+                box-shadow: 0 6px 15px rgba(108, 117, 125, 0.3);
+                color: #fff;
+            }
+
+            .btn-back-custom:focus, .btn-back-custom:active {
+                outline: none;
+                box-shadow: 0 0 0 0.25rem rgba(108, 117, 125, 0.25);
+            }
+
+        .alert-info, .alert-success, .alert-danger {
+            border-radius: 10px;
+            padding: 18px 25px;
+            font-size: 1.05rem;
+            font-weight: 600;
+            margin-top: 25px;
+            animation: slideIn 0.5s ease-out;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+       
+
+        .alert-info {
+            background-color: #e0f7fa;
+            color: #007b8e;
+            border-color: #b2ebf2;
+        }
+
+        .alert-success {
+            background-color: #e6ffed;
+            color: #28a745;
+            border-color: #b8f2c8;
+        }
+
+        .alert-danger {
+            background-color: #ffe6e6;
+            color: #dc3545;
+            border-color: #ffb3b3;
+        }
+
+        .text-danger {
+            font-size: 0.9em;
+            margin-top: 5px;
+            display: block;
+            color: #dc3545;
+        }
+
+        .item-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            align-items: flex-end;
+        }
+
+            .item-row .form-group {
+                flex-grow: 1;
+                margin-bottom: 0;
+            }
+
+                .item-row .form-group label {
+                    font-size: 0.95rem;
+                    margin-bottom: 5px;
+                }
+
+            .item-row .form-control {
+                padding: 10px 12px;
+                font-size: 0.95rem;
+            }
+
+            .item-row .remove-item-btn {
+                background-color: #dc3545;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                padding: 10px 15px;
+                cursor: pointer;
+                transition: background-color 0.2s ease;
+                font-size: 1rem;
+                height: 48px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+                .item-row .remove-item-btn:hover {
+                    background-color: #c82333;
+                }
+
+        .add-item-btn {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 12px 25px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            font-size: 1rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+            .add-item-btn:hover {
+                background-color: #218838;
+            }
+
+        
+    </style>
+</head>
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-start mb-4">
+        <button type="button" class="btn btn-back-custom"
+                asp-controller="Home" asp-action="Details" asp-route-id="@serviceId">
+            <i class="fas fa-arrow-left"></i> Обратно към детайли на услугата
+        </button>
+    </div>
+
+    <h2 class="text-center">Финансов Калкулатор / Анализатор</h2>
+
+    <div class="calculator-form-container">
+        <form id="financialCalculatorForm" method="post" enctype="multipart/form-data" action="/api/FinancialCalculator/calculate">
+            <div class="row">
+                <div class="col-md-6">
+                    <h3>Анализ на възвръщаемост на инвестициите (ROI)</h3>
+                    <div class="form-group mb-4">
+                        <label for="netProfitForROI">Нетна печалба (за ROI) (лв.):</label>
+                        <input type="number" step="0.01" class="form-control" id="netProfitForROI" name="NetProfitForROI" value="0" min="-1000000000" max="1000000000">
+                        <div class="text-danger" id="netProfitForROIError"></div>
+                    </div>
+                    <div class="form-group mb-4">
+                        <label for="costOfInvestment">Цена на инвестицията (лв.):</label>
+                        <input type="number" step="0.01" class="form-control" id="costOfInvestment" name="CostOfInvestment" value="0" min="0.01" max="1000000000">
+                        <div class="text-danger" id="costOfInvestmentError"></div>
+                    </div>
+
+                    <h3>Приходи</h3>
+                    <div id="revenueItemsContainer">
+                        
+                    </div>
+                    <button type="button" id="addRevenueItemBtn" class="btn add-item-btn">
+                        <i class="fas fa-plus-circle me-2"></i> Добави приход
+                    </button>
+                    <div class="text-danger" id="revenueItemsError"></div>
+                </div>
+
+                <div class="col-md-6">
+                    <h3>Разходи</h3>
+                    <div id="expenseItemsContainer">
+                       
+                    </div>
+                    <button type="button" id="addExpenseItemBtn" class="btn add-item-btn">
+                        <i class="fas fa-plus-circle me-2"></i> Добави разход
+                    </button>
+                    <div class="text-danger" id="expenseItemsError"></div>
+
+                    <h3>Прогноза</h3>
+                    <div class="form-group mb-4">
+                        <label for="growthRatePercentage">Процент на растеж (на период, %):</label>
+                        <input type="number" step="0.01" class="form-control" id="growthRatePercentage" name="GrowthRatePercentage" value="0" min="0" max="100">
+                        <div class="text-danger" id="growthRatePercentageError"></div>
+                    </div>
+                    <div class="form-group mb-4">
+                        <label for="forecastPeriodMonths">Период на прогноза (месеци):</label>
+                        <input type="number" step="1" class="form-control" id="forecastPeriodMonths" name="ForecastPeriodMonths" value="12" min="1" max="120">
+                        <div class="text-danger" id="forecastPeriodMonthsError"></div>
+                    </div>
+
+                    <div class="form-group mb-4">
+                        <label for="notes">Бележки (по избор):</label>
+                        <textarea class="form-control" id="notes" name="Notes" rows="3" maxlength="1000" placeholder="Допълнителни бележки към финансовия отчет."></textarea>
+                        <div class="text-danger" id="notesError"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-5">
+                <button type="submit" class="btn btn-primary">Генерирай Финансов Отчет</button>
+            </div>
+        </form>
+        <div id="messageArea" class="mt-4"></div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const revenueItemsContainer = document.getElementById('revenueItemsContainer');
+            const addRevenueItemBtn = document.getElementById('addRevenueItemBtn');
+            const expenseItemsContainer = document.getElementById('expenseItemsContainer');
+            const addExpenseItemBtn = document.getElementById('addExpenseItemBtn');
+
+            let revenueItemCounter = 0;
+            let expenseItemCounter = 0;
+
+           
+            function addRevenueItemRow(description = '', amount = '') {
+                const itemRow = document.createElement('div');
+                itemRow.classList.add('item-row');
+                itemRow.dataset.index = revenueItemCounter;
+
+                itemRow.innerHTML = `
+                    <div class="form-group flex-grow-1">
+                        <label for="revenueDescription_${revenueItemCounter}">Описание:</label>
+                        <input type="text" class="form-control" id="revenueDescription_${revenueItemCounter}" name="Revenues[${revenueItemCounter}].Description" value="${description}" required maxlength="200" placeholder="Напр. Продажби на продукти">
+                        <div class="text-danger" id="revenueDescription_${revenueItemCounter}Error"></div>
+                    </div>
+                    <div class="form-group" style="width: 150px;">
+                        <label for="revenueAmount_${revenueItemCounter}">Сума (лв.):</label>
+                        <input type="number" step="0.01" class="form-control" id="revenueAmount_${revenueItemCounter}" name="Revenues[${revenueItemCounter}].Amount" value="${amount}" required min="0.01" max="1000000000">
+                        <div class="text-danger" id="revenueAmount_${revenueItemCounter}Error"></div>
+                    </div>
+                    <button type="button" class="remove-item-btn" data-type="revenue" data-index="${revenueItemCounter}">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                `;
+                revenueItemsContainer.appendChild(itemRow);
+                itemRow.querySelector('.remove-item-btn').addEventListener('click', removeRevenueItem);
+                revenueItemCounter++;
+            }
+
+            function removeRevenueItem(event) {
+                event.target.closest('.item-row').remove();
+                reindexItems('revenue');
+            }
+
+        
+            function addExpenseItemRow(description = '', amount = '') {
+                const itemRow = document.createElement('div');
+                itemRow.classList.add('item-row');
+                itemRow.dataset.index = expenseItemCounter;
+
+                itemRow.innerHTML = `
+                    <div class="form-group flex-grow-1">
+                        <label for="expenseDescription_${expenseItemCounter}">Описание:</label>
+                        <input type="text" class="form-control" id="expenseDescription_${expenseItemCounter}" name="Expenses[${expenseItemCounter}].Description" value="${description}" required maxlength="200" placeholder="Напр. Наем на офис">
+                        <div class="text-danger" id="expenseDescription_${expenseItemCounter}Error"></div>
+                    </div>
+                    <div class="form-group" style="width: 150px;">
+                        <label for="expenseAmount_${expenseItemCounter}">Сума (лв.):</label>
+                        <input type="number" step="0.01" class="form-control" id="expenseAmount_${expenseItemCounter}" name="Expenses[${expenseItemCounter}].Amount" value="${amount}" required min="0.01" max="1000000000">
+                        <div class="text-danger" id="expenseAmount_${expenseItemCounter}Error"></div>
+                    </div>
+                    <button type="button" class="remove-item-btn" data-type="expense" data-index="${expenseItemCounter}">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                `;
+                expenseItemsContainer.appendChild(itemRow);
+                itemRow.querySelector('.remove-item-btn').addEventListener('click', removeExpenseItem);
+                expenseItemCounter++;
+            }
+
+            function removeExpenseItem(event) {
+                event.target.closest('.item-row').remove();
+                reindexItems('expense');
+            }
+
+            
+            function reindexItems(type) {
+                const container = type === 'revenue' ? revenueItemsContainer : expenseItemsContainer;
+                const rows = container.querySelectorAll('.item-row');
+                rows.forEach((row, index) => {
+                    row.dataset.index = index;
+                    const prefix = type === 'revenue' ? 'Revenue' : 'Expense';
+
+                    row.querySelector(`[id^="${prefix.toLowerCase()}Description_"]`).id = `${prefix.toLowerCase()}Description_${index}`;
+                    row.querySelector(`[name^="${prefix}s["]`).name = `${prefix}s[${index}].Description`;
+                    row.querySelector(`[id^="${prefix.toLowerCase()}Description_"]`).nextElementSibling.id = `${prefix.toLowerCase()}Description_${index}Error`;
+
+                    row.querySelector(`[id^="${prefix.toLowerCase()}Amount_"]`).id = `${prefix.toLowerCase()}Amount_${index}`;
+                    row.querySelector(`[name$=".Amount"]`).name = `${prefix}s[${index}].Amount`;
+                    row.querySelector(`[id^="${prefix.toLowerCase()}Amount_"]`).nextElementSibling.id = `${prefix.toLowerCase()}Amount_${index}Error`;
+
+                    row.querySelector('.remove-item-btn').dataset.index = index;
+                });
+                if (type === 'revenue') {
+                    revenueItemCounter = rows.length;
+                } else {
+                    expenseItemCounter = rows.length;
+                }
+            }
+
+            
+            addRevenueItemRow();
+            addExpenseItemRow();
+
+            
+            addRevenueItemBtn.addEventListener('click', () => addRevenueItemRow());
+            addExpenseItemBtn.addEventListener('click', () => addExpenseItemRow());
+
+          
+            document.getElementById('financialCalculatorForm').addEventListener('submit', async function (event) {
+                event.preventDefault();
+
+                const form = event.target;
+                const messageArea = document.getElementById('messageArea');
+
+               
+                messageArea.innerHTML = '';
+                document.querySelectorAll('.text-danger').forEach(el => el.textContent = '');
+
+                messageArea.innerHTML = '<div class="alert alert-info"><i class="fas fa-spinner fa-spin me-2"></i>Изчисляване на финансов отчет... Моля, изчакайте.</div>';
+
+                const requestData = {
+                    netProfitForROI: parseFloat(document.getElementById('netProfitForROI').value) || 0,
+                    costOfInvestment: parseFloat(document.getElementById('costOfInvestment').value) || 0,
+                    growthRatePercentage: parseFloat(document.getElementById('growthRatePercentage').value) || 0,
+                    forecastPeriodMonths: parseInt(document.getElementById('forecastPeriodMonths').value) || 0,
+                    notes: document.getElementById('notes').value,
+                    revenues: [],
+                    expenses: []
+                };
+
+                let isValid = true;
+
+                
+                if (isNaN(requestData.netProfitForROI)) {
+                    document.getElementById('netProfitForROIError').textContent = 'Моля, въведете валидна сума.';
+                    isValid = false;
+                }
+                if (isNaN(requestData.costOfInvestment) || requestData.costOfInvestment <= 0) {
+                    document.getElementById('costOfInvestmentError').textContent = 'Моля, въведете положителна сума за цена на инвестицията.';
+                    isValid = false;
+                }
+
+               
+                const revenueRows = revenueItemsContainer.querySelectorAll('.item-row');
+                revenueRows.forEach((row, index) => {
+                    const descriptionInput = row.querySelector(`[name="Revenues[${index}].Description"]`);
+                    const amountInput = row.querySelector(`[name="Revenues[${index}].Amount"]`);
+
+                    const item = {
+                        description: descriptionInput.value,
+                        amount: parseFloat(amountInput.value)
+                    };
+
+                    if (!item.description.trim()) {
+                        document.getElementById(`revenueDescription_${index}Error`).textContent = 'Описанието е задължително.';
+                        isValid = false;
+                    } else if (item.description.length > 200) {
+                        document.getElementById(`revenueDescription_${index}Error`).textContent = 'Описанието не може да надвишава 200 символа.';
+                        isValid = false;
+                    }
+                    if (isNaN(item.amount) || item.amount <= 0 || item.amount > 1000000000) {
+                        document.getElementById(`revenueAmount_${index}Error`).textContent = 'Сумата трябва да е положително число до 1 000 000 000.';
+                        isValid = false;
+                    }
+                    requestData.revenues.push(item);
+                });
+
+                
+                const expenseRows = expenseItemsContainer.querySelectorAll('.item-row');
+                expenseRows.forEach((row, index) => {
+                    const descriptionInput = row.querySelector(`[name="Expenses[${index}].Description"]`);
+                    const amountInput = row.querySelector(`[name="Expenses[${index}].Amount"]`);
+
+                    const item = {
+                        description: descriptionInput.value,
+                        amount: parseFloat(amountInput.value)
+                    };
+
+                    if (!item.description.trim()) {
+                        document.getElementById(`expenseDescription_${index}Error`).textContent = 'Описанието е задължително.';
+                        isValid = false;
+                    } else if (item.description.length > 200) {
+                        document.getElementById(`expenseDescription_${index}Error`).textContent = 'Описанието не може да надвишава 200 символа.';
+                        isValid = false;
+                    }
+                    if (isNaN(item.amount) || item.amount <= 0 || item.amount > 1000000000) {
+                        document.getElementById(`expenseAmount_${index}Error`).textContent = 'Сумата трябва да е положително число до 1 000 000 000.';
+                        isValid = false;
+                    }
+                    requestData.expenses.push(item);
+                });
+
+           
+                if (isNaN(requestData.growthRatePercentage) || requestData.growthRatePercentage < 0 || requestData.growthRatePercentage > 100) {
+                    document.getElementById('growthRatePercentageError').textContent = 'Процентът на растеж трябва да е между 0 и 100.';
+                    isValid = false;
+                }
+                if (isNaN(requestData.forecastPeriodMonths) || requestData.forecastPeriodMonths < 1 || requestData.forecastPeriodMonths > 120) {
+                    document.getElementById('forecastPeriodMonthsError').textContent = 'Периодът на прогноза трябва да е между 1 и 120 месеца.';
+                    isValid = false;
+                }
+                if (requestData.notes.length > 1000) {
+                    document.getElementById('notesError').textContent = 'Бележките не могат да надвишават 1000 символа.';
+                    isValid = false;
+                }
+
+                if (!isValid) {
+                    messageArea.innerHTML = '<div class="alert alert-danger">Моля, коригирайте грешките във формата.</div>';
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/api/FinancialCalculator/calculate', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify(requestData)
+                    });
+
+                    if (response.ok) {
+                        const blob = await response.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+
+                        const contentDisposition = response.headers.get('Content-Disposition');
+                        let filename = "financial_report.pdf";
+                        if (contentDisposition && contentDisposition.indexOf('filename=') !== -1) {
+                            const filenameMatch = /filename\*?=['"]?(?:UTF-8'')?([^;"]+)/i.exec(contentDisposition);
+                            if (filenameMatch && filenameMatch[1]) {
+                                filename = decodeURIComponent(filenameMatch[1].replace(/\+/g, ' '));
+                            }
+                        }
+
+                        a.download = filename;
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        a.remove();
+
+                        messageArea.innerHTML = `<div class="alert alert-success"><i class="fas fa-check-circle me-2"></i>Файлът на финансовия отчет '${filename}' е успешно генериран и изтеглен!</div>`;
+                    } else {
+                        let errorText = await response.text();
+                        try {
+                            const errorJson = JSON.parse(errorText);
+                            if (errorJson.errors) {
+                                
+                                for (const key in errorJson.errors) {
+                                    if (errorJson.errors.hasOwnProperty(key)) {
+                                        const errorMessages = errorJson.errors[key].join('; ');
+                                        
+                                        const mainFieldId = key.charAt(0).toLowerCase() + key.slice(1) + 'Error';
+                                        if (document.getElementById(mainFieldId)) {
+                                            document.getElementById(mainFieldId).textContent = errorMessages;
+                                        }
+
+                                        const itemMatch = key.match(/(Revenues|Expenses)\[(\d+)\]\.(Description|Amount)/);
+                                        if (itemMatch) {
+                                            const itemType = itemMatch[1].toLowerCase(); 
+                                            const itemIndex = itemMatch[2];
+                                            const itemField = itemMatch[3].toLowerCase(); 
+                                            const dynamicErrorId = `${itemType.slice(0, -1)}${itemField}_${itemIndex}Error`; 
+                                            if (document.getElementById(dynamicErrorId)) {
+                                                document.getElementById(dynamicErrorId).textContent = errorMessages;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            errorText = errorJson.message || response.statusText;
+                        } catch (e) {
+                            console.error("Failed to parse error response as JSON:", e);
+                        }
+                        messageArea.innerHTML = `<div class="alert alert-danger"><i class="fas fa-times-circle me-2"></i>Грешка при генериране на финансов отчет: ${errorText}</div>`;
+                    }
+                } catch (error) {
+                    console.error('Fetch error:', error);
+                    messageArea.innerHTML = `<div class="alert alert-danger"><i class="fas fa-exclamation-triangle me-2"></i>Възникна мрежова грешка: ${error.message}.</div>`;
+                }
+            });
+        });
+    </script>
+}
