@@ -14,6 +14,7 @@ using ServiceHub.Services.Services.Repository;
 using System.ComponentModel;
 using System.Text.Json;
 
+
 using System.Text.Json.Serialization;
 
 namespace ServiceHub
@@ -26,8 +27,12 @@ namespace ServiceHub
 
 
 
-            ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
+         
+
+           
             builder.Services.AddSingleton(typeof(IConverter), new SynchronizedConverter(new PdfTools()));
+
+            ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
 
             var connectionString = builder.Configuration.GetConnectionString("ServiceHubDbContextConnection") ??
                                    throw new InvalidOperationException("Connection string 'ServiceHubDbContextConnection' not found.");
@@ -134,6 +139,11 @@ namespace ServiceHub
             app.UseRouting();
             app.UseAuthentication();
             app.UseAuthorization();
+
+            app.MapControllerRoute(
+            name: "Admin", 
+            pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
+
 
             app.MapControllerRoute(
                 name: "default",

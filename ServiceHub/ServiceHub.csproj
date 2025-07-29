@@ -45,4 +45,13 @@
     <None Include="wwwroot\json\quotes.json" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="wkhtmltopdf\libwkhtmltox.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="wkhtmltopdf\wkhtmltopdf.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
