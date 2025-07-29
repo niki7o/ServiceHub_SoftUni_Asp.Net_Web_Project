@@ -12,6 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="DinkToPdf" Version="1.0.8" />
     <PackageReference Include="EPPlus" Version="7.7.3" />
     <PackageReference Include="itext" Version="9.2.0" />
     <PackageReference Include="itext.pdfhtml" Version="6.2.0" />
@@ -43,15 +44,6 @@
 
   <ItemGroup>
     <None Include="wwwroot\json\quotes.json" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Update="wkhtmltopdf\libwkhtmltox.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="wkhtmltopdf\wkhtmltopdf.exe">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
 
 </Project>
