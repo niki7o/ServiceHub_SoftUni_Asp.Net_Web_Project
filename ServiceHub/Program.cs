@@ -68,6 +68,7 @@ namespace ServiceHub
             builder.Services.AddScoped<IWordCharacterCounterService, WordCharacterCounterService>();
             builder.Services.AddScoped<IRandomPasswordGeneratorService, RandomPasswordGeneratorService>();
             builder.Services.AddScoped<ITextCaseConverterService, TextCaseConverterService>();
+            builder.Services.AddScoped<IInvoiceGeneratorService, InvoiceGeneratorService>();
             builder.Services.AddScoped<IServiceDispatcher, ServiceDispatcher>(sp =>
             {
                 var logger = sp.GetRequiredService<ILogger<ServiceDispatcher>>();
@@ -79,6 +80,7 @@ namespace ServiceHub
                     { ServiceConstants.TextCaseConverterServiceId, typeof(ITextCaseConverterService) },
                     { ServiceConstants.RandomPasswordGeneratorServiceId, typeof(IRandomPasswordGeneratorService) },
                     { ServiceConstants.ContractGeneratorServiceId, typeof(IContractGeneratorService) },
+                    { ServiceConstants.InvoiceReceiptGeneratorId, typeof(IInvoiceGeneratorService) },
                     //{ ServiceConstants.CodeSnippetConverterServiceId, typeof(ICodeSnippetConverterService) }
                 };
                 return new ServiceDispatcher(sp, logger, serviceImplementations);

@@ -1,7 +1,7 @@
 ﻿@using ServiceHub.Common
 @{
     ViewData["Title"] = "Автоматично CV/Резюме";
-    var serviceId = Context.Request.Query["serviceId"].ToString();
+    var serviceId = ViewData["ServiceId"] ?? ViewBag.ServiceId ?? "F0C72C7B-709D-44B7-81C1-1E5AB73305EC";
 }
 
 <head>

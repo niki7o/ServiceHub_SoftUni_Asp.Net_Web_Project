@@ -205,6 +205,10 @@ namespace ServiceHub.Controllers
             {
                 return Redirect("/ContractGenerator/ContractGeneratorForm");
             }
+            else if (id == ServiceConstants.InvoiceReceiptGeneratorId)
+            {
+                return Redirect("/InvoiceGenerator/InvoiceGeneratorForm");
+            }
             else if (id == ServiceConstants.CodeSnippetConverterServiceId)
             {
                 ViewBag.SupportedLanguages = new List<string> { "C#", "Python", "JavaScript", "PHP" };

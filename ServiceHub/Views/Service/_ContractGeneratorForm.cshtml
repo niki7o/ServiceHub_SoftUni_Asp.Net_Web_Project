@@ -2,7 +2,7 @@
 @{
     ViewData["Title"] = "Генератор на Договори";
   
-    var serviceId = Context.Request.Query["serviceId"].ToString();
+    var serviceId = ViewData["ServiceId"] ?? ViewBag.ServiceId ?? "8EDC2D04-00F5-4630-B5A9-4FA499FC7210";
 }
 
 <head>

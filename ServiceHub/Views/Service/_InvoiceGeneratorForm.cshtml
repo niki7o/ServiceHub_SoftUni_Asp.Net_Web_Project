@@ -1,0 +1,696 @@
+﻿@using ServiceHub.Common
+@{
+    ViewData["Title"] = "Генератор на Инвойси/Фактури";
+    var serviceId = ViewData["ServiceId"] ?? ViewBag.ServiceId ?? "B422F89B-E7A3-4130-B899-7B56010007E0"; 
+}
+
+<head>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+            color: #343a40;
+        }
+
+        .invoice-form-container {
+            background-color: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 15px 45px rgba(0, 0, 0, 0.1);
+            padding: 50px;
+            margin-top: 30px;
+            margin-bottom: 60px;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        
+
+        h2 {
+            color: #1a202c;
+            font-weight: 800;
+            margin-bottom: 40px;
+            position: relative;
+            padding-bottom: 15px;
+            font-size: 2.5rem;
+        }
+
+            h2::after {
+                content: '';
+                position: absolute;
+                left: 50%;
+                bottom: 0;
+                transform: translateX(-50%);
+                width: 100px;
+                height: 5px;
+                background-color: #007bff;
+                border-radius: 3px;
+            }
+
+        .form-group label {
+            font-weight: 700;
+            color: #495057;
+            margin-bottom: 10px;
+            display: block;
+            font-size: 1.05rem;
+        }
+
+        .form-control, .form-select {
+            border-radius: 10px;
+            border: 1px solid #ced4da;
+            padding: 14px 18px;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            font-size: 1rem;
+        }
+
+            .form-control:focus, .form-select:focus {
+                border-color: #007bff;
+                box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.25);
+            }
+
+        textarea.form-control {
+            resize: vertical;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+            border-radius: 10px;
+            padding: 14px 35px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+            box-shadow: 0 6px 15px rgba(0, 123, 255, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+            .btn-primary:hover {
+                background-color: #0056b3;
+                border-color: #0056b3;
+                transform: translateY(-3px);
+                box-shadow: 0 8px 20px rgba(0, 123, 255, 0.4);
+            }
+
+        .btn-back-custom {
+            background-color: #6c757d;
+            border-color: #6c757d;
+            border-radius: 10px;
+            padding: 10px 20px;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 10px rgba(108, 117, 125, 0.2);
+            color: #fff;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+            .btn-back-custom:hover {
+                background-color: #5a6268;
+                border-color: #5a6268;
+                transform: translateY(-2px);
+                box-shadow: 0 6px 15px rgba(108, 117, 125, 0.3);
+                color: #fff;
+            }
+
+            .btn-back-custom:focus, .btn-back-custom:active {
+                outline: none;
+                box-shadow: 0 0 0 0.25rem rgba(108, 117, 125, 0.25);
+            }
+
+        .alert-info, .alert-success, .alert-danger {
+            border-radius: 10px;
+            padding: 18px 25px;
+            font-size: 1.05rem;
+            font-weight: 600;
+            margin-top: 25px;
+            animation: slideIn 0.5s ease-out;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        
+
+        .alert-info {
+            background-color: #e0f7fa;
+            color: #007b8e;
+            border-color: #b2ebf2;
+        }
+
+        .alert-success {
+            background-color: #e6ffed;
+            color: #28a745;
+            border-color: #b8f2c8;
+        }
+
+        .alert-danger {
+            background-color: #ffe6e6;
+            color: #dc3545;
+            border-color: #ffb3b3;
+        }
+
+        .text-danger {
+            font-size: 0.9em;
+            margin-top: 5px;
+            display: block;
+            color: #dc3545;
+        }
+
+        .item-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            align-items: flex-end; 
+        }
+
+            .item-row .form-group {
+                flex-grow: 1;
+                margin-bottom: 0; 
+            }
+
+                .item-row .form-group label {
+                    font-size: 0.95rem; 
+                    margin-bottom: 5px;
+                }
+
+            .item-row .form-control {
+                padding: 10px 12px; 
+                font-size: 0.95rem;
+            }
+
+            .item-row .remove-item-btn {
+                background-color: #dc3545;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                padding: 10px 15px;
+                cursor: pointer;
+                transition: background-color 0.2s ease;
+                font-size: 1rem;
+                height: 48px; 
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+                .item-row .remove-item-btn:hover {
+                    background-color: #c82333;
+                }
+
+        .add-item-btn {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 12px 25px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            font-size: 1rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+            .add-item-btn:hover {
+                background-color: #218838;
+            }
+
+        
+        .btn-primary {
+            width: 100%;
+            padding: 12px 25px;
+            font-size: 1.1rem;
+        }
+
+        .btn-back-custom, .add-item-btn {
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        .item-row {
+            flex-direction: column; 
+            gap: 0; 
+        }
+
+            .item-row .form-group {
+                width: 100%; 
+                margin-bottom: 15px; 
+            }
+
+            .item-row .remove-item-btn {
+                width: 100%;
+                margin-top: 5px;
+            }
+
+        }
+    </style>
+</head>
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-start mb-4">
+        <button type="button" class="btn btn-back-custom"
+                asp-controller="Home" asp-action="Details" asp-route-id="@serviceId">
+            <i class="fas fa-arrow-left"></i> Обратно към детайли на услугата
+        </button>
+    </div>
+
+    <h2 class="text-center">Генератор на Инвойси/Фактури</h2>
+
+    <div class="invoice-form-container">
+        <form id="invoiceGeneratorForm" method="post" enctype="multipart/form-data" action="/api/InvoiceGenerator/generate">
+            <div class="row">
+                <div class="col-md-6">
+                    <h3>Данни за фактурата</h3>
+                    <div class="form-group mb-4">
+                        <label for="invoiceNumber">Номер на фактура:</label>
+                        <input type="text" class="form-control" id="invoiceNumber" name="InvoiceNumber" required maxlength="50" placeholder="Напр. 20240001">
+                        <div class="text-danger" id="invoiceNumberError"></div>
+                    </div>
+                    <div class="form-group mb-4">
+                        <label for="issueDate">Дата на издаване:</label>
+                        <input type="date" class="form-control" id="issueDate" name="IssueDate" required>
+                        <div class="text-danger" id="issueDateError"></div>
+                    </div>
+
+                    <h3>Данни за продавача</h3>
+                    <div class="form-group mb-4">
+                        <label for="sellerName">Име/Фирма на продавача:</label>
+                        <input type="text" class="form-control" id="sellerName" name="SellerName" required maxlength="200" placeholder="Напр. 'Моята Фирма' ООД">
+                        <div class="text-danger" id="sellerNameError"></div>
+                    </div>
+                    <div class="form-group mb-4">
+                        <label for="sellerAddress">Адрес на продавача (по избор):</label>
+                        <input type="text" class="form-control" id="sellerAddress" name="SellerAddress" maxlength="500" placeholder="Напр. гр. София, ул. 'Примерна' №10">
+                        <div class="text-danger" id="sellerAddressError"></div>
+                    </div>
+                    <div class="form-group mb-4">
+                        <label for="sellerEIK">ЕИК/БУЛСТАТ на продавача (по избор):</label>
+                        <input type="text" class="form-control" id="sellerEIK" name="SellerEIK" maxlength="50" placeholder="Напр. 123456789">
+                        <div class="text-danger" id="sellerEIKError"></div>
+                    </div>
+                    <div class="form-group mb-4">
+                        <label for="sellerMOL">МОЛ на продавача (по избор):</label>
+                        <input type="text" class="form-control" id="sellerMOL" name="SellerMOL" maxlength="50" placeholder="Напр. Иван Петров">
+                        <div class="text-danger" id="sellerMOLError"></div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <h3>Данни за купувача</h3>
+                    <div class="form-group mb-4">
+                        <label for="buyerName">Име/Фирма на купувача:</label>
+                        <input type="text" class="form-control" id="buyerName" name="BuyerName" required maxlength="200" placeholder="Напр. 'Вашата Фирма' ЕООД">
+                        <div class="text-danger" id="buyerNameError"></div>
+                    </div>
+                    <div class="form-group mb-4">
+                        <label for="buyerAddress">Адрес на купувача (по избор):</label>
+                        <input type="text" class="form-control" id="buyerAddress" name="BuyerAddress" maxlength="500" placeholder="Напр. гр. Пловдив, бул. 'Централен' №5">
+                        <div class="text-danger" id="buyerAddressError"></div>
+                    </div>
+                    <div class="form-group mb-4">
+                        <label for="buyerEIK">ЕИК/БУЛСТАТ на купувача (по избор):</label>
+                        <input type="text" class="form-control" id="buyerEIK" name="BuyerEIK" maxlength="50" placeholder="Напр. 987654321">
+                        <div class="text-danger" id="buyerEIKError"></div>
+                    </div>
+                    <div class="form-group mb-4">
+                        <label for="buyerMOL">МОЛ на купувача (по избор):</label>
+                        <input type="text" class="form-control" id="buyerMOL" name="BuyerMOL" maxlength="50" placeholder="Напр. Мария Иванова">
+                        <div class="text-danger" id="buyerMOLError"></div>
+                    </div>
+
+                    <h3>Допълнителни настройки</h3>
+                    <div class="form-group mb-4">
+                        <label for="discountPercentage">Отстъпка (%):</label>
+                        <input type="number" step="0.01" class="form-control" id="discountPercentage" name="DiscountPercentage" min="0" max="100" value="0">
+                        <div class="text-danger" id="discountPercentageError"></div>
+                    </div>
+                    <div class="form-group mb-4">
+                        <label for="taxRatePercentage">Данъчна ставка (%):</label>
+                        <input type="number" step="0.01" class="form-control" id="taxRatePercentage" name="TaxRatePercentage" min="0" max="100" value="20">
+                        <div class="text-danger" id="taxRatePercentageError"></div>
+                    </div>
+                    <div class="form-group mb-4">
+                        <label for="paymentMethod">Начин на плащане (по избор):</label>
+                        <input type="text" class="form-control" id="paymentMethod" name="PaymentMethod" maxlength="500" placeholder="Напр. Банков превод, В брой">
+                        <div class="text-danger" id="paymentMethodError"></div>
+                    </div>
+                    <div class="form-group mb-4">
+                        <label for="notes">Бележки (по избор):</label>
+                        <textarea class="form-control" id="notes" name="Notes" rows="3" maxlength="1000" placeholder="Допълнителни бележки към фактурата."></textarea>
+                        <div class="text-danger" id="notesError"></div>
+                    </div>
+                </div>
+            </div>
+
+            <h3 class="mt-4">Артикули</h3>
+            <div id="invoiceItemsContainer">
+                <!-- Invoice items will be added here dynamically -->
+            </div>
+            <button type="button" id="addItemBtn" class="btn add-item-btn">
+                <i class="fas fa-plus-circle me-2"></i> Добави артикул
+            </button>
+            <div class="text-danger" id="itemsError"></div>
+
+
+            <div class="text-center mt-5">
+                <button type="submit" class="btn btn-primary">Генерирай Фактура</button>
+            </div>
+        </form>
+        <div id="messageArea" class="mt-4"></div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const invoiceItemsContainer = document.getElementById('invoiceItemsContainer');
+            const addItemBtn = document.getElementById('addItemBtn');
+            let itemCounter = 0;
+
+            
+            function addItemRow(description = '', quantity = '', unitPrice = '') {
+                const itemRow = document.createElement('div');
+                itemRow.classList.add('item-row');
+                itemRow.dataset.index = itemCounter; 
+
+                itemRow.innerHTML = `
+                    <div class="form-group flex-grow-1">
+                        <label for="itemDescription_${itemCounter}">Описание:</label>
+                        <input type="text" class="form-control" id="itemDescription_${itemCounter}" name="Items[${itemCounter}].Description" value="${description}" required maxlength="200" placeholder="Напр. Услуга X">
+                        <div class="text-danger" id="itemDescription_${itemCounter}Error"></div>
+                    </div>
+                    <div class="form-group" style="width: 150px;">
+                        <label for="itemQuantity_${itemCounter}">Количество:</label>
+                        <input type="number" step="0.01" class="form-control" id="itemQuantity_${itemCounter}" name="Items[${itemCounter}].Quantity" value="${quantity}" required min="0.01" max="1000000">
+                        <div class="text-danger" id="itemQuantity_${itemCounter}Error"></div>
+                    </div>
+                    <div class="form-group" style="width: 150px;">
+                        <label for="itemUnitPrice_${itemCounter}">Ед. цена (лв.):</label>
+                        <input type="number" step="0.01" class="form-control" id="itemUnitPrice_${itemCounter}" name="Items[${itemCounter}].UnitPrice" value="${unitPrice}" required min="0.01" max="10000000">
+                        <div class="text-danger" id="itemUnitPrice_${itemCounter}Error"></div>
+                    </div>
+                    <button type="button" class="remove-item-btn" data-index="${itemCounter}">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                `;
+
+                invoiceItemsContainer.appendChild(itemRow);
+
+                // Add event listener for remove button
+                itemRow.querySelector('.remove-item-btn').addEventListener('click', function () {
+                    itemRow.remove();
+                    reindexItems(); // Reindex after removal
+                });
+
+                itemCounter++;
+            }
+
+            function reindexItems() {
+                const rows = invoiceItemsContainer.querySelectorAll('.item-row');
+                rows.forEach((row, index) => {
+                    row.dataset.index = index;
+                    row.querySelector(`[id^="itemDescription_"]`).id = `itemDescription_${index}`;
+                    row.querySelector(`[name^="Items["]`).name = `Items[${index}].Description`;
+                    row.querySelector(`[id^="itemDescription_"]`).nextElementSibling.id = `itemDescription_${index}Error`; 
+
+                    row.querySelector(`[id^="itemQuantity_"]`).id = `itemQuantity_${index}`;
+                    row.querySelector(`[name$=".Quantity"]`).name = `Items[${index}].Quantity`;
+                    row.querySelector(`[id^="itemQuantity_"]`).nextElementSibling.id = `itemQuantity_${index}Error`;
+
+                    row.querySelector(`[id^="itemUnitPrice_"]`).id = `itemUnitPrice_${index}`;
+                    row.querySelector(`[name$=".UnitPrice"]`).name = `Items[${index}].UnitPrice`;
+                    row.querySelector(`[id^="itemUnitPrice_"]`).nextElementSibling.id = `itemUnitPrice_${index}Error`;
+
+                    row.querySelector('.remove-item-btn').dataset.index = index;
+                });
+                itemCounter = rows.length;
+            }
+
+
+          
+            addItemRow();
+
+          
+            addItemBtn.addEventListener('click', () => addItemRow());
+
+           
+            document.getElementById('invoiceGeneratorForm').addEventListener('submit', async function (event) {
+                event.preventDefault();
+
+                const form = event.target;
+                const messageArea = document.getElementById('messageArea');
+
+                messageArea.innerHTML = '';
+                document.querySelectorAll('.text-danger').forEach(el => el.textContent = '');
+
+                messageArea.innerHTML = '<div class="alert alert-info"><i class="fas fa-spinner fa-spin me-2"></i>Генерирането на фактура е в ход... Моля, изчакайте.</div>';
+
+                const requestData = {
+                    invoiceNumber: document.getElementById('invoiceNumber').value,
+                    issueDate: document.getElementById('issueDate').value,
+                    sellerName: document.getElementById('sellerName').value,
+                    sellerAddress: document.getElementById('sellerAddress').value,
+                    sellerEIK: document.getElementById('sellerEIK').value,
+                    sellerMOL: document.getElementById('sellerMOL').value,
+                    buyerName: document.getElementById('buyerName').value,
+                    buyerAddress: document.getElementById('buyerAddress').value,
+                    buyerEIK: document.getElementById('buyerEIK').value,
+                    buyerMOL: document.getElementById('buyerMOL').value,
+                    discountPercentage: parseFloat(document.getElementById('discountPercentage').value) || 0,
+                    taxRatePercentage: parseFloat(document.getElementById('taxRatePercentage').value) || 0,
+                    paymentMethod: document.getElementById('paymentMethod').value,
+                    notes: document.getElementById('notes').value,
+                    items: []
+                };
+
+            
+                const itemRows = invoiceItemsContainer.querySelectorAll('.item-row');
+                if (itemRows.length === 0) {
+                    document.getElementById('itemsError').textContent = 'Трябва да добавите поне един артикул.';
+                    messageArea.innerHTML = '<div class="alert alert-danger">Моля, коригирайте грешките във формата.</div>';
+                    return;
+                }
+
+                let isValid = true;
+                itemRows.forEach((row, index) => {
+                    const descriptionInput = row.querySelector(`[name="Items[${index}].Description"]`);
+                    const quantityInput = row.querySelector(`[name="Items[${index}].Quantity"]`);
+                    const unitPriceInput = row.querySelector(`[name="Items[${index}].UnitPrice"]`);
+
+                    const item = {
+                        description: descriptionInput.value,
+                        quantity: parseFloat(quantityInput.value),
+                        unitPrice: parseFloat(unitPriceInput.value)
+                    };
+
+                    // Client-side validation for items
+                    if (!item.description.trim()) {
+                        document.getElementById(`itemDescription_${index}Error`).textContent = 'Описанието е задължително.';
+                        isValid = false;
+                    } else if (item.description.length > 200) {
+                        document.getElementById(`itemDescription_${index}Error`).textContent = 'Описанието не може да надвишава 200 символа.';
+                        isValid = false;
+                    }
+
+                    if (isNaN(item.quantity) || item.quantity <= 0 || item.quantity > 1000000) {
+                        document.getElementById(`itemQuantity_${index}Error`).textContent = 'Количеството трябва да е положително число до 1 000 000.';
+                        isValid = false;
+                    }
+
+                    if (isNaN(item.unitPrice) || item.unitPrice <= 0 || item.unitPrice > 10000000) {
+                        document.getElementById(`itemUnitPrice_${index}Error`).textContent = 'Ед. цена трябва да е положително число до 10 000 000.';
+                        isValid = false;
+                    }
+
+                    requestData.items.push(item);
+                });
+
+                // Validate main fields
+                if (!requestData.invoiceNumber.trim()) {
+                    document.getElementById('invoiceNumberError').textContent = 'Номерът на фактурата е задължителен.';
+                    isValid = false;
+                } else if (requestData.invoiceNumber.length > 50) {
+                    document.getElementById('invoiceNumberError').textContent = 'Номерът на фактурата не може да надвишава 50 символа.';
+                    isValid = false;
+                }
+
+                if (!requestData.issueDate) {
+                    document.getElementById('issueDateError').textContent = 'Датата на издаване е задължителна.';
+                    isValid = false;
+                }
+
+                if (!requestData.sellerName.trim()) {
+                    document.getElementById('sellerNameError').textContent = 'Името на продавача е задължително.';
+                    isValid = false;
+                } else if (requestData.sellerName.length > 200) {
+                    document.getElementById('sellerNameError').textContent = 'Името на продавача не може да надвишава 200 символа.';
+                    isValid = false;
+                }
+
+                if (requestData.sellerAddress.length > 500) {
+                    document.getElementById('sellerAddressError').textContent = 'Адресът на продавача не може да надвишава 500 символа.';
+                    isValid = false;
+                }
+                if (requestData.sellerEIK.length > 50) {
+                    document.getElementById('sellerEIKError').textContent = 'ЕИК/БУЛСТАТ на продавача не може да надвишава 50 символа.';
+                    isValid = false;
+                }
+                if (requestData.sellerMOL.length > 50) {
+                    document.getElementById('sellerMOLError').textContent = 'МОЛ на продавача не може да надвишава 50 символа.';
+                    isValid = false;
+                }
+
+                if (!requestData.buyerName.trim()) {
+                    document.getElementById('buyerNameError').textContent = 'Името на купувача е задължително.';
+                    isValid = false;
+                } else if (requestData.buyerName.length > 200) {
+                    document.getElementById('buyerNameError').textContent = 'Името на купувача не може да надвишава 200 символа.';
+                    isValid = false;
+                }
+
+                if (requestData.buyerAddress.length > 500) {
+                    document.getElementById('buyerAddressError').textContent = 'Адресът на купувача не може да надвишава 500 символа.';
+                    isValid = false;
+                }
+                if (requestData.buyerEIK.length > 50) {
+                    document.getElementById('buyerEIKError').textContent = 'ЕИК/БУЛСТАТ на купувача не може да надвишава 50 символа.';
+                    isValid = false;
+                }
+                if (requestData.buyerMOL.length > 50) {
+                    document.getElementById('buyerMOLError').textContent = 'МОЛ на купувача не може да надвишава 50 символа.';
+                    isValid = false;
+                }
+
+                if (isNaN(requestData.discountPercentage) || requestData.discountPercentage < 0 || requestData.discountPercentage > 100) {
+                    document.getElementById('discountPercentageError').textContent = 'Отстъпката трябва да е между 0 и 100.';
+                    isValid = false;
+                }
+                if (isNaN(requestData.taxRatePercentage) || requestData.taxRatePercentage < 0 || requestData.taxRatePercentage > 100) {
+                    document.getElementById('taxRatePercentageError').textContent = 'Данъчната ставка трябва да е между 0 и 100.';
+                    isValid = false;
+                }
+
+                if (requestData.paymentMethod.length > 500) {
+                    document.getElementById('paymentMethodError').textContent = 'Начинът на плащане не може да надвишава 500 символа.';
+                    isValid = false;
+                }
+                if (requestData.notes.length > 1000) {
+                    document.getElementById('notesError').textContent = 'Бележките не могат да надвишават 1000 символа.';
+                    isValid = false;
+                }
+
+
+                if (!isValid) {
+                    messageArea.innerHTML = '<div class="alert alert-danger">Моля, коригирайте грешките във формата.</div>';
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/api/InvoiceGenerator/generate', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify(requestData)
+                    });
+
+                    if (response.ok) {
+                        const blob = await response.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+
+                        const contentDisposition = response.headers.get('Content-Disposition');
+                        let filename = "generated_invoice.pdf";
+                        if (contentDisposition && contentDisposition.indexOf('filename=') !== -1) {
+                            const filenameMatch = /filename\*?=['"]?(?:UTF-8'')?([^;"]+)/i.exec(contentDisposition);
+                            if (filenameMatch && filenameMatch[1]) {
+                                filename = decodeURIComponent(filenameMatch[1].replace(/\+/g, ' '));
+                            }
+                        }
+
+                        a.download = filename;
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        a.remove();
+
+                        messageArea.innerHTML = `<div class="alert alert-success"><i class="fas fa-check-circle me-2"></i>Файлът на фактурата '${filename}' е успешно генериран и изтеглен!</div>`;
+                    } else {
+                        let errorText = await response.text();
+                        try {
+                            const errorJson = JSON.parse(errorText);
+                            if (errorJson.errors) {
+                                // Handle specific item errors if provided by the server
+                                if (errorJson.errors["Items[0].Description"]) { // Example for first item
+                                    document.getElementById('itemDescription_0Error').textContent = errorJson.errors["Items[0].Description"].join('; ');
+                                }
+                                // General errors for main fields
+                                if (errorJson.errors.InvoiceNumber) {
+                                    document.getElementById('invoiceNumberError').textContent = errorJson.errors.InvoiceNumber.join('; ');
+                                }
+                                if (errorJson.errors.IssueDate) {
+                                    document.getElementById('issueDateError').textContent = errorJson.errors.IssueDate.join('; ');
+                                }
+                                if (errorJson.errors.SellerName) {
+                                    document.getElementById('sellerNameError').textContent = errorJson.errors.SellerName.join('; ');
+                                }
+                                if (errorJson.errors.SellerAddress) {
+                                    document.getElementById('sellerAddressError').textContent = errorJson.errors.SellerAddress.join('; ');
+                                }
+                                if (errorJson.errors.SellerEIK) {
+                                    document.getElementById('sellerEIKError').textContent = errorJson.errors.SellerEIK.join('; ');
+                                }
+                                if (errorJson.errors.SellerMOL) {
+                                    document.getElementById('sellerMOLError').textContent = errorJson.errors.SellerMOL.join('; ');
+                                }
+                                if (errorJson.errors.BuyerName) {
+                                    document.getElementById('buyerNameError').textContent = errorJson.errors.BuyerName.join('; ');
+                                }
+                                if (errorJson.errors.BuyerAddress) {
+                                    document.getElementById('buyerAddressError').textContent = errorJson.errors.BuyerAddress.join('; ');
+                                }
+                                if (errorJson.errors.BuyerEIK) {
+                                    document.getElementById('buyerEIKError').textContent = errorJson.errors.BuyerEIK.join('; ');
+                                }
+                                if (errorJson.errors.BuyerMOL) {
+                                    document.getElementById('buyerMOLError').textContent = errorJson.errors.BuyerMOL.join('; ');
+                                }
+                                if (errorJson.errors.DiscountPercentage) {
+                                    document.getElementById('discountPercentageError').textContent = errorJson.errors.DiscountPercentage.join('; ');
+                                }
+                                if (errorJson.errors.TaxRatePercentage) {
+                                    document.getElementById('taxRatePercentageError').textContent = errorJson.errors.TaxRatePercentage.join('; ');
+                                }
+                                if (errorJson.errors.PaymentMethod) {
+                                    document.getElementById('paymentMethodError').textContent = errorJson.errors.PaymentMethod.join('; ');
+                                }
+                                if (errorJson.errors.Notes) {
+                                    document.getElementById('notesError').textContent = errorJson.errors.Notes.join('; ');
+                                }
+                                if (errorJson.errors.Items) {
+                                    document.getElementById('itemsError').textContent = errorJson.errors.Items.join('; ');
+                                }
+                            }
+                            errorText = errorJson.message || response.statusText;
+                        } catch (e) {
+                            console.error("Failed to parse error response as JSON:", e);
+                        }
+                        messageArea.innerHTML = `<div class="alert alert-danger"><i class="fas fa-times-circle me-2"></i>Грешка при генериране на фактура: ${errorText}</div>`;
+                    }
+                } catch (error) {
+                    console.error('Fetch error:', error);
+                    messageArea.innerHTML = `<div class="alert alert-danger"><i class="fas fa-exclamation-triangle me-2"></i>Възникна мрежова грешка: ${error.message}.</div>`;
+                }
+            });
+        });
+    </script>
+}
