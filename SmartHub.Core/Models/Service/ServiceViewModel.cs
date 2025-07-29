@@ -16,11 +16,11 @@ namespace ServiceHub.Core.Models.Service
         public string Description { get; set; } = null!;
         public string CategoryName { get; set; } = null!;
         public AccessType AccessType { get; set; } 
-        public bool IsBusinessOnly { get; set; } 
+ 
         public int ReviewCount { get; set; }
         public double AverageRating { get; set; }
-        public bool IsFavorite { get; set; } 
-
+        public bool IsFavorite { get; set; }
+        public int ViewsCount { get; set; } = 0;
         public IEnumerable<ReviewViewModel> Reviews { get; set; } = new List<ReviewViewModel>(); 
     }
 }

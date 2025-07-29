@@ -11,7 +11,7 @@ namespace ServiceHub.Services.Interfaces
     public interface IServiceService
     {
 
-        Task<IEnumerable<ServiceViewModel>> GetAllAsync(string? filter = null, string? sort = null, string? currentUserId = null);
+        Task<IEnumerable<ServiceViewModel>> GetAllAsync(string? categoryFilter = null,string? accessTypeFilter = null, string? filter = null, string? sort = null,string? currentUserId = null);
         Task<ServiceViewModel> GetByIdAsync(Guid id, string? currentUserId);
         Task CreateAsync(ServiceFormModel model);
         Task UpdateAsync(Guid id, ServiceFormModel model);
@@ -19,7 +19,7 @@ namespace ServiceHub.Services.Interfaces
 
         Task AddReviewAsync(Guid serviceId, string userId, ReviewFormModel model);
 
-
+        Task IncrementViewsCount(Guid serviceId);
         Task<ServiceFormModel> GetServiceForEditAsync(Guid id);
     }
 }

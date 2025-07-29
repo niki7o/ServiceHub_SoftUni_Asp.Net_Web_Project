@@ -48,81 +48,51 @@ namespace ServiceHub.Controllers
             _categoryRepository = categoryRepository;
         }
 
-        public async Task<IActionResult> All(string? categoryFilter, string? accessTypeFilter)
+        [HttpGet]
+        public async Task<IActionResult> All(string? categoryFilter,string? accessTypeFilter,string? filter,string? sort)
         {
+            string? currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
             var allCategories = await _categoryRepository.All().OrderBy(c => c.Name).ToListAsync();
-            ViewBag.Categories = new SelectList(allCategories, "Name", "Name", categoryFilter);
+            var categoriesList = allCategories.Select(c => new SelectListItem { Value = c.Name, Text = c.Name }).ToList();
+            categoriesList.Insert(0, new SelectListItem { Value = "", Text = "All Categories" });
+            ViewBag.Categories = new SelectList(categoriesList, "Value", "Text", categoryFilter);
+            ViewBag.CurrentCategory = categoryFilter;
 
             var allAccessTypes = Enum.GetNames(typeof(AccessType))
                                      .Select(name => new SelectListItem { Value = name, Text = name })
                                      .ToList();
+            allAccessTypes.Insert(0, new SelectListItem { Value = "", Text = "All Access Types" });
             ViewBag.AccessTypes = new SelectList(allAccessTypes, "Value", "Text", accessTypeFilter);
-
-            ViewBag.CurrentCategory = categoryFilter;
             ViewBag.CurrentAccessType = accessTypeFilter;
 
-            IQueryable<Service> servicesQuery = serviceRepository.All().Include(s => s.Category);
+            ViewBag.CurrentFilter = filter;
+            ViewBag.CurrentSort = sort;
 
-            if (!string.IsNullOrEmpty(categoryFilter))
-            {
-                servicesQuery = servicesQuery.Where(s => s.Category != null && s.Category.Name == categoryFilter);
-            }
 
-            if (!string.IsNullOrEmpty(accessTypeFilter))
-            {
-                if (Enum.TryParse<AccessType>(accessTypeFilter, true, out AccessType parsedAccessType))
-                {
-                    servicesQuery = servicesQuery.Where(s => s.AccessType == parsedAccessType);
-                }
-            }
+            var services = await serviceService.GetAllAsync(categoryFilter, accessTypeFilter, filter, sort, currentUserId);
 
-            var services = await servicesQuery.ToListAsync();
-
-            var serviceDisplayDtos = services.Select(s => new ServiceSeedModel
-            {
-                Id = s.Id,
-                Title = s.Title,
-                Description = s.Description,
-                Category = s.Category != null ? s.Category.Name : "N/A",
-                AccessType = s.AccessType.ToString(),
-
-            }).ToList();
-
-            return View(serviceDisplayDtos);
+            return View(services);
         }
 
         public async Task<IActionResult> Details(Guid id)
         {
-            var service = await serviceRepository.All()
-                                                 .Include(s => s.Category)
-                                                 .Include(s => s.Reviews)
-                                                     .ThenInclude(r => r.User)
-                                                 .FirstOrDefaultAsync(s => s.Id == id);
+            string? currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            if (service == null)
+          
+            await serviceService.IncrementViewsCount(id);
+            _logger.LogInformation($"Controller.Details: Извикан IncrementViewsCount за ServiceId: {id}.");
+
+            
+            var serviceViewModel = await serviceService.GetByIdAsync(id, currentUserId);
+
+            if (serviceViewModel == null)
             {
+                _logger.LogWarning($"Controller.Details: Услуга с ID {id} не е намерена след увеличение на брояча.");
                 return NotFound();
             }
 
-            var serviceViewModel = new ServiceViewModel
-            {
-                Id = service.Id,
-                Title = service.Title,
-                Description = service.Description,
-                IsBusinessOnly = service.IsBusinessOnly,
-                AccessType = service.AccessType,
-                CategoryName = service.Category.Name,
-                Reviews = service.Reviews.Select(r => new ReviewViewModel
-                {
-                    Id = r.Id,
-                    Rating = r.Rating,
-                    Comment = r.Comment,
-                    UserName = r.User.UserName,
-                    CreatedOn = r.CreatedOn
-                }).ToList(),
-                AverageRating = service.Reviews.Any() ? service.Reviews.Average(r => r.Rating) : 0,
-                ReviewCount = service.Reviews.Count
-            };
+            _logger.LogInformation($"Controller.Details: ServiceId: {serviceViewModel.Id}, ViewsCount (във ViewModel): {serviceViewModel.ViewsCount}, IsFavorite: {serviceViewModel.IsFavorite} за потребител: {currentUserId}");
 
             bool canUseService = false;
             if (User.Identity.IsAuthenticated)
@@ -134,18 +104,13 @@ namespace ServiceHub.Controllers
                     bool isBusinessUser = await userManager.IsInRoleAsync(user, "BusinessUser");
                     bool isRegularUser = await userManager.IsInRoleAsync(user, "User");
 
-                    if (isAdmin)
+                    if (isAdmin || isBusinessUser)
                     {
                         canUseService = true;
-                    }
-                    else if (isBusinessUser)
-                    {
-                        canUseService = true;
-                        canUseService = service.IsBusinessOnly;
                     }
                     else if (isRegularUser)
                     {
-                        if (service.AccessType == AccessType.Free || service.AccessType == AccessType.Partial)
+                        if (serviceViewModel.AccessType == AccessType.Free || serviceViewModel.AccessType == AccessType.Partial)
                         {
                             canUseService = true;
                         }
@@ -157,7 +122,6 @@ namespace ServiceHub.Controllers
 
             return View(serviceViewModel);
         }
-
         [HttpGet("Service/UseService/{id}")]
         public async Task<IActionResult> UseService(Guid id)
         {

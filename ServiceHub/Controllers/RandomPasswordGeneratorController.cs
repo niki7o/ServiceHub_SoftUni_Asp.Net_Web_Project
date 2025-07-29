@@ -5,22 +5,22 @@ using ServiceHub.Services.Interfaces;
 namespace ServiceHub.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")] // Base route: /api/RandomPasswordGenerator
+    [Route("api/[controller]")] 
     public class RandomPasswordGeneratorController : ControllerBase
     {
         private readonly ILogger<RandomPasswordGeneratorController> _logger;
-        private readonly IRandomPasswordGeneratorService _passwordGeneratorService; // Инжектиран сервиз
+        private readonly IRandomPasswordGeneratorService _passwordGeneratorService; 
 
         public RandomPasswordGeneratorController(
             ILogger<RandomPasswordGeneratorController> logger,
-            IRandomPasswordGeneratorService passwordGeneratorService) // Добавен сервиз в конструктора
+            IRandomPasswordGeneratorService passwordGeneratorService)
         {
             _logger = logger;
             _passwordGeneratorService = passwordGeneratorService;
         }
 
-        [HttpPost("generate")] // Full route: /api/RandomPasswordGenerator/generate
-        public async Task<IActionResult> GeneratePassword([FromBody] PasswordGenerateRequestModel request) // Направен async
+        [HttpPost("generate")] 
+        public async Task<IActionResult> GeneratePassword([FromBody] PasswordGenerateRequestModel request) 
         {
             if (!ModelState.IsValid)
             {
@@ -29,7 +29,6 @@ namespace ServiceHub.Controllers
                 return BadRequest(ModelState);
             }
 
-            // Делегиране на логиката към сервиза
             var response = await _passwordGeneratorService.GeneratePasswordAsync(request);
 
             if (!string.IsNullOrEmpty(response.Message) && response.GeneratedPassword == "") 
@@ -37,7 +36,7 @@ namespace ServiceHub.Controllers
                 return BadRequest(new { message = response.Message });
             }
 
-            return Ok(response); // Връщане на отговора от сервиза
+            return Ok(response); 
         }
     }
 }

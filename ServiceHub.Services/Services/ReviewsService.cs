@@ -35,7 +35,6 @@ namespace ServiceHub.Services.Services
                 throw new ArgumentException("Service not found.");
             }
 
-            // Optional: Check if user exists, though userId comes from authenticated context
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
             {
@@ -63,7 +62,7 @@ namespace ServiceHub.Services.Services
                 throw new ArgumentException("Review not found.");
             }
 
-            // Authorization: Only the original author can edit a review. Admins cannot edit.
+           
             if (review.UserId != currentUserId)
             {
                 throw new UnauthorizedAccessException("You are not authorized to edit this review.");
@@ -84,7 +83,6 @@ namespace ServiceHub.Services.Services
                 throw new ArgumentException("Review not found.");
             }
 
-            // Authorization: Only the original author can update.
             if (review.UserId != currentUserId)
             {
                 throw new UnauthorizedAccessException("You are not authorized to update this review.");
@@ -92,7 +90,7 @@ namespace ServiceHub.Services.Services
 
             review.Rating = model.Rating;
             review.Comment = model.Comment;
-            review.ModifiedOn = DateTime.UtcNow; // Set modification timestamp
+            review.ModifiedOn = DateTime.UtcNow; 
 
             _reviewRepository.Update(review);
             await _reviewRepository.SaveChangesAsync();
@@ -106,7 +104,7 @@ namespace ServiceHub.Services.Services
                 throw new ArgumentException("Review not found.");
             }
 
-            // Authorization: Original author OR Admin can delete.
+            
             if (review.UserId != currentUserId && !isAdmin)
             {
                 throw new UnauthorizedAccessException("You are not authorized to delete this review.");

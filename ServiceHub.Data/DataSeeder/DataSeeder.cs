@@ -161,7 +161,6 @@ namespace ServiceHub.Data.DataSeeder
                         logger.LogInformation($"Successfully read services.json content. Length: {json.Length}");
                         try
                         {
-                            // Ensure ServiceSeedModel matches your JSON structure
                             var serviceSeedModels = JsonSerializer.Deserialize<List<ServiceSeedModel>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
                             if (serviceSeedModels != null && serviceSeedModels.Any())
@@ -188,7 +187,7 @@ namespace ServiceHub.Data.DataSeeder
                                     if (!Enum.TryParse(seedModel.AccessType, true, out AccessType accessTypeEnum))
                                     {
                                         logger.LogWarning($"Could not parse AccessType '{seedModel.AccessType}' for service '{seedModel.Title}'. Defaulting to 'Free'.");
-                                        accessTypeEnum = AccessType.Free; // Default to Free if parse fails
+                                        accessTypeEnum = AccessType.Free; 
                                     }
 
                                     var service = new Service

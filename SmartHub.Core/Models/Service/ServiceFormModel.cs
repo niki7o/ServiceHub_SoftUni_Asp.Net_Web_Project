@@ -18,8 +18,6 @@ namespace ServiceHub.Core.Models.Service
         [StringLength(1000, MinimumLength = 10, ErrorMessage = "Description must be between 10 and 1000 characters.")]
         public string Description { get; set; } = null!;
 
-        [Display(Name = "Business Only")]
-        public bool IsBusinessOnly { get; set; }
 
         [Required(ErrorMessage = "Category is required.")]
         [Display(Name = "Category")]

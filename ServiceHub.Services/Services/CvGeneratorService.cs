@@ -42,9 +42,7 @@ namespace ServiceHub.Services.Services
                         Orientation = Orientation.Portrait,
                         PaperSize = PaperKind.A4,
                         Margins = new MarginSettings() { Top = 10, Bottom = 10, Left = 10, Right = 10 },
-                        // Ако wkhtmltopdf.exe не е в PATH, може да се наложи да посочите пътя тук.
-                        // Пример: "C:\\Program Files\\wkhtmltopdf\\bin\\wkhtmltopdf.exe"
-                        // Ако сте го копирали в ServiceHub.Web/Rotativa, тогава DinkToPdf трябва да го намери автоматично.
+                      
                     },
                     Objects = {
                         new ObjectSettings() {

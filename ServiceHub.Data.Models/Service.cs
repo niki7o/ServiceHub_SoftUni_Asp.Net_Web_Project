@@ -19,7 +19,6 @@ namespace ServiceHub.Data.Models
 
         public string Description { get; set; } = null!;
 
-        public bool IsBusinessOnly { get; set; }
 
         public Guid CategoryId { get; set; }
         public virtual Category Category { get; set; } = null!;
@@ -27,7 +26,8 @@ namespace ServiceHub.Data.Models
         public virtual ICollection<Review> Reviews { get; set; } = new HashSet<Review>();
         public virtual ICollection<Favorite> Favorites { get; set; }
         public AccessType AccessType { get; set; }
+        public int ViewsCount { get; set; } = 0;
 
-        
+
     }
 }

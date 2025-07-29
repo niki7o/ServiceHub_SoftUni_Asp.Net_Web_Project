@@ -21,7 +21,7 @@ namespace ServiceHub.Services.Services
 
     public Task<WordCharacterCountResponseModel> CountTextAsync(WordCharacterCountRequestModel request)
     {
-        // NEW LOG: Log the incoming request text
+    
         _logger.LogInformation("CountTextAsync received request.Text: '{RequestText}' (Length: {TextLength})",
                                request.Text ?? "[NULL]", request.Text?.Length ?? 0);
 
@@ -37,25 +37,23 @@ namespace ServiceHub.Services.Services
             });
         }
 
-        // Count characters (including whitespace)
+       
         int charCount = request.Text.Length;
 
-        // More robust word counting using Regex to split by any non-alphanumeric characters
-        // and then filtering out empty entries. This handles multiple spaces, punctuation better.
+       
         int wordCount = Regex.Matches(request.Text, @"\b\w+\b").Count;
 
-        // Count lines: Split by newline characters. If the text is not empty, there's at least one line.
-        // Handles cases with empty lines or just a single line without a newline at the end.
+       
         int lineCount = request.Text.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None)
                                     .Length;
-        // If the text is not empty but contains only newlines, ensure lineCount is at least 1.
+      
         if (string.IsNullOrWhiteSpace(request.Text) && lineCount > 0)
         {
-            lineCount = 0; // If only whitespace/newlines, but no actual content, consider 0 lines.
+            lineCount = 0;
         }
         else if (!string.IsNullOrWhiteSpace(request.Text) && lineCount == 0)
         {
-            lineCount = 1; // If there's text but no newlines, it's at least one line.
+            lineCount = 1; 
         }
 
 

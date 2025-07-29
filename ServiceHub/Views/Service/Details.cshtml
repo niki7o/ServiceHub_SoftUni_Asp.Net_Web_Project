@@ -49,12 +49,6 @@
             @Html.DisplayFor(model => model.Description)
         </dd>
         <dt class="col-sm-3">
-            Is Business Only
-        </dt>
-        <dd class="col-sm-9">
-            @Html.DisplayFor(model => model.IsBusinessOnly)
-        </dd>
-        <dt class="col-sm-3">
             Access Type
         </dt>
         <dd class="col-sm-9">
@@ -71,6 +65,12 @@
         </dt>
         <dd class="col-sm-9">
             @Model.AverageRating.ToString("F1") / 5 (@Model.ReviewCount reviews)
+        </dd>
+        <dt class="col-sm-3">
+            Views @* Етикет за броя преглеждания *@
+        </dt>
+        <dd class="col-sm-9">
+            @Model.ViewsCount @* **КЛЮЧОВО: Покажете стойността на ViewsCount от модела** *@
         </dd>
     </dl>
 
@@ -125,7 +125,7 @@
             <a asp-controller="Subscription" asp-action="Upgrade" class="btn btn-info">Upgrade Plan</a>
         }
 
-        <form asp-controller="Favorite" asp-action="ToggleFavorite" asp-route-serviceId="@Model.Id" method="post" class="d-inline">
+        <form asp-controller="Service" asp-action="ToggleFavorite" asp-route-serviceId="@Model.Id" method="post" class="d-inline">
             @Html.AntiForgeryToken()
             @if (Model.IsFavorite)
             {
@@ -160,5 +160,4 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-    
 }

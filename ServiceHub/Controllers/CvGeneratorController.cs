@@ -18,7 +18,7 @@ namespace ServiceHub.Controllers
             _logger = logger;
         }
 
-        [HttpGet("/CvGenerator/CvGeneratorForm")] // Абсолютен маршрут за View-то
+        [HttpGet("/CvGenerator/CvGeneratorForm")] 
         public IActionResult CvGeneratorForm()
         {
             _logger.LogInformation("Serving CvGeneratorForm view.");

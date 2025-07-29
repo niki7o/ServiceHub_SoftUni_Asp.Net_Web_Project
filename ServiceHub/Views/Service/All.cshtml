@@ -1,27 +1,29 @@
-﻿
-@using ServiceHub.Data.DataSeeder
+﻿@model IEnumerable<ServiceHub.Core.Models.Service.ServiceViewModel>
 @using ServiceHub.Data.Models
-@model IEnumerable<ServiceSeedModel>
+@using ServiceHub.Common.Enum
+@using System.Security.Claims
 
 @{
-    ViewData["Title"] = "All Services";
+    ViewData["Title"] = "Всики Услуги";
     var categories = ViewBag.Categories as SelectList;
     var accessTypes = ViewBag.AccessTypes as SelectList;
     var currentCategory = ViewBag.CurrentCategory;
     var currentAccessType = ViewBag.CurrentAccessType;
+    var currentFilter = ViewBag.CurrentFilter;
+    var currentSort = ViewBag.CurrentSort;
 }
 
 <h1>All Services</h1>
 
 <p>
-    <a asp-action="Create">Create New Service</a>
+    <a asp-action="Create" class="btn btn-primary">Създай услуга шаблон</a>
 </p>
 
 <div class="filter-section mb-3 p-3 border rounded bg-light">
     <form asp-action="All" method="get">
         <div class="row g-3 align-items-end">
-            <div class="col-md-4">
-                <label for="categoryFilter" class="form-label">Category:</label>
+            <div class="col-md-3">
+                <label for="categoryFilter" class="form-label">Категория:</label>
                 <select name="categoryFilter" id="categoryFilter" class="form-select">
                     @if (categories != null)
                     {
@@ -32,8 +34,8 @@
                     }
                 </select>
             </div>
-            <div class="col-md-4">
-                <label for="accessTypeFilter" class="form-label">Access Type:</label>
+            <div class="col-md-3">
+                <label for="accessTypeFilter" class="form-label">План:</label>
                 <select name="accessTypeFilter" id="accessTypeFilter" class="form-select">
                     @if (accessTypes != null)
                     {
@@ -44,9 +46,26 @@
                     }
                 </select>
             </div>
-            <div class="col-md-4">
-                <button type="submit" class="btn btn-primary">Filter</button>
-                <a asp-action="All" class="btn btn-secondary ms-2">Clear Filter</a>
+            <div class="col-md-3">
+                <label for="filter" class="form-label">Филтриране по:</label>
+                <select name="filter" id="filter" class="form-select">
+                    <option value="" selected="@(string.IsNullOrEmpty(currentFilter))">None</option>
+                    <option value="favorite" selected="@("favorite" == currentFilter)">Любими</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="sort" class="form-label">Сортирай по:</label>
+                <select name="sort" id="sort" class="form-select">
+                    <option value="" selected="@(string.IsNullOrEmpty(currentSort))">По подразбиране</option>
+                    <option value="az" selected="@("az" == currentSort)">Азбучен ред (A-Z)</option>
+                    <option value="za" selected="@("za" == currentSort)">Обратен ред (Z-A)</option>
+                    <option value="recent" selected="@("recent" == currentSort)">Най-нови</option>
+                    <option value="mostviewed" selected="@("mostviewed" == currentSort)">Най-посещавани</option>
+                </select>
+            </div>
+            <div class="col-12 text-end">
+                <button type="submit" class="btn btn-primary">Прилагане на филтри и сортиране</button>
+                <a asp-action="All" class="btn btn-secondary ms-2">Изчисти всички</a>
             </div>
         </div>
     </form>
@@ -55,12 +74,14 @@
 <table class="table table-striped">
     <thead>
         <tr>
-            <th>Title</th>
-            <th>Description</th>
-            <th>Category</th>
-            <th>Access Type</th>
-            <th>Active</th>
-            <th>Actions</th>
+            <th>Заглавие</th>
+            <th>Описание</th>
+            <th>Категория</th>
+            <th>План</th>
+            <th>Ревюта</th>
+            <th>Rейтинг</th>
+            <th>Посетители</th>
+            <th>Действия</th>
         </tr>
     </thead>
     <tbody>
@@ -71,17 +92,24 @@
                 <tr>
                     <td>@service.Title</td>
                     <td>@service.Description</td>
-                    <td>@service.Category</td>
+                    <td>@service.CategoryName</td>
                     <td>@service.AccessType</td>
-                 
+                    <td>@service.ReviewCount</td>
+                    <td>@service.AverageRating.ToString("F1") / 5</td>
+                    <td>@service.ViewsCount</td>
                     <td>
                         @if (User.Identity.IsAuthenticated)
                         {
-                            <a asp-action="Details" asp-route-id="@service.Id" class="btn btn-info btn-sm me-1">Details</a>
+                            <a asp-action="Details" asp-route-id="@service.Id" class="btn btn-info btn-sm me-1">Детайли</a>
                             @if (User.IsInRole("Admin"))
                             {
-                                <a asp-action="Edit" asp-route-id="@service.Id" class="btn btn-warning btn-sm">Edit</a>
+                                <a asp-action="Edit" asp-route-id="@service.Id" class="btn btn-warning btn-sm">Настройки</a>
+                                <a asp-action="Delete" asp-route-id="@service.Id" class="btn btn-danger btn-sm">Изтрий</a>
                             }
+                        }
+                        else
+                        {
+                            <a asp-action="Details" asp-route-id="@service.Id" class="btn btn-info btn-sm me-1">Детайли</a>
                         }
                     </td>
                 </tr>
@@ -90,7 +118,7 @@
         else
         {
             <tr>
-                <td colspan="6">No services found matching the criteria.</td>
+                <td colspan="8">No services found matching the criteria.</td>
             </tr>
         }
     </tbody>

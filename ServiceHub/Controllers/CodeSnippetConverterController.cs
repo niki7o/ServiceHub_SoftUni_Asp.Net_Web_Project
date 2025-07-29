@@ -37,10 +37,9 @@ namespace ServiceHub.Controllers
             string sourceLang = request.SourceLanguage.ToLower();
             string targetLang = request.TargetLanguage.ToLower();
 
-            // Simplified conversion logic
             if (sourceLang == targetLang)
             {
-                convertedCode = request.SourceCode; // Just return the original code
+                convertedCode = request.SourceCode; 
                 message = "Изходният и целевият език не могат да бъдат еднакви. Върнат е оригиналният код.";
             }
             else if (sourceLang == "c#")
@@ -450,7 +449,7 @@ namespace ServiceHub.Controllers
         private string ConvertPhpToJavaScript(string phpCode)
         {
             var sb = new StringBuilder();
-            // Remove PHP tags for processing
+           
             string cleanPhpCode = Regex.Replace(phpCode, @"<\?php|\?>", "").Trim();
             var lines = cleanPhpCode.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
 
