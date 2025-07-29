@@ -118,23 +118,37 @@ namespace ServiceHub.Services.Services
 
         private FileContentData ExtractContentFromOriginalFile(byte[] fileContent, string fileName)
         {
-            string originalFileExtension = Path.GetExtension(fileName)?.ToLowerInvariant() ?? string.Empty;
-            string textContent = string.Empty;
-            byte[]? imageBytes = null;
+            _logger.LogInformation($"ExtractContentFromOriginalFile: Обработва се файл: '{fileName}'");
 
             if (fileContent == null || fileContent.Length == 0)
             {
+                _logger.LogError("ExtractContentFromOriginalFile: Оригиналният файл е празен или липсва.");
                 return new FileContentData { IsSuccess = false, ErrorMessage = "Оригиналният файл е празен или липсва." };
             }
 
+            string originalFileExtension = Path.GetExtension(fileName)?.ToLowerInvariant() ?? string.Empty;
+
+            
+            if (string.IsNullOrWhiteSpace(originalFileExtension) || originalFileExtension == ".")
+            {
+                _logger.LogError($"ExtractContentFromOriginalFile: Невалидно или липсващо разширение на файла: '{fileName}'. Получено разширение: '{originalFileExtension}'");
+                return new FileContentData { IsSuccess = false, ErrorMessage = $"Не може да се извлече съдържание от файл без разширение или с невалидно разширение (получено: '{originalFileExtension}')." };
+            }
+
+           
+            originalFileExtension = originalFileExtension.TrimStart('.');
+
+            string textContent = string.Empty;
+            byte[]? imageBytes = null;
+
             switch (originalFileExtension)
             {
-                case ".txt":
-                case ".csv":
+                case "txt":
+                case "csv":
                     try
                     {
                         textContent = Encoding.UTF8.GetString(fileContent);
-                        _logger.LogInformation($"Successfully extracted text from {originalFileExtension} file using UTF-8.");
+                        _logger.LogInformation($"Successfully extracted text from .{originalFileExtension} file using UTF-8.");
                     }
                     catch (DecoderFallbackException)
                     {
@@ -142,25 +156,25 @@ namespace ServiceHub.Services.Services
                         {
                             Encoding win1251 = Encoding.GetEncoding("windows-1251");
                             textContent = win1251.GetString(fileContent);
-                            _logger.LogInformation($"Successfully extracted text from {originalFileExtension} file using Windows-1251.");
+                            _logger.LogInformation($"Successfully extracted text from .{originalFileExtension} file using Windows-1251.");
                         }
                         catch (Exception ex)
                         {
-                            _logger.LogError(ex, $"Error reading original {originalFileExtension} file content with alternative encodings.");
-                            return new FileContentData { IsSuccess = false, ErrorMessage = $"Грешка при четене на текст от {originalFileExtension} с различни кодирания." };
+                            _logger.LogError(ex, $"Error reading original .{originalFileExtension} file content with alternative encodings.");
+                            return new FileContentData { IsSuccess = false, ErrorMessage = $"Грешка при четене на текст от .{originalFileExtension} с различни кодирания." };
                         }
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, $"Error reading original {originalFileExtension} file content.");
-                        return new FileContentData { IsSuccess = false, ErrorMessage = $"Грешка при четене на текст от {originalFileExtension}." };
+                        _logger.LogError(ex, $"Error reading original .{originalFileExtension} file content.");
+                        return new FileContentData { IsSuccess = false, ErrorMessage = $"Грешка при четене на текст от .{originalFileExtension}." };
                     }
                     break;
 
-                case ".docx":
+                case "docx":
                     try
                     {
-                        using (WordprocessingDocument wordDocument = WordprocessingDocument.Open(new MemoryStream(fileContent), false))
+                        using (DocumentFormat.OpenXml.Packaging.WordprocessingDocument wordDocument = DocumentFormat.OpenXml.Packaging.WordprocessingDocument.Open(new MemoryStream(fileContent), false))
                         {
                             textContent = wordDocument.MainDocumentPart?.Document?.Body?.InnerText ?? string.Empty;
                         }
@@ -173,7 +187,7 @@ namespace ServiceHub.Services.Services
                     }
                     break;
 
-                case ".pdf":
+                case "pdf":
                     try
                     {
                         using (var document = PdfDocument.Open(fileContent))
@@ -194,18 +208,18 @@ namespace ServiceHub.Services.Services
                     }
                     break;
 
-                case ".jpg":
-                case ".png":
-                case ".jpeg":
+                case "jpg":
+                case "png":
+                case "jpeg":
                     imageBytes = fileContent;
                     textContent = $"--- Изображение '{fileName}' (OCR изисква специализирана библиотека) ---";
-                    _logger.LogWarning($"Image content from {originalFileExtension} used. OCR not implemented. Placeholder text used.");
+                    _logger.LogWarning($"Image content from .{originalFileExtension} used. OCR not implemented. Placeholder text used.");
                     break;
 
-                case ".xlsx":
+                case "xlsx":
                     try
                     {
-                        using (var package = new ExcelPackage(new MemoryStream(fileContent)))
+                        using (var package = new OfficeOpenXml.ExcelPackage(new MemoryStream(fileContent)))
                         {
                             var worksheet = package.Workbook.Worksheets.FirstOrDefault();
                             if (worksheet != null)
@@ -248,8 +262,8 @@ namespace ServiceHub.Services.Services
                     break;
 
                 default:
-                    _logger.LogWarning($"Content extraction not implemented for original file type: {originalFileExtension}.");
-                    return new FileContentData { IsSuccess = false, ErrorMessage = $"Извличането на съдържание от '{originalFileExtension}' файлове не е имплементирано." };
+                    _logger.LogWarning($"Content extraction not implemented for original file type: .{originalFileExtension}.");
+                    return new FileContentData { IsSuccess = false, ErrorMessage = $"Извличането на съдържание от '.{originalFileExtension}' файлове не е имплементирано." };
             }
 
             return new FileContentData { IsSuccess = true, TextContent = textContent, ImageBytes = imageBytes };

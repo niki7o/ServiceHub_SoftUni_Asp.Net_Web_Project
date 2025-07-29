@@ -2,6 +2,7 @@
 using ServiceHub.Common;
 using ServiceHub.Core.Models.Service.FileConverter;
 using ServiceHub.Services.Interfaces;
+using System.Diagnostics;
 
 namespace ServiceHub.Controllers
 {
@@ -28,7 +29,8 @@ namespace ServiceHub.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error accessing ServiceConstants.FileConverterServiceId. Ensure it is a valid GUID.");
-                return View("Error", new { RequestId = "Invalid ServiceId Configuration" });
+             
+                return View("Error", new { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
             }
 
             return View("~/Views/Service/_FileConverterForm.cshtml");
@@ -39,7 +41,7 @@ namespace ServiceHub.Controllers
         public async Task<IActionResult> Convert(
             [FromForm(Name = "ServiceId")] Guid serviceId,
             [FromForm(Name = "FileContent")] IFormFile fileContent,
-            [FromForm(Name = "OriginalFileName")] string? originalFileName,
+            [FromForm(Name = "OriginalFileName")] string? originalFileNameInput, // Променено име на параметъра
             [FromForm(Name = "TargetFormat")] string targetFormat,
             [FromForm(Name = "PerformOCRIfApplicable")] bool performOCRIfApplicable)
         {
@@ -74,11 +76,16 @@ namespace ServiceHub.Controllers
                 fileBytes = memoryStream.ToArray();
             }
 
+            
+            string finalOriginalFileName = string.IsNullOrWhiteSpace(originalFileNameInput)
+                                            ? fileContent.FileName 
+                                            : originalFileNameInput; 
+
             var serviceRequest = new FileConvertRequest
             {
                 ServiceId = serviceId,
                 FileContent = fileBytes,
-                OriginalFileName = originalFileName ?? fileContent.FileName,
+                OriginalFileName = finalOriginalFileName, 
                 TargetFormat = targetFormat,
                 PerformOCRIfApplicable = performOCRIfApplicable
             };
@@ -94,7 +101,13 @@ namespace ServiceHub.Controllers
                     _logger.LogInformation($"File conversion successful for '{fileConvertResult.ConvertedFileName}'.");
                     if (fileConvertResult.ConvertedFileContent != null && fileConvertResult.ConvertedFileContent.Length > 0)
                     {
-                        return File(fileConvertResult.ConvertedFileContent, fileConvertResult.ContentType ?? "application/octet-stream", fileConvertResult.ConvertedFileName);
+                        string finalContentType = fileConvertResult.ContentType ?? "application/octet-stream";
+                        if (fileConvertResult.TargetFormat.ToLowerInvariant() == "pdf")
+                        {
+                            finalContentType = "application/pdf";
+                        }
+
+                        return File(fileConvertResult.ConvertedFileContent, finalContentType, fileConvertResult.ConvertedFileName);
                     }
                     else
                     {
@@ -114,6 +127,5 @@ namespace ServiceHub.Controllers
                 return BadRequest(new { message = $"Грешка при конвертиране на файла: {response.ErrorMessage ?? "Неизвестна грешка."}" });
             }
         }
-    
     }
 }

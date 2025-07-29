@@ -12,7 +12,7 @@ namespace ServiceHub.Services.Services
     public class RandomPasswordGeneratorService : IRandomPasswordGeneratorService
     {
         private readonly ILogger<RandomPasswordGeneratorService> _logger;
-        private static readonly Random random = new Random(); // Използваме статичен Random за по-добро разпределение
+        private static readonly Random random = new Random(); 
 
         private const string lower = "abcdefghijklmnopqrstuvwxyz";
         private const string upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -26,7 +26,7 @@ namespace ServiceHub.Services.Services
 
         public Task<PasswordGenerateResponseModel> GeneratePasswordAsync(PasswordGenerateRequestModel request)
         {
-            // Валидация, която може да се дублира и в контролера чрез ModelState.IsValid
+         
             if (request.Length < 1 || request.Length > 128)
             {
                 _logger.LogWarning("Invalid password length requested: {Length}", request.Length);

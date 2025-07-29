@@ -32,5 +32,7 @@ namespace ServiceHub.Core.Models.Tools
 
         [StringLength(2000, ErrorMessage = "Уменията не могат да надвишават 2000 символа.")]
         public string? Skills { get; set; }
+        [StringLength(1000, ErrorMessage = "Резюмето не може да надвишава 1000 символа.")]
+        public string? Summary { get; set; }
     }
 }
