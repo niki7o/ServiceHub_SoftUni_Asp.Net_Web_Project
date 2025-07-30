@@ -27,7 +27,6 @@ namespace ServiceHub.Data.Models
         public virtual ICollection<Favorite> Favorites { get; set; }
         public AccessType AccessType { get; set; }
         public int ViewsCount { get; set; } = 0;
-
-
+        public string? ServiceConfigJson { get; set; }
     }
 }

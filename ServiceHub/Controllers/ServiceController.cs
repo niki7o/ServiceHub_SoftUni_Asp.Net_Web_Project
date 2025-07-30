@@ -10,7 +10,7 @@ using ServiceHub.Core.Models.Reviews;
 using ServiceHub.Core.Models.Service;
 using ServiceHub.Core.Models.Service.FileConverter;
 using ServiceHub.Core.Models.Tools;
-using ServiceHub.Data.DataSeeder;
+
 using ServiceHub.Data.Models;
 using ServiceHub.Services.Interfaces;
 using System.Diagnostics;
@@ -218,6 +218,7 @@ namespace ServiceHub.Controllers
                 ViewBag.SupportedLanguages = new List<string> { "C#", "Python", "JavaScript", "PHP" };
                 return View("~/Views/Service/_CodeSnippetConverter.cshtml");
             }
+          
             else
             {
                 _logger.LogWarning($"Service {service.Title} ({service.Id}) found and accessible, but no specific form View is configured.");

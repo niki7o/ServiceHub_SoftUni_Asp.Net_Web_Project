@@ -12,8 +12,8 @@ using ServiceHub.Data;
 namespace ServiceHub.Data.Migrations
 {
     [DbContext(typeof(ServiceHubDbContext))]
-    [Migration("20250729083045_NewServiceProperty")]
-    partial class NewServiceProperty
+    [Migration("20250730221830_FinalMigrationWithCorrectUserHashes")]
+    partial class FinalMigrationWithCorrectUserHashes
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -50,6 +50,29 @@ namespace ServiceHub.Data.Migrations
                         .HasFilter("[NormalizedName] IS NOT NULL");
 
                     b.ToTable("AspNetRoles", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = "99049752-95b1-477d-944a-f34589d31b09",
+                            ConcurrencyStamp = "6921f7d1-0e82-4f24-83c1-f0ae0ee9eacd",
+                            Name = "Admin",
+                            NormalizedName = "ADMIN"
+                        },
+                        new
+                        {
+                            Id = "0c8b3e8e-c25e-44d7-84f9-2c7b5a1b3e4f",
+                            ConcurrencyStamp = "65cc6550-cba0-414d-b2b4-3114a2a56902",
+                            Name = "BusinessUser",
+                            NormalizedName = "BUSINESSUSER"
+                        },
+                        new
+                        {
+                            Id = "1d9c4f9f-a36a-4d6b-b5e0-3d8c6b2a5f7e",
+                            ConcurrencyStamp = "f20bb15d-6946-4250-9fd3-7dfdc7688d67",
+                            Name = "User",
+                            NormalizedName = "USER"
+                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -139,6 +162,23 @@ namespace ServiceHub.Data.Migrations
                     b.HasIndex("RoleId");
 
                     b.ToTable("AspNetUserRoles", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            UserId = "2e7a5b6c-d4e5-4f7g-h8i9-0j1k2l3m4n5o",
+                            RoleId = "99049752-95b1-477d-944a-f34589d31b09"
+                        },
+                        new
+                        {
+                            UserId = "3f8b6c7d-e5f6-4g8h-i9j0-1k2l3m4n5o6p",
+                            RoleId = "0c8b3e8e-c25e-44d7-84f9-2c7b5a1b3e4f"
+                        },
+                        new
+                        {
+                            UserId = "4g9c7d8e-f6g7-4h9i-j0k1-2l3m4n5o6p7q",
+                            RoleId = "1d9c4f9f-a36a-4d6b-b5e0-3d8c6b2a5f7e"
+                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
@@ -231,6 +271,59 @@ namespace ServiceHub.Data.Migrations
                         .HasFilter("[NormalizedUserName] IS NOT NULL");
 
                     b.ToTable("AspNetUsers", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = "2e7a5b6c-d4e5-4f7g-h8i9-0j1k2l3m4n5o",
+                            AccessFailedCount = 0,
+                            ConcurrencyStamp = "8f981569-defc-4ee9-a80a-b24742ba5933",
+                            Email = "admin@servicehub.com",
+                            EmailConfirmed = true,
+                            IsBusiness = false,
+                            LockoutEnabled = false,
+                            NormalizedEmail = "ADMIN@SERVICEHUB.COM",
+                            NormalizedUserName = "ADMINUSER",
+                            PasswordHash = "AQAAAAIAAYagAAAAEHDyY+bWGj5b4NCEQ22sdDwwgOXUGzd14Jna1PWwgUGuAT5uDIm3rppo3ro8FK2jdw==",
+                            PhoneNumberConfirmed = false,
+                            SecurityStamp = "5330dbf4-8e4a-48ce-8b8f-d75d31da852f",
+                            TwoFactorEnabled = false,
+                            UserName = "adminuser"
+                        },
+                        new
+                        {
+                            Id = "3f8b6c7d-e5f6-4g8h-i9j0-1k2l3m4n5o6p",
+                            AccessFailedCount = 0,
+                            ConcurrencyStamp = "7061c07e-e396-4a0a-aca5-c2ceda13ee1c",
+                            Email = "business@servicehub.com",
+                            EmailConfirmed = true,
+                            IsBusiness = false,
+                            LockoutEnabled = false,
+                            NormalizedEmail = "BUSINESS@SERVICEHUB.COM",
+                            NormalizedUserName = "BUSINESSUSER",
+                            PasswordHash = "AQAAAAIAAYagAAAAEDvbXwCicbCkwIgkmtihHz+xB9VVltKmrmML+xT00yGnQH57wYtvDJ18a/xQQWvCXA==",
+                            PhoneNumberConfirmed = false,
+                            SecurityStamp = "c70b2d64-f218-4736-9f54-dd9c79f17b8b",
+                            TwoFactorEnabled = false,
+                            UserName = "businessuser"
+                        },
+                        new
+                        {
+                            Id = "4g9c7d8e-f6g7-4h9i-j0k1-2l3m4n5o6p7q",
+                            AccessFailedCount = 0,
+                            ConcurrencyStamp = "473d805a-28eb-410b-b3f6-fbf15e909de3",
+                            Email = "user@servicehub.com",
+                            EmailConfirmed = true,
+                            IsBusiness = false,
+                            LockoutEnabled = false,
+                            NormalizedEmail = "USER@SERVICEHUB.COM",
+                            NormalizedUserName = "REGULARUSER",
+                            PasswordHash = "AQAAAAIAAYagAAAAEKY0c1iTAtyn5l0NSl/Trn0F1PZ9MRgXUKO2ErqWpvmLb0X7LhGC0RoeprNGZ2paXg==",
+                            PhoneNumberConfirmed = false,
+                            SecurityStamp = "6777badc-f86e-4580-b79b-77dec4eeb594",
+                            TwoFactorEnabled = false,
+                            UserName = "regularuser"
+                        });
                 });
 
             modelBuilder.Entity("ServiceHub.Data.Models.Category", b =>
@@ -256,6 +349,22 @@ namespace ServiceHub.Data.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Categories");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("a0a0a0a0-a0a0-a0a0-a0a0-000000000001"),
+                            CreatedOn = new DateTime(2025, 7, 30, 22, 18, 29, 92, DateTimeKind.Utc).AddTicks(9208),
+                            Description = "Инструменти за работа с документи.",
+                            Name = "Документи"
+                        },
+                        new
+                        {
+                            Id = new Guid("b1b1b1b1-b1b1-b1b1-b1b1-000000000002"),
+                            CreatedOn = new DateTime(2025, 7, 30, 22, 18, 29, 92, DateTimeKind.Utc).AddTicks(9227),
+                            Description = "Различни общи инструменти.",
+                            Name = "Инструменти"
+                        });
                 });
 
             modelBuilder.Entity("ServiceHub.Data.Models.Favorite", b =>
@@ -343,6 +452,9 @@ namespace ServiceHub.Data.Migrations
                     b.Property<DateTime?>("ModifiedOn")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("ServiceConfigJson")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -355,6 +467,107 @@ namespace ServiceHub.Data.Migrations
                     b.HasIndex("CategoryId");
 
                     b.ToTable("Services");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("1d4ae40b-c305-47b7-beed-163c4a0aeb40"),
+                            AccessType = 1,
+                            CategoryId = new Guid("a0a0a0a0-a0a0-a0a0-a0a0-000000000001"),
+                            CreatedOn = new DateTime(2025, 7, 30, 22, 18, 29, 93, DateTimeKind.Utc).AddTicks(5647),
+                            Description = "Конвертира различни файлови формати (напр. PDF към DOCX, JPG към PNG).",
+                            ServiceConfigJson = "{\"toolName\": \"FileConverter\", \"endpoint\": \"/api/FileConverter/convert\", \"method\": \"POST\"}",
+                            Title = "Конвертор на Файлове",
+                            ViewsCount = 0
+                        },
+                        new
+                        {
+                            Id = new Guid("e11e539c-0290-4171-b606-16628d1790b0"),
+                            AccessType = 1,
+                            CategoryId = new Guid("b1b1b1b1-b1b1-b1b1-b1b1-000000000002"),
+                            CreatedOn = new DateTime(2025, 7, 30, 22, 18, 29, 93, DateTimeKind.Utc).AddTicks(5655),
+                            Description = "Преобразува код между програмни езици (напр. C# към Python).",
+                            ServiceConfigJson = "{\"toolName\": \"CodeConverter\", \"endpoint\": \"/api/CodeConverter/convert\", \"method\": \"POST\"}",
+                            Title = "Конвертор на Кодови Снипети",
+                            ViewsCount = 0
+                        },
+                        new
+                        {
+                            Id = new Guid("c10de2fa-b49b-4c0d-9e8f-142b3cd40e6f"),
+                            AccessType = 0,
+                            CategoryId = new Guid("b1b1b1b1-b1b1-b1b1-b1b1-000000000002"),
+                            CreatedOn = new DateTime(2025, 7, 30, 22, 18, 29, 93, DateTimeKind.Utc).AddTicks(5660),
+                            Description = "Преобразува текст в главни букви, малки букви или заглавен регистър.",
+                            ServiceConfigJson = "{\"toolName\": \"TextCaseConverter\", \"endpoint\": \"/api/TextCaseConverter/convert\", \"method\": \"POST\"}",
+                            Title = "Конвертор на Текст (Главни/Малки букви)",
+                            ViewsCount = 0
+                        },
+                        new
+                        {
+                            Id = new Guid("f0c72c7b-709d-44b7-81c1-1e5ab73305ec"),
+                            AccessType = 2,
+                            CategoryId = new Guid("a0a0a0a0-a0a0-a0a0-a0a0-000000000001"),
+                            CreatedOn = new DateTime(2025, 7, 30, 22, 18, 29, 93, DateTimeKind.Utc).AddTicks(5664),
+                            Description = "Въвеждаш данни и получаваш готово CV в PDF формат.",
+                            ServiceConfigJson = "{\"toolName\": \"CVGenerator\", \"endpoint\": \"/api/CVGenerator/generate\", \"method\": \"POST\"}",
+                            Title = "Автоматично CV/Резюме",
+                            ViewsCount = 0
+                        },
+                        new
+                        {
+                            Id = new Guid("f5e402c0-91ba-4f8e-97d0-3b443fe10d3c"),
+                            AccessType = 0,
+                            CategoryId = new Guid("b1b1b1b1-b1b1-b1b1-b1b1-000000000002"),
+                            CreatedOn = new DateTime(2025, 7, 30, 22, 18, 29, 93, DateTimeKind.Utc).AddTicks(5668),
+                            Description = "Генерира силни, случайни пароли с конфигурируеми опции.",
+                            ServiceConfigJson = "{\"toolName\": \"PasswordGenerator\", \"endpoint\": \"/api/PasswordGenerator/generate\", \"method\": \"GET\"}",
+                            Title = "Генератор на Случайни Пароли",
+                            ViewsCount = 0
+                        },
+                        new
+                        {
+                            Id = new Guid("b422f89b-e7a3-4130-b899-7b56010007e0"),
+                            AccessType = 2,
+                            CategoryId = new Guid("a0a0a0a0-a0a0-a0a0-a0a0-000000000001"),
+                            CreatedOn = new DateTime(2025, 7, 30, 22, 18, 29, 93, DateTimeKind.Utc).AddTicks(5673),
+                            Description = "Въвеждаш данни и получаваш изчислена фактура.",
+                            ServiceConfigJson = "{\"toolName\": \"InvoiceGenerator\", \"endpoint\": \"/api/InvoiceGenerator/generate\", \"method\": \"POST\"}",
+                            Title = "Генератор на Инвойси/Фактури",
+                            ViewsCount = 0
+                        },
+                        new
+                        {
+                            Id = new Guid("2ef43d87-d749-4d7d-9b7d-f7c4f527bea7"),
+                            AccessType = 2,
+                            CategoryId = new Guid("b1b1b1b1-b1b1-b1b1-b1b1-000000000002"),
+                            CreatedOn = new DateTime(2025, 7, 30, 22, 18, 29, 93, DateTimeKind.Utc).AddTicks(5676),
+                            Description = "Изчислява ROI, бюджети, прогнозни приходи и разходи.",
+                            ServiceConfigJson = "{\"toolName\": \"FinancialCalculator\", \"endpoint\": \"/api/FinancialCalculator/calculate\", \"method\": \"POST\"}",
+                            Title = "Финансов Калкулатор / Анализатор",
+                            ViewsCount = 0
+                        },
+                        new
+                        {
+                            Id = new Guid("3a7b8b0c-1d2e-4f5a-a837-3d5e9f1a2b0c"),
+                            AccessType = 0,
+                            CategoryId = new Guid("b1b1b1b1-b1b1-b1b1-b1b1-000000000002"),
+                            CreatedOn = new DateTime(2025, 7, 30, 22, 18, 29, 93, DateTimeKind.Utc).AddTicks(5687),
+                            Description = "Преброява думи, символи и редове във въведен текст.",
+                            ServiceConfigJson = "{\"toolName\": \"WordCharacterCounter\", \"endpoint\": \"/api/WordCharacter/count\", \"method\": \"POST\"}",
+                            Title = "Брояч на Думи и Символи",
+                            ViewsCount = 0
+                        },
+                        new
+                        {
+                            Id = new Guid("8edc2d04-00f5-4630-b5a9-4fa499fc7210"),
+                            AccessType = 2,
+                            CategoryId = new Guid("a0a0a0a0-a0a0-a0a0-a0a0-000000000001"),
+                            CreatedOn = new DateTime(2025, 7, 30, 22, 18, 29, 93, DateTimeKind.Utc).AddTicks(5691),
+                            Description = "Генерира автоматично договори с шаблони (наем, труд и др.).",
+                            ServiceConfigJson = "{\"toolName\": \"ContractGenerator\", \"endpoint\": \"/api/ContractGenerator/generate\", \"method\": \"POST\"}",
+                            Title = "Генератор на Договори",
+                            ViewsCount = 0
+                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>

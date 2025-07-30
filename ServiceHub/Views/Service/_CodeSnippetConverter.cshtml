@@ -1,49 +1,69 @@
-﻿@{
-    ViewData["Title"] = "Конвертор на Кодови Снипети";
-    var supportedLanguages = ViewBag.SupportedLanguages as List<string> ?? new List<string>();
+﻿@model ServiceHub.Core.Models.Tools.CodeSnippetConvertRequestModel
+@{
+    ViewData["Title"] = "Конвертор на Кодови Снипети"; 
+    var supportedLanguages = ViewBag.SupportedLanguages as List<string> ?? new List<string> { "C#", "Python", "JavaScript", "PHP" };
 }
 
-<h2 class="text-center my-4">Конвертор на Кодови Снипети</h2>
+<h2 class="text-center my-4 text-primary font-weight-bold">Конвертор на Кодови Снипети</h2>
+<p class="text-center text-muted mb-4">Конвертирайте програмни кодове между различни езици бързо и лесно.</p>
 
 <div class="container mt-4">
-    <div class="row">
-        <div class="col-md-6">
-            <div class="form-group">
-                <label for="sourceCode">Въведете изходен код:</label>
-                <textarea class="form-control" id="sourceCode" rows="15" placeholder="Въведете вашия код тук..."></textarea>
+    <div class="card shadow-lg rounded-lg">
+        <div class="card-body p-4 p-md-5">
+            <div class="row">
+                <div class="col-md-6 border-right pr-md-4">
+                    <h3 class="h5 text-secondary mb-3">Въведете код за конвертиране</h3>
+                    <div class="form-group mb-3">
+                        <label for="sourceLanguage" class="form-label font-weight-bold">Изходен език:</label>
+                        <select id="sourceLanguage" class="form-control form-control-lg rounded-pill">
+                            <option value="">-- Изберете изходен език --</option>
+                            @foreach (var lang in supportedLanguages)
+                            {
+                                <option value="@lang">@lang</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label for="targetLanguage" class="form-label font-weight-bold">Целеви език:</label>
+                        <select id="targetLanguage" class="form-control form-control-lg rounded-pill">
+                            <option value="">-- Изберете целеви език --</option>
+                            @foreach (var lang in supportedLanguages)
+                            {
+                                <option value="@lang">@lang</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="form-group mb-4">
+                        <label for="sourceCode" class="form-label font-weight-bold">Изходен код:</label>
+                        <textarea id="sourceCode" rows="12" class="form-control rounded-lg" placeholder="Въведете вашия код тук..."></textarea>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button id="convertCodeButton" class="btn btn-primary btn-lg rounded-pill shadow-sm">
+                            <i class="fas fa-sync-alt me-2"></i> Конвертирай Код
+                        </button>
+                    </div>
+                </div>
+
+                <div class="col-md-6 pl-md-4 mt-4 mt-md-0">
+                    <h3 class="h5 text-secondary mb-3">Конвертиран код</h3>
+                    <div class="form-group mb-4">
+                        <textarea id="convertedCode" rows="18" class="form-control rounded-lg bg-light text-dark" readonly></textarea>
+                    </div>
+                    <div id="conversionMessage" class="mt-2 p-3 rounded" style="display:none;"></div>
+                </div>
             </div>
-            <div class="form-group mt-3">
-                <label for="sourceLanguage">Изходен език:</label>
-                <select class="form-control" id="sourceLanguage">
-                    @foreach (var lang in supportedLanguages)
-                    {
-                        <option value="@lang">@lang</option>
-                    }
-                </select>
-            </div>
-            <div class="form-group mt-3">
-                <label for="targetLanguage">Целеви език:</label>
-                <select class="form-control" id="targetLanguage">
-                    @foreach (var lang in supportedLanguages)
-                    {
-                        <option value="@lang">@lang</option>
-                    }
-                </select>
-            </div>
-            <button id="convertCodeButton" class="btn btn-primary mt-3">Конвертирай Код</button>
-        </div>
-        <div class="col-md-6">
-            <div class="form-group">
-                <label for="convertedCode">Конвертиран код:</label>
-                <textarea class="form-control" id="convertedCode" rows="15" readonly style="background-color: #e9ecef;"></textarea>
-            </div>
-            <div id="conversionMessage" class="mt-2 text-info" style="display:none;"></div>
         </div>
     </div>
 </div>
 
 @section Scripts {
     <script>
+       
+      
+
         document.getElementById('convertCodeButton').addEventListener('click', async () => {
             const sourceCode = document.getElementById('sourceCode').value;
             const sourceLanguage = document.getElementById('sourceLanguage').value;
@@ -51,26 +71,49 @@
             const convertedCodeOutput = document.getElementById('convertedCode');
             const conversionMessage = document.getElementById('conversionMessage');
 
-            convertedCodeOutput.value = ''; 
+          
+            convertedCodeOutput.value = '';
             conversionMessage.style.display = 'none';
             conversionMessage.textContent = '';
+            conversionMessage.className = 'mt-2 p-3 rounded'; 
 
+            
             if (!sourceCode.trim()) {
                 conversionMessage.textContent = 'Моля, въведете изходен код.';
-                conversionMessage.className = 'mt-2 text-danger';
+                conversionMessage.classList.add('alert', 'alert-danger');
+                conversionMessage.style.display = 'block';
+                return;
+            }
+
+            if (!sourceLanguage) {
+                conversionMessage.textContent = 'Моля, изберете изходен език.';
+                conversionMessage.classList.add('alert', 'alert-danger');
+                conversionMessage.style.display = 'block';
+                return;
+            }
+
+            if (!targetLanguage) {
+                conversionMessage.textContent = 'Моля, изберете целеви език.';
+                conversionMessage.classList.add('alert', 'alert-danger');
                 conversionMessage.style.display = 'block';
                 return;
             }
 
             if (sourceLanguage === targetLanguage) {
                 conversionMessage.textContent = 'Изходният и целевият език не могат да бъдат еднакви.';
-                conversionMessage.className = 'mt-2 text-warning';
+                conversionMessage.classList.add('alert', 'alert-warning');
                 conversionMessage.style.display = 'block';
                 convertedCodeOutput.value = sourceCode; 
                 return;
             }
 
             try {
+               
+                conversionMessage.textContent = 'Конвертиране на кода... Моля, изчакайте.';
+                conversionMessage.classList.add('alert', 'alert-info');
+                conversionMessage.style.display = 'block';
+                document.getElementById('convertCodeButton').disabled = true; 
+
                 const response = await fetch('/api/CodeSnippetConverter/convert', {
                     method: 'POST',
                     headers: {
@@ -88,7 +131,8 @@
                     const result = await response.json();
                     convertedCodeOutput.value = result.convertedCode;
                     conversionMessage.textContent = result.message || 'Конвертирането е успешно.';
-                    conversionMessage.className = 'mt-2 text-success';
+                    conversionMessage.classList.remove('alert-info', 'alert-danger', 'alert-warning');
+                    conversionMessage.classList.add('alert', 'alert-success');
                     conversionMessage.style.display = 'block';
                 } else {
                     let errorMessage = `Грешка: ${response.status} ${response.statusText}`;
@@ -99,15 +143,21 @@
                         errorMessage = `Грешка: ${response.status} ${response.statusText}. Невалиден отговор от сървъра.`;
                         console.error('Failed to parse error response as JSON:', jsonError);
                     }
+                    convertedCodeOutput.value = ''; 
                     conversionMessage.textContent = errorMessage;
-                    conversionMessage.className = 'mt-2 text-danger';
+                    conversionMessage.classList.remove('alert-info', 'alert-success', 'alert-warning');
+                    conversionMessage.classList.add('alert', 'alert-danger');
                     conversionMessage.style.display = 'block';
                 }
             } catch (error) {
                 console.error('Fetch error:', error);
+                convertedCodeOutput.value = ''; 
                 conversionMessage.textContent = `Възникна мрежова грешка: ${error.message}.`;
-                conversionMessage.className = 'mt-2 text-danger';
+                conversionMessage.classList.remove('alert-info', 'alert-success', 'alert-warning');
+                conversionMessage.classList.add('alert', 'alert-danger');
                 conversionMessage.style.display = 'block';
+            } finally {
+                document.getElementById('convertCodeButton').disabled = false; 
             }
         });
     </script>

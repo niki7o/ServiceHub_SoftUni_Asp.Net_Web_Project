@@ -18,7 +18,6 @@ namespace ServiceHub.Common
 
         public static readonly Guid RandomPasswordGeneratorServiceId = Guid.Parse("F5E402C0-91BA-4F8E-97D0-3B443FE10D3C");
 
-        public static readonly Guid WebPoliciesGeneratorServiceId = Guid.Parse("D15A147A-24D4-4B47-8EBA-6C62E19DE1FF");
 
         public static readonly Guid InvoiceReceiptGeneratorId = Guid.Parse("B422F89B-E7A3-4130-B899-7B56010007E0"); 
 

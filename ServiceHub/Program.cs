@@ -1,18 +1,20 @@
 ﻿using DinkToPdf;
 using DinkToPdf.Contracts;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using OfficeOpenXml;
 using ServiceHub.Common;
 using ServiceHub.Data;
-using ServiceHub.Data.DataSeeder;
+
 using ServiceHub.Data.Models;
 using ServiceHub.Services.Interfaces;
 using ServiceHub.Services.Services;
 using ServiceHub.Services.Services.Repository;
 using System.ComponentModel;
 using System.Text.Json;
+
 
 
 using System.Text.Json.Serialization;
@@ -25,21 +27,20 @@ namespace ServiceHub
         {
             var builder = WebApplication.CreateBuilder(args);
 
-
-
-         
-
            
             builder.Services.AddSingleton(typeof(IConverter), new SynchronizedConverter(new PdfTools()));
 
+          
             ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
 
+           
             var connectionString = builder.Configuration.GetConnectionString("ServiceHubDbContextConnection") ??
                                    throw new InvalidOperationException("Connection string 'ServiceHubDbContextConnection' not found.");
             builder.Services.AddDbContext<ServiceHubDbContext>(options =>
-                                options.UseSqlServer(connectionString));
+                               options.UseSqlServer(connectionString));
             builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
+           
             builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
             {
                 options.SignIn.RequireConfirmedAccount = false;
@@ -49,10 +50,10 @@ namespace ServiceHub
                 options.Password.RequireNonAlphanumeric = false;
                 options.Password.RequiredLength = 6;
             })
-            .AddRoles<IdentityRole>()
+            .AddRoles<IdentityRole>() 
             .AddEntityFrameworkStores<ServiceHubDbContext>();
 
-
+          
             builder.Services.AddControllersWithViews()
                 .AddJsonOptions(options =>
                 {
@@ -62,20 +63,21 @@ namespace ServiceHub
                 });
             builder.Services.AddRazorPages();
 
+            
             builder.Services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
-
             builder.Services.AddScoped<IServiceService, ServicesService>();
             builder.Services.AddScoped<IReviewService, ReviewsService>();
-
             builder.Services.AddScoped<IFileConverterService, FileConverterService>();
             builder.Services.AddScoped<IContractGeneratorService, ContractGeneratorService>();
-            builder.Services.AddScoped<ICvGeneratorService, CvGeneratorService>(); 
+            builder.Services.AddScoped<ICvGeneratorService, CvGeneratorService>();
             builder.Services.AddScoped<IWordCharacterCounterService, WordCharacterCounterService>();
             builder.Services.AddScoped<IRandomPasswordGeneratorService, RandomPasswordGeneratorService>();
             builder.Services.AddScoped<ITextCaseConverterService, TextCaseConverterService>();
             builder.Services.AddScoped<IInvoiceGeneratorService, InvoiceGeneratorService>();
             builder.Services.AddScoped<IFinancialCalculatorService, FinancialCalculatorService>();
+            builder.Services.AddScoped<ICodeSnippetConverterService, CodeSnippetConverterService>();
 
+           
             builder.Services.AddScoped<IServiceDispatcher, ServiceDispatcher>(sp =>
             {
                 var logger = sp.GetRequiredService<ILogger<ServiceDispatcher>>();
@@ -89,40 +91,35 @@ namespace ServiceHub
                     { ServiceConstants.ContractGeneratorServiceId, typeof(IContractGeneratorService) },
                     { ServiceConstants.InvoiceReceiptGeneratorId, typeof(IInvoiceGeneratorService) },
                     { ServiceConstants.FinancialCalculatorAnalyzerId, typeof(IFinancialCalculatorService) },
-                    //{ ServiceConstants.CodeSnippetConverterServiceId, typeof(ICodeSnippetConverterService) }
+                    { ServiceConstants.CodeSnippetConverterServiceId, typeof(ICodeSnippetConverterService) }
                 };
                 return new ServiceDispatcher(sp, logger, serviceImplementations);
             });
 
             var app = builder.Build();
 
+
             using (var scope = app.Services.CreateScope())
             {
                 var services = scope.ServiceProvider;
-                var logger = services.GetRequiredService<ILogger<Program>>();
-
                 try
                 {
                     var dbContext = services.GetRequiredService<ServiceHubDbContext>();
-                    var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
                     var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+                    var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
 
-                    logger.LogInformation("Applying database migrations...");
                     await dbContext.Database.MigrateAsync();
-                    logger.LogInformation("Database migrations applied successfully.");
 
-                    logger.LogInformation("Starting Data Seeder execution...");
-                    await DataSeeder.SeedRolesAsync(roleManager, logger);
-                    await DataSeeder.SeedUsersAsync(userManager, logger);
-                    await DataSeeder.SeedCategoriesAsync(dbContext, logger);
-                    await DataSeeder.SeedServicesAsync(dbContext, logger);
-                    logger.LogInformation("Data Seeder execution completed.");
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError(ex, "An error occurred during database migration or data seeding.");
+                    var logger = services.GetRequiredService<ILogger<Program>>();
+                    logger.LogError(ex, "[Startup] An error occurred while seeding the database. Application might not function correctly.");
                 }
             }
+
+
+
 
             if (app.Environment.IsDevelopment())
             {
@@ -140,10 +137,10 @@ namespace ServiceHub
             app.UseAuthentication();
             app.UseAuthorization();
 
+           
             app.MapControllerRoute(
-            name: "Admin", 
-            pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
-
+                name: "Admin",
+                pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
 
             app.MapControllerRoute(
                 name: "default",
@@ -152,7 +149,8 @@ namespace ServiceHub
 
             app.MapControllers();
 
-            app.Run();
+            app.Run(); 
         }
+
     }
 }
