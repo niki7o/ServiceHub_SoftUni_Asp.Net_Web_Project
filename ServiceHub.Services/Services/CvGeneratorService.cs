@@ -79,8 +79,14 @@ namespace ServiceHub.Services.Services
 
         private string GenerateCvHtml(CvGenerateRequestModel request)
         {
+             
             StringBuilder htmlBuilder = new StringBuilder();
+            string ProcessTextAreaContent(string content)
+            {
+                if (string.IsNullOrEmpty(content)) return "";
 
+                return content.Replace("\r\n", "<br/>").Replace("\n", "<br/>");
+            }
             htmlBuilder.Append($@"
             <!DOCTYPE html>
             <html lang='bg'>
