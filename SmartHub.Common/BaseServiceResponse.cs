@@ -8,7 +8,7 @@ namespace ServiceHub.Common
 {
     public abstract class BaseServiceResponse
     {
-        public bool IsSuccess { get; set; } 
-        public string? ErrorMessage { get; set; }
+        public virtual bool IsSuccess { get; set; }
+        public virtual string ErrorMessage { get; set; } = string.Empty;
     }
 }
