@@ -1,125 +1,107 @@
 ﻿@model IEnumerable<ServiceHub.Core.Models.Service.ServiceViewModel>
-@using ServiceHub.Data.Models
-@using ServiceHub.Common.Enum
-@using System.Security.Claims
-
 @{
-    ViewData["Title"] = "Всики Услуги";
-    var categories = ViewBag.Categories as SelectList;
-    var accessTypes = ViewBag.AccessTypes as SelectList;
-    var currentCategory = ViewBag.CurrentCategory;
-    var currentAccessType = ViewBag.CurrentAccessType;
-    var currentFilter = ViewBag.CurrentFilter;
-    var currentSort = ViewBag.CurrentSort;
+    ViewData["Title"] = "All Services";
 }
 
-<h1>All Services</h1>
+<h2 class="text-center">All Services</h2>
+<hr />
 
-<p>
-    <a asp-action="Create" class="btn btn-primary">Създай услуга шаблон</a>
-</p>
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success" role="alert">
+        @TempData["SuccessMessage"]
+    </div>
+}
 
-<div class="filter-section mb-3 p-3 border rounded bg-light">
-    <form asp-action="All" method="get">
-        <div class="row g-3 align-items-end">
-            <div class="col-md-3">
-                <label for="categoryFilter" class="form-label">Категория:</label>
-                <select name="categoryFilter" id="categoryFilter" class="form-select">
-                    @if (categories != null)
-                    {
-                        @foreach (var item in categories)
-                        {
-                            <option value="@item.Value" selected="@(item.Value == currentCategory)">@item.Text</option>
-                        }
-                    }
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger" role="alert">
+        @TempData["ErrorMessage"]
+    </div>
+}
+
+@if (User.IsInRole("BusinessUser") || User.IsInRole("Admin"))
+{
+    <p>
+        <a asp-action="CreateTemplate" class="btn btn-primary">Създай услуга шаблон</a>
+    </p>
+}
+
+<div class="row mb-3">
+    <div class="col-md-4">
+        <form asp-action="All" method="get">
+            <div class="form-group">
+                <label for="categoryFilter">Категория:</label>
+                <select name="categoryFilter" id="categoryFilter" class="form-control" asp-items="ViewBag.Categories" onchange="this.form.submit()">
+                    <option value="">All Categories</option>
                 </select>
             </div>
-            <div class="col-md-3">
-                <label for="accessTypeFilter" class="form-label">План:</label>
-                <select name="accessTypeFilter" id="accessTypeFilter" class="form-select">
-                    @if (accessTypes != null)
-                    {
-                        @foreach (var item in accessTypes)
-                        {
-                            <option value="@item.Value" selected="@(item.Value == currentAccessType)">@item.Text</option>
-                        }
-                    }
+        </form>
+    </div>
+    <div class="col-md-4">
+        <form asp-action="All" method="get">
+            <div class="form-group">
+                <label for="accessTypeFilter">Тип достъп:</label>
+                <select name="accessTypeFilter" id="accessTypeFilter" class="form-control" asp-items="ViewBag.AccessTypes" onchange="this.form.submit()">
+                    <option value="">All Access Types</option>
                 </select>
             </div>
-            <div class="col-md-3">
-                <label for="filter" class="form-label">Филтриране по:</label>
-                <select name="filter" id="filter" class="form-select">
-                    <option value="" selected="@(string.IsNullOrEmpty(currentFilter))">None</option>
-                    <option value="favorite" selected="@("favorite" == currentFilter)">Любими</option>
+        </form>
+    </div>
+    <div class="col-md-4">
+        <form asp-action="All" method="get">
+            <div class="form-group">
+                <label for="sort">Сортирай по:</label>
+                <select name="sort" id="sort" class="form-control" onchange="this.form.submit()">
+                    <option value="">Default</option>
+                    <option value="az" selected="@(ViewBag.CurrentSort == "az")">Име (А-Я)</option>
+                    <option value="za" selected="@(ViewBag.CurrentSort == "za")">Име (Я-А)</option>
+                    <option value="recent" selected="@(ViewBag.CurrentSort == "recent")">Най-нови</option>
+                    <option value="mostviewed" selected="@(ViewBag.CurrentSort == "mostviewed")">Най-гледани</option>
                 </select>
             </div>
-            <div class="col-md-3">
-                <label for="sort" class="form-label">Сортирай по:</label>
-                <select name="sort" id="sort" class="form-select">
-                    <option value="" selected="@(string.IsNullOrEmpty(currentSort))">По подразбиране</option>
-                    <option value="az" selected="@("az" == currentSort)">Азбучен ред (A-Z)</option>
-                    <option value="za" selected="@("za" == currentSort)">Обратен ред (Z-A)</option>
-                    <option value="recent" selected="@("recent" == currentSort)">Най-нови</option>
-                    <option value="mostviewed" selected="@("mostviewed" == currentSort)">Най-посещавани</option>
-                </select>
-            </div>
-            <div class="col-12 text-end">
-                <button type="submit" class="btn btn-primary">Прилагане на филтри и сортиране</button>
-                <a asp-action="All" class="btn btn-secondary ms-2">Изчисти всички</a>
-            </div>
-        </div>
-    </form>
+        </form>
+    </div>
 </div>
 
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>Заглавие</th>
-            <th>Описание</th>
-            <th>Категория</th>
-            <th>План</th>
-            <th>Ревюта</th>
-            <th>Rейтинг</th>
-            <th>Посетители</th>
-            <th>Действия</th>
-        </tr>
-    </thead>
-    <tbody>
-        @if (Model != null && Model.Any())
-        {
-            @foreach (var service in Model)
-            {
-                <tr>
-                    <td>@service.Title</td>
-                    <td>@service.Description</td>
-                    <td>@service.CategoryName</td>
-                    <td>@service.AccessType</td>
-                    <td>@service.ReviewCount</td>
-                    <td>@service.AverageRating.ToString("F1") / 5</td>
-                    <td>@service.ViewsCount</td>
-                    <td>
-                        @if (User.Identity.IsAuthenticated)
-                        {
-                            <a asp-action="Details" asp-route-id="@service.Id" class="btn btn-info btn-sm me-1">Детайли</a>
-                            @if (User.IsInRole("Admin"))
+<div class="row">
+    @foreach (var service in Model)
+    {
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">@service.Title</h5>
+                    <h6 class="card-subtitle mb-2 text-muted">@service.CategoryName</h6>
+                    <p class="card-text flex-grow-1">
+                        @(service.Description.Length > 100 ? service.Description.Substring(0, 100) + "..." : service.Description)
+                    </p>
+
+                    @if (service.IsTemplate && !service.IsApproved)
+                    {
+                        <div class="alert alert-info py-1 px-2 text-sm" role="alert">
+                            Създадена услуга от @service.CreatedByUserName, но е още в разработка.
+                        </div>
+                    }
+
+                    <div class="d-flex justify-content-between align-items-center mt-auto">
+                        <div class="btn-group">
+                            <a asp-action="Details" asp-route-id="@service.Id" class="btn btn-sm btn-outline-secondary">Детайли</a>
+                            @if (User.Identity.IsAuthenticated)
                             {
-                                <a asp-action="Edit" asp-route-id="@service.Id" class="btn btn-warning btn-sm">Настройки</a>
-                                <a asp-action="Delete" asp-route-id="@service.Id" class="btn btn-danger btn-sm">Изтрий</a>
+                                <form asp-action="ToggleFavorite" asp-route-serviceId="@service.Id" method="post" class="d-inline">
+                                    <button type="submit" class="btn btn-sm @(service.IsFavorite ? "btn-warning" : "btn-outline-warning")">
+                                        <i class="fas fa-star"></i> Любими
+                                    </button>
+                                </form>
                             }
-                        }
-                        else
-                        {
-                            <a asp-action="Details" asp-route-id="@service.Id" class="btn btn-info btn-sm me-1">Детайли</a>
-                        }
-                    </td>
-                </tr>
-            }
-        }
-        else
-        {
-            <tr>
-                <td colspan="8">No services found matching the criteria.</td>
-            </tr>
-        }
-    </tbody>
-</table>
+                        </div>
+                        <small class="text-muted">
+                            <i class="fas fa-eye"></i> @service.ViewsCount
+                            <i class="fas fa-star" style="color: gold;"></i> @service.AverageRating.ToString("F1") (@service.ReviewCount)
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>

@@ -25,7 +25,7 @@ namespace ServiceHub.Data
         {
             base.OnModelCreating(builder);
 
-            
+            // Configure relationships
             builder.Entity<Favorite>()
                 .HasOne(f => f.User)
                 .WithMany(u => u.Favorites)
@@ -56,7 +56,21 @@ namespace ServiceHub.Data
                 .HasForeignKey(s => s.CategoryId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            
+            // New relationship for CreatedByUser
+            builder.Entity<Service>()
+                .HasOne(s => s.CreatedByUser)
+                .WithMany(u => u.CreatedServices)
+                .HasForeignKey(s => s.CreatedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // New relationship for ApprovedByUser
+            builder.Entity<Service>()
+                .HasOne(s => s.ApprovedByUser)
+                .WithMany()
+                .HasForeignKey(s => s.ApprovedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Seed Categories
             var categoryDocumentsId = Guid.Parse("A0A0A0A0-A0A0-A0A0-A0A0-000000000001");
             var categoryToolsId = Guid.Parse("B1B1B1B1-B1B1-B1B1-B1B1-000000000002");
 
@@ -65,8 +79,12 @@ namespace ServiceHub.Data
                 new Category { Id = categoryToolsId, Name = "Инструменти", Description = "Различни общи инструменти.", CreatedOn = DateTime.UtcNow }
             );
 
-         
-            const string ServicesJsonContent = @"[
+            // Service Seed Model for JSON deserialization
+            // This nested class is only for deserializing the JSON string
+          
+
+        // Service JSON Content - Removed "IsPremium" field
+        const string ServicesJsonContent = @"[
                 {
                     ""Id"": ""1D4AE40B-C305-47B7-BEED-163C4A0AEB40"",
                     ""Title"": ""Конвертор на Файлове"",
@@ -141,7 +159,6 @@ namespace ServiceHub.Data
                 }
             ]";
 
-           
             try
             {
                 var serviceSeedModels = JsonSerializer.Deserialize<List<ServiceSeedModel>>(
@@ -152,6 +169,11 @@ namespace ServiceHub.Data
                 if (serviceSeedModels != null)
                 {
                     var servicesToSeed = new List<Service>();
+        // Define a dummy admin user ID to associate with seeded services
+        // This is crucial for the CreatedByUserId property.
+        // Make sure this ID matches an actual Admin user ID in your Identity database.
+        string dummyAdminUserId = "2e7a5b6c-d4e5-4f7g-h8i9-0j1k2l3m4n5o"; // This should match the admin user ID seeded below
+
                     foreach (var seedModel in serviceSeedModels)
                     {
                         Guid categoryId;
@@ -171,7 +193,7 @@ namespace ServiceHub.Data
 AccessType accessTypeEnum;
 if (!Enum.TryParse(seedModel.AccessType, true, out accessTypeEnum))
 {
-    accessTypeEnum = AccessType.Free;
+    accessTypeEnum = AccessType.Free; // Default to Free if parsing fails
 }
 
 servicesToSeed.Add(new Service
@@ -183,7 +205,14 @@ servicesToSeed.Add(new Service
     AccessType = accessTypeEnum,
     ViewsCount = 0,
     ServiceConfigJson = seedModel.ServiceConfigJson,
-    CreatedOn = DateTime.UtcNow
+    CreatedOn = DateTime.UtcNow,
+    // For seeded services, assume they are not templates and are approved
+    IsTemplate = false,
+    IsApproved = true,
+    CreatedByUserId = dummyAdminUserId, // Assign the dummy admin user as creator
+    ApprovedByUserId = dummyAdminUserId, // Assume approved by admin
+    ApprovedOn = DateTime.UtcNow
+    // Removed IsPremium
 });
                     }
                     builder.Entity<Service>().HasData(servicesToSeed);
@@ -194,7 +223,7 @@ servicesToSeed.Add(new Service
                 Console.WriteLine($"Error seeding services in OnModelCreating: {ex.Message}");
             }
 
-           
+            // Seed Roles
             var adminRoleId = "99049752-95b1-477d-944a-f34589d31b09";
 var businessRoleId = "0c8b3e8e-c25e-44d7-84f9-2c7b5a1b3e4f";
 var userRoleId = "1d9c4f9f-a36a-4d6b-b5e0-3d8c6b2a5f7e";
@@ -205,7 +234,7 @@ builder.Entity<IdentityRole>().HasData(
     new IdentityRole { Id = userRoleId, Name = "User", NormalizedName = "USER", ConcurrencyStamp = Guid.NewGuid().ToString() }
 );
 
-
+// Seed Users
 var adminUserId = "2e7a5b6c-d4e5-4f7g-h8i9-0j1k2l3m4n5o";
 var businessUserId = "3f8b6c7d-e5f6-4g8h-i9j0-1k2l3m4n5o6p";
 var regularUserId = "4g9c7d8e-f6g7-4h9i-j0k1-2l3m4n5o6p7q";
@@ -219,7 +248,7 @@ builder.Entity<ApplicationUser>().HasData(
         Email = "admin@servicehub.com",
         NormalizedEmail = "ADMIN@SERVICEHUB.COM",
         EmailConfirmed = true,
-        PasswordHash = "AQAAAAIAAYagAAAAEHDyY+bWGj5b4NCEQ22sdDwwgOXUGzd14Jna1PWwgUGuAT5uDIm3rppo3ro8FK2jdw==", 
+        PasswordHash = "AQAAAAIAAYagAAAAEHDyY+bWGj5b4NCEQ22sdDwwgOXUGzd14Jna1PWwgUGuAT5uDIm3rppo3ro8FK2jdw==",
         SecurityStamp = Guid.NewGuid().ToString(),
         ConcurrencyStamp = Guid.NewGuid().ToString()
     },
@@ -231,7 +260,7 @@ builder.Entity<ApplicationUser>().HasData(
         Email = "business@servicehub.com",
         NormalizedEmail = "BUSINESS@SERVICEHUB.COM",
         EmailConfirmed = true,
-        PasswordHash = "AQAAAAIAAYagAAAAEDvbXwCicbCkwIgkmtihHz+xB9VVltKmrmML+xT00yGnQH57wYtvDJ18a/xQQWvCXA==", 
+        PasswordHash = "AQAAAAIAAYagAAAAEDvbXwCicbCkwIgkmtihHz+xB9VVltKmrmML+xT00yGnQH57wYtvDJ18a/xQQWvCXA==",
         SecurityStamp = Guid.NewGuid().ToString(),
         ConcurrencyStamp = Guid.NewGuid().ToString()
     },
@@ -243,13 +272,13 @@ builder.Entity<ApplicationUser>().HasData(
         Email = "user@servicehub.com",
         NormalizedEmail = "USER@SERVICEHUB.COM",
         EmailConfirmed = true,
-        PasswordHash = "AQAAAAIAAYagAAAAEKY0c1iTAtyn5l0NSl/Trn0F1PZ9MRgXUKO2ErqWpvmLb0X7LhGC0RoeprNGZ2paXg==", 
+        PasswordHash = "AQAAAAIAAYagAAAAEKY0c1iTAtyn5l0NSl/Trn0F1PZ9MRgXUKO2ErqWpvmLb0X7LhGC0RoeprNGZ2paXg==",
         SecurityStamp = Guid.NewGuid().ToString(),
         ConcurrencyStamp = Guid.NewGuid().ToString()
     }
 );
 
-
+// Seed User Roles
 builder.Entity<IdentityUserRole<string>>().HasData(
     new IdentityUserRole<string> { UserId = adminUserId, RoleId = adminRoleId },
     new IdentityUserRole<string> { UserId = businessUserId, RoleId = businessRoleId },

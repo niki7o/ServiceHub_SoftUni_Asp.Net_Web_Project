@@ -1,4 +1,5 @@
-﻿using ServiceHub.Common.Enum;
+﻿using Microsoft.AspNetCore.Mvc.Rendering;
+using ServiceHub.Common.Enum;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -27,5 +28,6 @@ namespace ServiceHub.Core.Models.Service
         [Display(Name = "Access Type")]
         public AccessType AccessType { get; set; }
 
+        public IEnumerable<SelectListItem> Categories { get; set; } = new List<SelectListItem>();
     }
 }

@@ -1,30 +1,18 @@
 ﻿@model ServiceHub.Core.Models.Service.ServiceViewModel
-@using ServiceHub.Common.Enum
-@using ServiceHub.Data.Models
-@using System.Security.Claims
-
 @{
-    ViewData["Title"] = "Service Details";
-    bool canUseService = ViewBag.CanUseService ?? false;
-
-    string? currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-    bool isAdmin = User.IsInRole("Admin");
+    ViewData["Title"] = Model.Title;
 }
 
-<h1>Service Details</h1>
+<h2 class="text-center">@Model.Title</h2>
+<hr />
 
-@if (TempData["ServiceMessage"] != null)
-{
-    <div class="alert alert-info" role="alert">
-        @TempData["ServiceMessage"]
-    </div>
-}
 @if (TempData["SuccessMessage"] != null)
 {
     <div class="alert alert-success" role="alert">
         @TempData["SuccessMessage"]
     </div>
 }
+
 @if (TempData["ErrorMessage"] != null)
 {
     <div class="alert alert-danger" role="alert">
@@ -32,132 +20,88 @@
     </div>
 }
 
-<div>
-    <h4>@Model.Title</h4>
-    <hr />
-    <dl class="row">
-        <dt class="col-sm-3">
-            Title
-        </dt>
-        <dd class="col-sm-9">
-            @Html.DisplayFor(model => model.Title)
-        </dd>
-        <dt class="col-sm-3">
-            Description
-        </dt>
-        <dd class="col-sm-9">
-            @Html.DisplayFor(model => model.Description)
-        </dd>
-        <dt class="col-sm-3">
-            Access Type
-        </dt>
-        <dd class="col-sm-9">
-            @Html.DisplayFor(model => model.AccessType)
-        </dd>
-        <dt class="col-sm-3">
-            Category
-        </dt>
-        <dd class="col-sm-9">
-            @Html.DisplayFor(model => model.CategoryName)
-        </dd>
-        <dt class="col-sm-3">
-            Average Rating
-        </dt>
-        <dd class="col-sm-9">
-            @Model.AverageRating.ToString("F1") / 5 (@Model.ReviewCount reviews)
-        </dd>
-        <dt class="col-sm-3">
-            Views 
-        </dt>
-        <dd class="col-sm-9">
-            @Model.ViewsCount 
-        </dd>
-    </dl>
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">@Model.Title</h5>
+                <h6 class="card-subtitle mb-2 text-muted">Категория: @Model.CategoryName</h6>
+                <p class="card-text">@Model.Description</p>
+                <p class="card-text">
+                    <small class="text-muted">
+                        <i class="fas fa-eye"></i> Преглеждания: @Model.ViewsCount
+                        <i class="fas fa-star" style="color: gold;"></i> Рейтинг: @Model.AverageRating.ToString("F1") (@Model.ReviewCount ревюта)
+                    </small>
+                </p>
+                <p class="card-text">
+                    <small class="text-muted">
+                        Създадена от: @Model.CreatedByUserName
+                    </small>
+                </p>
 
-    <h5>Reviews (@Model.ReviewCount)</h5>
-    @if (Model.Reviews != null && Model.Reviews.Any())
-    {
-        <ul class="list-group mb-3">
-            @foreach (var review in Model.Reviews)
-            {
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <div>
-                        Rating: @review.Rating / 5 <br />
-                        Comment: @review.Comment <br />
-                        Reviewed by: @review.UserName (@review.CreatedOn.ToShortDateString())
+                @if (Model.IsTemplate && !Model.IsApproved)
+                {
+                    <div class="alert alert-warning" role="alert">
+                        Тази услуга е шаблон и е в процес на преглед. Тя не е публично достъпна за използване.
                     </div>
-                    @if (User.Identity.IsAuthenticated)
-                    {
-                        @if (review.UserName == User.Identity.Name || isAdmin)
-                        {
-                            <div class="btn-group" role="group">
-                                @if (review.UserName == User.Identity.Name)
-                                {
-                                    <a asp-controller="Review" asp-action="EditReview" asp-route-reviewId="@review.Id" class="btn btn-warning btn-sm me-1">Edit</a>
-                                }
-                                <form asp-controller="Review" asp-action="DeleteReview" asp-route-reviewId="@review.Id" method="post" class="d-inline">
-                                    @Html.AntiForgeryToken()
-                                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this review?');">Delete</button>
-                                </form>
-                            </div>
-                        }
-                    }
-                </li>
-            }
-        </ul>
-    }
-    else
-    {
-        <p>No reviews yet.</p>
-    }
-</div>
-<div class="mt-4">
-    @if (User.Identity.IsAuthenticated)
-    {
-        @if (canUseService)
-        {
-            <a asp-controller="Service" asp-action="UseService" asp-route-id="@Model.Id" class="btn btn-success me-2">Use Service</a>
+                }
 
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <div class="btn-group">
+                        @if (ViewBag.CanUseService != null && ViewBag.CanUseService && !Model.IsTemplate)
+                        {
+                            <a asp-action="UseService" asp-route-id="@Model.Id" class="btn btn-success">Използвай услугата</a>
+                        }
+                        else if (User.Identity.IsAuthenticated && User.IsInRole("User") && Model.AccessType != ServiceHub.Common.Enum.AccessType.Free && Model.AccessType != ServiceHub.Common.Enum.AccessType.Partial)
+                        {
+                            <a asp-controller="Home" asp-action="Plans" class="btn btn-info">Надгради абонамент</a>
+                        }
+
+                        @if (User.Identity.IsAuthenticated && !Model.IsTemplate)
+                        {
+                            <form asp-action="ToggleFavorite" asp-route-serviceId="@Model.Id" method="post" class="d-inline">
+                                <button type="submit" class="btn @(Model.IsFavorite ? "btn-warning" : "btn-outline-warning")">
+                                    <i class="fas fa-star"></i> @(Model.IsFavorite ? "Премахни от любими" : "Добави в любими")
+                                </button>
+                            </form>
+                            <a asp-controller="Review" asp-action="CreateReview" asp-route-serviceId="@Model.Id" class="btn btn-info">Остави ревю</a>
+                        }
+
+                        @if (User.IsInRole("Admin"))
+                        {
+                            @if (!Model.IsTemplate)
+                            {
+                                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Редактирай</a>
+                                <form asp-action="Delete" asp-route-id="@Model.Id" method="post" class="d-inline" onsubmit="return confirm('Сигурни ли сте, че искате да изтриете тази услуга?');">
+                                    <button type="submit" class="btn btn-danger">Изтрий</button>
+                                </form>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h4 class="mt-4">Ревюта</h4>
+        @if (Model.Reviews != null && Model.Reviews.Any())
+        {
+            <div class="list-group mb-4">
+                @foreach (var review in Model.Reviews)
+                {
+                    <div class="list-group-item list-group-item-action flex-column align-items-start">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1">@review.UserName</h5>
+                            <small>@review.CreatedOn.ToShortDateString()</small>
+                        </div>
+                        <p class="mb-1">@review.Comment</p>
+                        <small>Рейтинг: @review.Rating <i class="fas fa-star" style="color: gold;"></i></small>
+                    </div>
+                }
+            </div>
         }
         else
         {
-            <button type="button" class="btn btn-warning me-2" disabled>Upgrade to Use</button>
-            <a asp-controller="Subscription" asp-action="Plans" class="btn btn-info">Upgrade Plan</a>
+            <p>Все още няма ревюта за тази услуга.</p>
         }
-
-        <form asp-controller="Service" asp-action="ToggleFavorite" asp-route-serviceId="@Model.Id" method="post" class="d-inline">
-            @Html.AntiForgeryToken()
-            @if (Model.IsFavorite)
-            {
-                <button type="submit" class="btn btn-danger me-2">
-                    <i class="fas fa-heart"></i> Remove from Favorites
-                </button>
-            }
-            else
-            {
-                <button type="submit" class="btn btn-outline-primary me-2">
-                    <i class="far fa-heart"></i> Add to Favorites
-                </button>
-            }
-        </form>
-    }
-    else
-    {
-        <p class="text-info">Please log in or register to use or favorite this service.</p>
-        <a asp-area="Identity" asp-page="/Account/Register" class="btn btn-primary me-2">Register</a>
-        <a asp-area="Identity" asp-page="/Account/Login" class="btn btn-outline-primary">Log In</a>
-    }
-
-    <a asp-action="All" class="btn btn-secondary ms-2">Back to List</a>
-
-    @if (User.Identity.IsAuthenticated)
-    {
-        <h5 class="mt-4">
-            <a asp-controller="Review" asp-action="CreateReview" asp-route-serviceId="@Model.Id" class="btn btn-primary btn-sm">Leave a Review</a>
-        </h5>
-    }
+    </div>
 </div>
-
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
-}

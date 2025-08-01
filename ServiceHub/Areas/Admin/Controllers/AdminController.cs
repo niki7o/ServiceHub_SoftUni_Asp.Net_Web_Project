@@ -4,25 +4,32 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ServiceHub.Areas.Admin.Models;
 using ServiceHub.Data.Models;
+using ServiceHub.Services.Interfaces;
+using System.Security.Claims;
 
 namespace ServiceHub.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Roles = "Admin")] 
+    [Authorize(Roles = "Admin")]
     public class AdminController : Controller
     {
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly RoleManager<IdentityRole> _roleManager; 
+        private readonly RoleManager<IdentityRole> _roleManager;
         private readonly ILogger<AdminController> _logger;
+        private readonly IServiceService _serviceService; // Re-injected IServiceService
 
-        public AdminController(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, ILogger<AdminController> logger) 
+        public AdminController(
+            UserManager<ApplicationUser> userManager,
+            RoleManager<IdentityRole> roleManager,
+            ILogger<AdminController> logger,
+            IServiceService serviceService) // Added IServiceService to constructor
         {
             _userManager = userManager;
-            _roleManager = roleManager; 
+            _roleManager = roleManager;
             _logger = logger;
+            _serviceService = serviceService; // Assign the injected service
         }
 
-       
         public async Task<IActionResult> AllUsers()
         {
             var users = await _userManager.Users.ToListAsync();
@@ -37,11 +44,23 @@ namespace ServiceHub.Areas.Admin.Controllers
                     Id = user.Id,
                     UserName = user.UserName,
                     Email = user.Email,
-                    Roles = roles.ToList() 
+                    Roles = roles.ToList()
                 });
             }
 
-            return View(userViewModels);
+            // Fetch pending service templates using the injected service
+            // This is the part that was missing or commented out in your provided code
+            var pendingTemplates = await _serviceService.GetAllPendingTemplatesAsync();
+
+            // Create the AdminDashboardViewModel and pass it to the view
+            // This is the part that was missing or commented out in your provided code
+            var viewModel = new AdminDashboardViewModel
+            {
+                Users = userViewModels,
+                PendingServices = pendingTemplates
+            };
+
+            return View(viewModel); // Pass the combined viewModel
         }
 
         [HttpPost]
@@ -67,7 +86,6 @@ namespace ServiceHub.Areas.Admin.Controllers
                 return RedirectToAction(nameof(AllUsers));
             }
 
-            
             if (await _userManager.IsInRoleAsync(user, "BusinessUser"))
             {
                 var removeResult = await _userManager.RemoveFromRoleAsync(user, "BusinessUser");
@@ -80,7 +98,6 @@ namespace ServiceHub.Areas.Admin.Controllers
 
                 if (!await _userManager.IsInRoleAsync(user, "User"))
                 {
-                   
                     if (!await _roleManager.RoleExistsAsync("User"))
                     {
                         await _roleManager.CreateAsync(new IdentityRole("User"));
@@ -104,7 +121,7 @@ namespace ServiceHub.Areas.Admin.Controllers
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken] 
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> PromoteToBusinessUser(string id)
         {
             if (string.IsNullOrEmpty(id))
@@ -120,21 +137,18 @@ namespace ServiceHub.Areas.Admin.Controllers
                 return RedirectToAction(nameof(AllUsers));
             }
 
-            
             if (user.Id == _userManager.GetUserId(User))
             {
                 TempData["ErrorMessage"] = "Не можете да промоутнете собствения си акаунт.";
                 return RedirectToAction(nameof(AllUsers));
             }
 
-         
             if (await _userManager.IsInRoleAsync(user, "BusinessUser") || await _userManager.IsInRoleAsync(user, "Admin"))
             {
                 TempData["WarningMessage"] = "Потребителят вече е BusinessUser или Admin и не може да бъде промоутнат.";
                 return RedirectToAction(nameof(AllUsers));
             }
 
-          
             if (await _userManager.IsInRoleAsync(user, "User"))
             {
                 var removeNormalUserResult = await _userManager.RemoveFromRoleAsync(user, "User");
@@ -146,7 +160,6 @@ namespace ServiceHub.Areas.Admin.Controllers
                 }
             }
 
-        
             if (!await _roleManager.RoleExistsAsync("BusinessUser"))
             {
                 await _roleManager.CreateAsync(new IdentityRole("BusinessUser"));
@@ -186,7 +199,6 @@ namespace ServiceHub.Areas.Admin.Controllers
                 return RedirectToAction(nameof(AllUsers));
             }
 
-           
             if (await _userManager.IsInRoleAsync(user, "Admin") || await _userManager.IsInRoleAsync(user, "BusinessUser"))
             {
                 TempData["ErrorMessage"] = "Не можете да изтриете Администратор или BusinessUser директно. Моля, първо понижете ролята им.";
@@ -201,6 +213,70 @@ namespace ServiceHub.Areas.Admin.Controllers
             else
             {
                 TempData["ErrorMessage"] = $"Грешка при изтриване на потребител: {string.Join(", ", result.Errors.Select(e => e.Description))}";
+            }
+
+            return RedirectToAction(nameof(AllUsers));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ApproveServiceTemplate(Guid id)
+        {
+            string? adminId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (adminId == null)
+            {
+                TempData["ErrorMessage"] = "Неупълномощен достъп.";
+                return Unauthorized();
+            }
+
+            try
+            {
+                await _serviceService.ApproveServiceTemplateAsync(id, adminId);
+                TempData["SuccessMessage"] = "Шаблонът за услуга е успешно одобрен и публикуван!";
+            }
+            catch (ArgumentException ex)
+            {
+                TempData["ErrorMessage"] = ex.Message;
+            }
+            catch (InvalidOperationException ex)
+            {
+                TempData["ErrorMessage"] = ex.Message;
+            }
+            catch (Exception)
+            {
+                TempData["ErrorMessage"] = "Възникна грешка при одобряване на шаблона.";
+            }
+
+            return RedirectToAction(nameof(AllUsers));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RejectServiceTemplate(Guid id)
+        {
+            string? adminId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (adminId == null)
+            {
+                TempData["ErrorMessage"] = "Неупълномощен достъп.";
+                return Unauthorized();
+            }
+
+            try
+            {
+                await _serviceService.RejectServiceTemplateAsync(id, adminId);
+                TempData["SuccessMessage"] = "Шаблонът за услуга е успешно отхвърлен и изтрит!";
+            }
+            catch (ArgumentException ex)
+            {
+                TempData["ErrorMessage"] = ex.Message;
+            }
+            catch (InvalidOperationException ex)
+            {
+                TempData["ErrorMessage"] = ex.Message;
+            }
+            catch (Exception)
+            {
+                TempData["ErrorMessage"] = "Възникна грешка при отхвърляне на шаблона.";
             }
 
             return RedirectToAction(nameof(AllUsers));

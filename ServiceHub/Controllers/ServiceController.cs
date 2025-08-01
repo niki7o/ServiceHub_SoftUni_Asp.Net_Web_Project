@@ -48,8 +48,8 @@ namespace ServiceHub.Controllers
             _categoryRepository = categoryRepository;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> All(string? categoryFilter,string? accessTypeFilter,string? filter,string? sort)
+        [AllowAnonymous]
+        public async Task<IActionResult> All(string? categoryFilter, string? accessTypeFilter, string? filter = null, string? sort = null)
         {
             string? currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
@@ -69,27 +69,40 @@ namespace ServiceHub.Controllers
             ViewBag.CurrentFilter = filter;
             ViewBag.CurrentSort = sort;
 
-
             var services = await serviceService.GetAllAsync(categoryFilter, accessTypeFilter, filter, sort, currentUserId);
 
             return View(services);
         }
 
+        [AllowAnonymous]
         public async Task<IActionResult> Details(Guid id)
         {
             string? currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-          
             await serviceService.IncrementViewsCount(id);
             _logger.LogInformation($"Controller.Details: Извикан IncrementViewsCount за ServiceId: {id}.");
 
-            
-            var serviceViewModel = await serviceService.GetByIdAsync(id, currentUserId);
+            ServiceViewModel? serviceViewModel;
+            try
+            {
+                serviceViewModel = await serviceService.GetByIdAsync(id, currentUserId);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                TempData["ErrorMessage"] = "Нямате право да преглеждате този шаблон за услуга.";
+                return RedirectToAction(nameof(All));
+            }
+            catch (ArgumentException)
+            {
+                TempData["ErrorMessage"] = "Услугата не е намерена.";
+                return RedirectToAction(nameof(All));
+            }
 
             if (serviceViewModel == null)
             {
-                _logger.LogWarning($"Controller.Details: Услуга с ID {id} не е намерена след увеличение на брояча.");
-                return NotFound();
+                _logger.LogWarning($"Controller.Details: Услуга с ID {id} не е намерена или достъпът е отказан.");
+                TempData["ErrorMessage"] = "Услугата не е намерена или не е достъпна.";
+                return RedirectToAction(nameof(All));
             }
 
             _logger.LogInformation($"Controller.Details: ServiceId: {serviceViewModel.Id}, ViewsCount (във ViewModel): {serviceViewModel.ViewsCount}, IsFavorite: {serviceViewModel.IsFavorite} за потребител: {currentUserId}");
@@ -119,9 +132,13 @@ namespace ServiceHub.Controllers
             }
 
             ViewBag.CanUseService = canUseService;
+            ViewBag.IsTemplate = serviceViewModel.IsTemplate;
+            ViewBag.IsApproved = serviceViewModel.IsApproved;
+            ViewBag.CreatedByUserName = serviceViewModel.CreatedByUserName;
 
             return View(serviceViewModel);
         }
+
         [HttpGet("Service/UseService/{id}")]
         public async Task<IActionResult> UseService(Guid id)
         {
@@ -132,6 +149,12 @@ namespace ServiceHub.Controllers
                 _logger.LogWarning($"Attempted to use non-existent service with ID: {id}");
                 TempData["ErrorMessage"] = "Услугата не е намерена.";
                 return View("~/Views/Shared/Error.cshtml", new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+            }
+
+            if (service.IsTemplate && !service.IsApproved)
+            {
+                TempData["ErrorMessage"] = "Тази услуга е шаблон и все още не е одобрена за използване.";
+                return RedirectToAction("Details", "Service", new { id = service.Id });
             }
 
             var user = await userManager.GetUserAsync(User);
@@ -218,7 +241,6 @@ namespace ServiceHub.Controllers
                 ViewBag.SupportedLanguages = new List<string> { "C#", "Python", "JavaScript", "PHP" };
                 return View("~/Views/Service/_CodeSnippetConverter.cshtml");
             }
-          
             else
             {
                 _logger.LogWarning($"Service {service.Title} ({service.Id}) found and accessible, but no specific form View is configured.");
@@ -273,8 +295,8 @@ namespace ServiceHub.Controllers
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors)
-                                            .Select(e => e.ErrorMessage)
-                                            .ToList();
+                                             .Select(e => e.ErrorMessage)
+                                             .ToList();
                 _logger.LogWarning("Model validation failed for service request. Errors: {Errors}",
                     string.Join("; ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage)));
                 return BadRequest(ModelState);
@@ -302,32 +324,267 @@ namespace ServiceHub.Controllers
 
         [HttpPost]
         [Authorize]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> ToggleFavorite(Guid serviceId)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (userId == null) return Unauthorized();
 
-            var existingFavorite = await favoriteRepo.All()
-                                                     .FirstOrDefaultAsync(f => f.UserId == userId && f.ServiceId == serviceId);
-
-            if (existingFavorite != null)
+            try
             {
-                favoriteRepo.Delete(existingFavorite);
-                TempData["SuccessMessage"] = "Removed from favorites!";
+                await serviceService.ToggleFavorite(serviceId, userId);
+                TempData["SuccessMessage"] = "Статусът на любими е променен успешно!";
             }
-            else
+            catch (ArgumentException ex)
             {
-                var newFavorite = new Favorite
-                {
-                    UserId = userId,
-                    ServiceId = serviceId,
-                    CreatedOn = DateTime.UtcNow
-                };
-                await favoriteRepo.AddAsync(newFavorite);
-                TempData["SuccessMessage"] = "Added to favorites!";
+                TempData["ErrorMessage"] = ex.Message;
             }
-            await favoriteRepo.SaveChangesAsync();
+            catch (InvalidOperationException ex)
+            {
+                TempData["ErrorMessage"] = ex.Message;
+            }
+            catch (Exception)
+            {
+                TempData["ErrorMessage"] = "Възникна грешка при промяна на любимия статус.";
+            }
             return RedirectToAction(nameof(Details), new { id = serviceId });
+        }
+
+        [HttpGet]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Create()
+        {
+            var model = new ServiceFormModel
+            {
+                Categories = await _categoryRepository.All().OrderBy(c => c.Name).Select(c => new SelectListItem { Value = c.Id.ToString(), Text = c.Name }).ToListAsync()
+            };
+            return View(model);
+        }
+
+        [HttpPost]
+        [Authorize(Roles = "Admin")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(ServiceFormModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                model.Categories = await _categoryRepository.All().OrderBy(c => c.Name).Select(c => new SelectListItem { Value = c.Id.ToString(), Text = c.Name }).ToListAsync();
+                TempData["ErrorMessage"] = "Невалидни данни за услугата. Моля, проверете въведеното.";
+                return View(model);
+            }
+
+            var adminId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (adminId == null)
+            {
+                TempData["ErrorMessage"] = "Неупълномощен достъп. Моля, влезте в профила си.";
+                return Unauthorized();
+            }
+
+            try
+            {
+                await serviceService.CreateAsync(model, adminId);
+                TempData["SuccessMessage"] = "Услугата е създадена успешно!";
+                return RedirectToAction(nameof(All));
+            }
+            catch (Exception)
+            {
+                model.Categories = await _categoryRepository.All().OrderBy(c => c.Name).Select(c => new SelectListItem { Value = c.Id.ToString(), Text = c.Name }).ToListAsync();
+                TempData["ErrorMessage"] = "Възникна грешка при създаване на услугата.";
+                return View(model);
+            }
+        }
+
+        [HttpGet]
+        [Authorize(Roles = "BusinessUser,Admin")]
+        public async Task<IActionResult> CreateTemplate()
+        {
+            var model = new ServiceFormModel
+            {
+                Categories = await _categoryRepository.All().OrderBy(c => c.Name).Select(c => new SelectListItem { Value = c.Id.ToString(), Text = c.Name }).ToListAsync()
+            };
+            return View(model);
+        }
+
+        [HttpPost]
+        [Authorize(Roles = "BusinessUser,Admin")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AddTemplate(ServiceFormModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                model.Categories = await _categoryRepository.All().OrderBy(c => c.Name).Select(c => new SelectListItem { Value = c.Id.ToString(), Text = c.Name }).ToListAsync();
+                TempData["ErrorMessage"] = "Невалидни данни за шаблона. Моля, проверете въведеното.";
+                return View("CreateTemplate", model);
+            }
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+            {
+                TempData["ErrorMessage"] = "Неупълномощен достъп. Моля, влезте в профила си.";
+                return Unauthorized();
+            }
+
+            var currentUser = await userManager.GetUserAsync(User);
+            bool isAdmin = await userManager.IsInRoleAsync(currentUser, "Admin");
+
+            try
+            {
+                await serviceService.AddServiceTemplateAsync(model, userId, isAdmin);
+                if (isAdmin)
+                {
+                    TempData["SuccessMessage"] = "Услугата е създадена успешно (директно одобрена като администратор)!";
+                }
+                else
+                {
+                    TempData["SuccessMessage"] = "Шаблонът за услуга е изпратен за одобрение!";
+                }
+                return RedirectToAction(nameof(All));
+            }
+            catch (InvalidOperationException ex)
+            {
+                model.Categories = await _categoryRepository.All().OrderBy(c => c.Name).Select(c => new SelectListItem { Value = c.Id.ToString(), Text = c.Name }).ToListAsync();
+                TempData["ErrorMessage"] = ex.Message;
+                return View("CreateTemplate", model);
+            }
+            catch (Exception)
+            {
+                model.Categories = await _categoryRepository.All().OrderBy(c => c.Name).Select(c => new SelectListItem { Value = c.Id.ToString(), Text = c.Name }).ToListAsync();
+                TempData["ErrorMessage"] = "Възникна грешка при създаване на шаблона.";
+                return View("CreateTemplate", model);
+            }
+        }
+
+        [HttpGet]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Edit(Guid id)
+        {
+            string? userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+            {
+                return Unauthorized();
+            }
+
+            var currentUser = await userManager.GetUserAsync(User);
+            bool isAdmin = await userManager.IsInRoleAsync(currentUser, "Admin");
+
+            try
+            {
+                var model = await serviceService.GetServiceForEditAsync(id, userId, isAdmin);
+                model.Categories = await _categoryRepository.All().OrderBy(c => c.Name).Select(c => new SelectListItem { Value = c.Id.ToString(), Text = c.Name }).ToListAsync();
+                return View(model);
+            }
+            catch (ArgumentException ex)
+            {
+                TempData["ErrorMessage"] = ex.Message;
+                return RedirectToAction(nameof(All));
+            }
+            catch (InvalidOperationException ex)
+            {
+                TempData["ErrorMessage"] = ex.Message;
+                return RedirectToAction(nameof(All));
+            }
+            catch (UnauthorizedAccessException)
+            {
+                TempData["ErrorMessage"] = "Нямате право да редактирате тази услуга.";
+                return Forbid();
+            }
+            catch (Exception)
+            {
+                TempData["ErrorMessage"] = "Възникна грешка при извличане на услугата за редактиране.";
+                return RedirectToAction(nameof(All));
+            }
+        }
+
+        [HttpPost]
+        [Authorize(Roles = "Admin")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(Guid id, ServiceFormModel model)
+        {
+            string? userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+            {
+                return Unauthorized();
+            }
+
+            var currentUser = await userManager.GetUserAsync(User);
+            bool isAdmin = await userManager.IsInRoleAsync(currentUser, "Admin");
+
+            if (!ModelState.IsValid)
+            {
+                model.Categories = await _categoryRepository.All().OrderBy(c => c.Name).Select(c => new SelectListItem { Value = c.Id.ToString(), Text = c.Name }).ToListAsync();
+                TempData["ErrorMessage"] = "Невалидни данни за услугата. Моля, проверете въведеното.";
+                return View(model);
+            }
+
+            try
+            {
+                await serviceService.UpdateAsync(id, model, userId, isAdmin);
+                TempData["SuccessMessage"] = "Услугата е редактирана успешно!";
+                return RedirectToAction(nameof(Details), new { id = id });
+            }
+            catch (ArgumentException ex)
+            {
+                TempData["ErrorMessage"] = ex.Message;
+                return RedirectToAction(nameof(All));
+            }
+            catch (InvalidOperationException ex)
+            {
+                TempData["ErrorMessage"] = ex.Message;
+                return RedirectToAction(nameof(All));
+            }
+            catch (UnauthorizedAccessException)
+            {
+                TempData["ErrorMessage"] = "Нямате право да редактирате тази услуга.";
+                return Forbid();
+            }
+            catch (Exception)
+            {
+                model.Categories = await _categoryRepository.All().OrderBy(c => c.Name).Select(c => new SelectListItem { Value = c.Id.ToString(), Text = c.Name }).ToListAsync();
+                TempData["ErrorMessage"] = "Възникна грешка при редактиране на услугата.";
+                return View(model);
+            }
+        }
+
+        [HttpPost]
+        [Authorize(Roles = "Admin")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(Guid id)
+        {
+            string? userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+            {
+                return Unauthorized();
+            }
+
+            var currentUser = await userManager.GetUserAsync(User);
+            bool isAdmin = await userManager.IsInRoleAsync(currentUser, "Admin");
+
+            try
+            {
+                await serviceService.DeleteAsync(id, userId, isAdmin);
+                TempData["SuccessMessage"] = "Услугата е изтрита успешно!";
+                return RedirectToAction(nameof(All));
+            }
+            catch (ArgumentException ex)
+            {
+                TempData["ErrorMessage"] = ex.Message;
+                return RedirectToAction(nameof(All));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                TempData["ErrorMessage"] = ex.Message;
+                return RedirectToAction(nameof(All));
+            }
+            catch (InvalidOperationException ex)
+            {
+                TempData["ErrorMessage"] = ex.Message;
+                return RedirectToAction(nameof(All));
+            }
+            catch (Exception)
+            {
+                TempData["ErrorMessage"] = "Възникна грешка при изтриване на услугата.";
+                return RedirectToAction(nameof(All));
+            }
         }
     }
 }

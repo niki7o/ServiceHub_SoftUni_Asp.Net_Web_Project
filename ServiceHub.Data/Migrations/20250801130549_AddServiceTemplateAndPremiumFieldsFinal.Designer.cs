@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ServiceHub.Data;
 
@@ -11,9 +12,11 @@ using ServiceHub.Data;
 namespace ServiceHub.Data.Migrations
 {
     [DbContext(typeof(ServiceHubDbContext))]
-    partial class ServiceHubDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250801130549_AddServiceTemplateAndPremiumFieldsFinal")]
+    partial class AddServiceTemplateAndPremiumFieldsFinal
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -52,21 +55,21 @@ namespace ServiceHub.Data.Migrations
                         new
                         {
                             Id = "99049752-95b1-477d-944a-f34589d31b09",
-                            ConcurrencyStamp = "9122216c-0d61-4e8f-b29f-538fa5ad118c",
+                            ConcurrencyStamp = "ab30b278-1fe4-4058-bdf5-c97b0317bb49",
                             Name = "Admin",
                             NormalizedName = "ADMIN"
                         },
                         new
                         {
                             Id = "0c8b3e8e-c25e-44d7-84f9-2c7b5a1b3e4f",
-                            ConcurrencyStamp = "84b4d27b-a4bc-4dad-92da-029924f684fe",
+                            ConcurrencyStamp = "fe74c9d2-fc5c-4058-b95f-5c40a2a3c3f4",
                             Name = "BusinessUser",
                             NormalizedName = "BUSINESSUSER"
                         },
                         new
                         {
                             Id = "1d9c4f9f-a36a-4d6b-b5e0-3d8c6b2a5f7e",
-                            ConcurrencyStamp = "f541ce60-648d-4f24-aefb-b9d6fd85c2ab",
+                            ConcurrencyStamp = "9879ecec-d1b8-48aa-9895-665e8f1df7ec",
                             Name = "User",
                             NormalizedName = "USER"
                         });
@@ -224,9 +227,6 @@ namespace ServiceHub.Data.Migrations
                     b.Property<bool>("IsBusiness")
                         .HasColumnType("bit");
 
-                    b.Property<DateTime?>("LastServiceCreationDate")
-                        .HasColumnType("datetime2");
-
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("bit");
 
@@ -277,7 +277,7 @@ namespace ServiceHub.Data.Migrations
                         {
                             Id = "2e7a5b6c-d4e5-4f7g-h8i9-0j1k2l3m4n5o",
                             AccessFailedCount = 0,
-                            ConcurrencyStamp = "372293cc-9cb6-43c5-8687-f1b00a5c0ae9",
+                            ConcurrencyStamp = "17f2c00d-127e-4a60-8b55-b7d857a45938",
                             Email = "admin@servicehub.com",
                             EmailConfirmed = true,
                             IsBusiness = false,
@@ -286,7 +286,7 @@ namespace ServiceHub.Data.Migrations
                             NormalizedUserName = "ADMINUSER",
                             PasswordHash = "AQAAAAIAAYagAAAAEHDyY+bWGj5b4NCEQ22sdDwwgOXUGzd14Jna1PWwgUGuAT5uDIm3rppo3ro8FK2jdw==",
                             PhoneNumberConfirmed = false,
-                            SecurityStamp = "93e7bdb2-ef35-4c89-b409-859a65391d5d",
+                            SecurityStamp = "81b41e60-bbfd-426e-a451-b324afac9042",
                             TwoFactorEnabled = false,
                             UserName = "adminuser"
                         },
@@ -294,7 +294,7 @@ namespace ServiceHub.Data.Migrations
                         {
                             Id = "3f8b6c7d-e5f6-4g8h-i9j0-1k2l3m4n5o6p",
                             AccessFailedCount = 0,
-                            ConcurrencyStamp = "1ca176f1-355f-46ba-9e98-d622b346a6fd",
+                            ConcurrencyStamp = "bb81e0bc-25e2-4eda-9092-eaefb8045765",
                             Email = "business@servicehub.com",
                             EmailConfirmed = true,
                             IsBusiness = false,
@@ -303,7 +303,7 @@ namespace ServiceHub.Data.Migrations
                             NormalizedUserName = "BUSINESSUSER",
                             PasswordHash = "AQAAAAIAAYagAAAAEDvbXwCicbCkwIgkmtihHz+xB9VVltKmrmML+xT00yGnQH57wYtvDJ18a/xQQWvCXA==",
                             PhoneNumberConfirmed = false,
-                            SecurityStamp = "7a2c2d01-42ec-446e-907c-c4c0c6c9eed4",
+                            SecurityStamp = "91973d3d-b866-422d-b759-6dc734d7fad2",
                             TwoFactorEnabled = false,
                             UserName = "businessuser"
                         },
@@ -311,7 +311,7 @@ namespace ServiceHub.Data.Migrations
                         {
                             Id = "4g9c7d8e-f6g7-4h9i-j0k1-2l3m4n5o6p7q",
                             AccessFailedCount = 0,
-                            ConcurrencyStamp = "9deb2551-aede-4306-9c4d-b91f0bd1aefc",
+                            ConcurrencyStamp = "960af341-2093-42d2-9174-7a28273b0431",
                             Email = "user@servicehub.com",
                             EmailConfirmed = true,
                             IsBusiness = false,
@@ -320,7 +320,7 @@ namespace ServiceHub.Data.Migrations
                             NormalizedUserName = "REGULARUSER",
                             PasswordHash = "AQAAAAIAAYagAAAAEKY0c1iTAtyn5l0NSl/Trn0F1PZ9MRgXUKO2ErqWpvmLb0X7LhGC0RoeprNGZ2paXg==",
                             PhoneNumberConfirmed = false,
-                            SecurityStamp = "ced19f4c-5b40-4d9c-9ea5-d980c89956b4",
+                            SecurityStamp = "11d5fbe2-e03e-4300-869c-4c72a147b85b",
                             TwoFactorEnabled = false,
                             UserName = "regularuser"
                         });
@@ -354,14 +354,14 @@ namespace ServiceHub.Data.Migrations
                         new
                         {
                             Id = new Guid("a0a0a0a0-a0a0-a0a0-a0a0-000000000001"),
-                            CreatedOn = new DateTime(2025, 8, 1, 14, 19, 42, 188, DateTimeKind.Utc).AddTicks(8327),
+                            CreatedOn = new DateTime(2025, 8, 1, 13, 5, 48, 82, DateTimeKind.Utc).AddTicks(3671),
                             Description = "Инструменти за работа с документи.",
                             Name = "Документи"
                         },
                         new
                         {
                             Id = new Guid("b1b1b1b1-b1b1-b1b1-b1b1-000000000002"),
-                            CreatedOn = new DateTime(2025, 8, 1, 14, 19, 42, 188, DateTimeKind.Utc).AddTicks(8330),
+                            CreatedOn = new DateTime(2025, 8, 1, 13, 5, 48, 82, DateTimeKind.Utc).AddTicks(3689),
                             Description = "Различни общи инструменти.",
                             Name = "Инструменти"
                         });
@@ -439,18 +439,8 @@ namespace ServiceHub.Data.Migrations
                     b.Property<int>("AccessType")
                         .HasColumnType("int");
 
-                    b.Property<string>("ApprovedByUserId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime?>("ApprovedOn")
-                        .HasColumnType("datetime2");
-
                     b.Property<Guid>("CategoryId")
                         .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("CreatedByUserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
 
                     b.Property<DateTime>("CreatedOn")
                         .HasColumnType("datetime2");
@@ -458,12 +448,6 @@ namespace ServiceHub.Data.Migrations
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsApproved")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsTemplate")
-                        .HasColumnType("bit");
 
                     b.Property<DateTime?>("ModifiedOn")
                         .HasColumnType("datetime2");
@@ -480,11 +464,7 @@ namespace ServiceHub.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ApprovedByUserId");
-
                     b.HasIndex("CategoryId");
-
-                    b.HasIndex("CreatedByUserId");
 
                     b.ToTable("Services");
 
@@ -493,14 +473,9 @@ namespace ServiceHub.Data.Migrations
                         {
                             Id = new Guid("1d4ae40b-c305-47b7-beed-163c4a0aeb40"),
                             AccessType = 1,
-                            ApprovedByUserId = "2e7a5b6c-d4e5-4f7g-h8i9-0j1k2l3m4n5o",
-                            ApprovedOn = new DateTime(2025, 8, 1, 14, 19, 42, 190, DateTimeKind.Utc).AddTicks(6770),
                             CategoryId = new Guid("a0a0a0a0-a0a0-a0a0-a0a0-000000000001"),
-                            CreatedByUserId = "2e7a5b6c-d4e5-4f7g-h8i9-0j1k2l3m4n5o",
-                            CreatedOn = new DateTime(2025, 8, 1, 14, 19, 42, 190, DateTimeKind.Utc).AddTicks(6767),
+                            CreatedOn = new DateTime(2025, 8, 1, 13, 5, 48, 83, DateTimeKind.Utc).AddTicks(613),
                             Description = "Конвертира различни файлови формати (напр. PDF към DOCX, JPG към PNG).",
-                            IsApproved = true,
-                            IsTemplate = false,
                             ServiceConfigJson = "{\"toolName\": \"FileConverter\", \"endpoint\": \"/api/FileConverter/convert\", \"method\": \"POST\"}",
                             Title = "Конвертор на Файлове",
                             ViewsCount = 0
@@ -509,14 +484,9 @@ namespace ServiceHub.Data.Migrations
                         {
                             Id = new Guid("e11e539c-0290-4171-b606-16628d1790b0"),
                             AccessType = 1,
-                            ApprovedByUserId = "2e7a5b6c-d4e5-4f7g-h8i9-0j1k2l3m4n5o",
-                            ApprovedOn = new DateTime(2025, 8, 1, 14, 19, 42, 190, DateTimeKind.Utc).AddTicks(6781),
                             CategoryId = new Guid("b1b1b1b1-b1b1-b1b1-b1b1-000000000002"),
-                            CreatedByUserId = "2e7a5b6c-d4e5-4f7g-h8i9-0j1k2l3m4n5o",
-                            CreatedOn = new DateTime(2025, 8, 1, 14, 19, 42, 190, DateTimeKind.Utc).AddTicks(6781),
+                            CreatedOn = new DateTime(2025, 8, 1, 13, 5, 48, 83, DateTimeKind.Utc).AddTicks(621),
                             Description = "Преобразува код между програмни езици (напр. C# към Python).",
-                            IsApproved = true,
-                            IsTemplate = false,
                             ServiceConfigJson = "{\"toolName\": \"CodeConverter\", \"endpoint\": \"/api/CodeConverter/convert\", \"method\": \"POST\"}",
                             Title = "Конвертор на Кодови Снипети",
                             ViewsCount = 0
@@ -525,14 +495,9 @@ namespace ServiceHub.Data.Migrations
                         {
                             Id = new Guid("c10de2fa-b49b-4c0d-9e8f-142b3cd40e6f"),
                             AccessType = 0,
-                            ApprovedByUserId = "2e7a5b6c-d4e5-4f7g-h8i9-0j1k2l3m4n5o",
-                            ApprovedOn = new DateTime(2025, 8, 1, 14, 19, 42, 190, DateTimeKind.Utc).AddTicks(6786),
                             CategoryId = new Guid("b1b1b1b1-b1b1-b1b1-b1b1-000000000002"),
-                            CreatedByUserId = "2e7a5b6c-d4e5-4f7g-h8i9-0j1k2l3m4n5o",
-                            CreatedOn = new DateTime(2025, 8, 1, 14, 19, 42, 190, DateTimeKind.Utc).AddTicks(6786),
+                            CreatedOn = new DateTime(2025, 8, 1, 13, 5, 48, 83, DateTimeKind.Utc).AddTicks(624),
                             Description = "Преобразува текст в главни букви, малки букви или заглавен регистър.",
-                            IsApproved = true,
-                            IsTemplate = false,
                             ServiceConfigJson = "{\"toolName\": \"TextCaseConverter\", \"endpoint\": \"/api/TextCaseConverter/convert\", \"method\": \"POST\"}",
                             Title = "Конвертор на Текст (Главни/Малки букви)",
                             ViewsCount = 0
@@ -541,14 +506,9 @@ namespace ServiceHub.Data.Migrations
                         {
                             Id = new Guid("f0c72c7b-709d-44b7-81c1-1e5ab73305ec"),
                             AccessType = 2,
-                            ApprovedByUserId = "2e7a5b6c-d4e5-4f7g-h8i9-0j1k2l3m4n5o",
-                            ApprovedOn = new DateTime(2025, 8, 1, 14, 19, 42, 190, DateTimeKind.Utc).AddTicks(6791),
                             CategoryId = new Guid("a0a0a0a0-a0a0-a0a0-a0a0-000000000001"),
-                            CreatedByUserId = "2e7a5b6c-d4e5-4f7g-h8i9-0j1k2l3m4n5o",
-                            CreatedOn = new DateTime(2025, 8, 1, 14, 19, 42, 190, DateTimeKind.Utc).AddTicks(6790),
+                            CreatedOn = new DateTime(2025, 8, 1, 13, 5, 48, 83, DateTimeKind.Utc).AddTicks(628),
                             Description = "Въвеждаш данни и получаваш готово CV в PDF формат.",
-                            IsApproved = true,
-                            IsTemplate = false,
                             ServiceConfigJson = "{\"toolName\": \"CVGenerator\", \"endpoint\": \"/api/CVGenerator/generate\", \"method\": \"POST\"}",
                             Title = "Автоматично CV/Резюме",
                             ViewsCount = 0
@@ -557,14 +517,9 @@ namespace ServiceHub.Data.Migrations
                         {
                             Id = new Guid("f5e402c0-91ba-4f8e-97d0-3b443fe10d3c"),
                             AccessType = 0,
-                            ApprovedByUserId = "2e7a5b6c-d4e5-4f7g-h8i9-0j1k2l3m4n5o",
-                            ApprovedOn = new DateTime(2025, 8, 1, 14, 19, 42, 190, DateTimeKind.Utc).AddTicks(6806),
                             CategoryId = new Guid("b1b1b1b1-b1b1-b1b1-b1b1-000000000002"),
-                            CreatedByUserId = "2e7a5b6c-d4e5-4f7g-h8i9-0j1k2l3m4n5o",
-                            CreatedOn = new DateTime(2025, 8, 1, 14, 19, 42, 190, DateTimeKind.Utc).AddTicks(6806),
+                            CreatedOn = new DateTime(2025, 8, 1, 13, 5, 48, 83, DateTimeKind.Utc).AddTicks(631),
                             Description = "Генерира силни, случайни пароли с конфигурируеми опции.",
-                            IsApproved = true,
-                            IsTemplate = false,
                             ServiceConfigJson = "{\"toolName\": \"PasswordGenerator\", \"endpoint\": \"/api/PasswordGenerator/generate\", \"method\": \"GET\"}",
                             Title = "Генератор на Случайни Пароли",
                             ViewsCount = 0
@@ -573,14 +528,9 @@ namespace ServiceHub.Data.Migrations
                         {
                             Id = new Guid("b422f89b-e7a3-4130-b899-7b56010007e0"),
                             AccessType = 2,
-                            ApprovedByUserId = "2e7a5b6c-d4e5-4f7g-h8i9-0j1k2l3m4n5o",
-                            ApprovedOn = new DateTime(2025, 8, 1, 14, 19, 42, 190, DateTimeKind.Utc).AddTicks(6812),
                             CategoryId = new Guid("a0a0a0a0-a0a0-a0a0-a0a0-000000000001"),
-                            CreatedByUserId = "2e7a5b6c-d4e5-4f7g-h8i9-0j1k2l3m4n5o",
-                            CreatedOn = new DateTime(2025, 8, 1, 14, 19, 42, 190, DateTimeKind.Utc).AddTicks(6811),
+                            CreatedOn = new DateTime(2025, 8, 1, 13, 5, 48, 83, DateTimeKind.Utc).AddTicks(636),
                             Description = "Въвеждаш данни и получаваш изчислена фактура.",
-                            IsApproved = true,
-                            IsTemplate = false,
                             ServiceConfigJson = "{\"toolName\": \"InvoiceGenerator\", \"endpoint\": \"/api/InvoiceGenerator/generate\", \"method\": \"POST\"}",
                             Title = "Генератор на Инвойси/Фактури",
                             ViewsCount = 0
@@ -589,14 +539,9 @@ namespace ServiceHub.Data.Migrations
                         {
                             Id = new Guid("2ef43d87-d749-4d7d-9b7d-f7c4f527bea7"),
                             AccessType = 2,
-                            ApprovedByUserId = "2e7a5b6c-d4e5-4f7g-h8i9-0j1k2l3m4n5o",
-                            ApprovedOn = new DateTime(2025, 8, 1, 14, 19, 42, 190, DateTimeKind.Utc).AddTicks(6816),
                             CategoryId = new Guid("b1b1b1b1-b1b1-b1b1-b1b1-000000000002"),
-                            CreatedByUserId = "2e7a5b6c-d4e5-4f7g-h8i9-0j1k2l3m4n5o",
-                            CreatedOn = new DateTime(2025, 8, 1, 14, 19, 42, 190, DateTimeKind.Utc).AddTicks(6816),
+                            CreatedOn = new DateTime(2025, 8, 1, 13, 5, 48, 83, DateTimeKind.Utc).AddTicks(640),
                             Description = "Изчислява ROI, бюджети, прогнозни приходи и разходи.",
-                            IsApproved = true,
-                            IsTemplate = false,
                             ServiceConfigJson = "{\"toolName\": \"FinancialCalculator\", \"endpoint\": \"/api/FinancialCalculator/calculate\", \"method\": \"POST\"}",
                             Title = "Финансов Калкулатор / Анализатор",
                             ViewsCount = 0
@@ -605,14 +550,9 @@ namespace ServiceHub.Data.Migrations
                         {
                             Id = new Guid("3a7b8b0c-1d2e-4f5a-a837-3d5e9f1a2b0c"),
                             AccessType = 0,
-                            ApprovedByUserId = "2e7a5b6c-d4e5-4f7g-h8i9-0j1k2l3m4n5o",
-                            ApprovedOn = new DateTime(2025, 8, 1, 14, 19, 42, 190, DateTimeKind.Utc).AddTicks(6820),
                             CategoryId = new Guid("b1b1b1b1-b1b1-b1b1-b1b1-000000000002"),
-                            CreatedByUserId = "2e7a5b6c-d4e5-4f7g-h8i9-0j1k2l3m4n5o",
-                            CreatedOn = new DateTime(2025, 8, 1, 14, 19, 42, 190, DateTimeKind.Utc).AddTicks(6820),
+                            CreatedOn = new DateTime(2025, 8, 1, 13, 5, 48, 83, DateTimeKind.Utc).AddTicks(735),
                             Description = "Преброява думи, символи и редове във въведен текст.",
-                            IsApproved = true,
-                            IsTemplate = false,
                             ServiceConfigJson = "{\"toolName\": \"WordCharacterCounter\", \"endpoint\": \"/api/WordCharacter/count\", \"method\": \"POST\"}",
                             Title = "Брояч на Думи и Символи",
                             ViewsCount = 0
@@ -621,14 +561,9 @@ namespace ServiceHub.Data.Migrations
                         {
                             Id = new Guid("8edc2d04-00f5-4630-b5a9-4fa499fc7210"),
                             AccessType = 2,
-                            ApprovedByUserId = "2e7a5b6c-d4e5-4f7g-h8i9-0j1k2l3m4n5o",
-                            ApprovedOn = new DateTime(2025, 8, 1, 14, 19, 42, 190, DateTimeKind.Utc).AddTicks(6824),
                             CategoryId = new Guid("a0a0a0a0-a0a0-a0a0-a0a0-000000000001"),
-                            CreatedByUserId = "2e7a5b6c-d4e5-4f7g-h8i9-0j1k2l3m4n5o",
-                            CreatedOn = new DateTime(2025, 8, 1, 14, 19, 42, 190, DateTimeKind.Utc).AddTicks(6824),
+                            CreatedOn = new DateTime(2025, 8, 1, 13, 5, 48, 83, DateTimeKind.Utc).AddTicks(739),
                             Description = "Генерира автоматично договори с шаблони (наем, труд и др.).",
-                            IsApproved = true,
-                            IsTemplate = false,
                             ServiceConfigJson = "{\"toolName\": \"ContractGenerator\", \"endpoint\": \"/api/ContractGenerator/generate\", \"method\": \"POST\"}",
                             Title = "Генератор на Договори",
                             ViewsCount = 0
@@ -726,34 +661,17 @@ namespace ServiceHub.Data.Migrations
 
             modelBuilder.Entity("ServiceHub.Data.Models.Service", b =>
                 {
-                    b.HasOne("ServiceHub.Data.Models.ApplicationUser", "ApprovedByUser")
-                        .WithMany()
-                        .HasForeignKey("ApprovedByUserId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.HasOne("ServiceHub.Data.Models.Category", "Category")
                         .WithMany("Services")
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("ServiceHub.Data.Models.ApplicationUser", "CreatedByUser")
-                        .WithMany("CreatedServices")
-                        .HasForeignKey("CreatedByUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("ApprovedByUser");
-
                     b.Navigation("Category");
-
-                    b.Navigation("CreatedByUser");
                 });
 
             modelBuilder.Entity("ServiceHub.Data.Models.ApplicationUser", b =>
                 {
-                    b.Navigation("CreatedServices");
-
                     b.Navigation("Favorites");
 
                     b.Navigation("Reviews");

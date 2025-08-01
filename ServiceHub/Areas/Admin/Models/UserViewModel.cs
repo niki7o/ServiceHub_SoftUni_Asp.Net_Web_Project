@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ServiceHub.Core.Models.Service;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -19,5 +20,6 @@ namespace ServiceHub.Areas.Admin.Models
 
         [Display(Name = "Роли")]
         public IEnumerable<string> Roles { get; set; } = new List<string>();
+       
     }
 }
