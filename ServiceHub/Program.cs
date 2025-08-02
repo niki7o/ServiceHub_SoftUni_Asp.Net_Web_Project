@@ -25,7 +25,7 @@ namespace ServiceHub
     {
         public static async Task Main(string[] args)
         {
-            var builder = WebApplication.CreateBuilder(args);
+            WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
            
             builder.Services.AddSingleton(typeof(IConverter), new SynchronizedConverter(new PdfTools()));
@@ -34,7 +34,7 @@ namespace ServiceHub
             ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
 
            
-            var connectionString = builder.Configuration.GetConnectionString("ServiceHubDbContextConnection") ??
+            string connectionString = builder.Configuration.GetConnectionString("ServiceHubDbContextConnection") ??
                                    throw new InvalidOperationException("Connection string 'ServiceHubDbContextConnection' not found.");
             builder.Services.AddDbContext<ServiceHubDbContext>(options =>
                                options.UseSqlServer(connectionString));
@@ -96,7 +96,7 @@ namespace ServiceHub
                 return new ServiceDispatcher(sp, logger, serviceImplementations);
             });
 
-            var app = builder.Build();
+            WebApplication app = builder.Build();
 
 
             using (var scope = app.Services.CreateScope())

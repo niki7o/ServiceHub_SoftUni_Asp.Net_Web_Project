@@ -6,8 +6,8 @@
 
     if (serviceId == Guid.Empty)
     {
-        <div class="max-w-md mx-auto bg-white p-8 rounded-xl shadow-lg mt-10 font-inter">
-            <p class="text-red-500 text-center font-bold text-lg">
+        <div class="card shadow-lg mt-5 p-4 text-center">
+            <p class="text-danger font-weight-bold">
                 Грешка: Идентификаторът на услугата не е зададен правилно.
                 Моля, проверете ServiceConstants.cs и FileConverterController.cs.
             </p>
@@ -16,63 +16,227 @@
     }
 }
 
-<!DOCTYPE html>
-<html lang="bg">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Конвертор на Файлове</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-       
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f0f2f5;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
+<style>
+    .form-page-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: calc(100vh - 150px);
+        padding: 30px;
+        box-sizing: border-box;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .file-converter-card {
+        max-width: 580px;
+        width: 100%;
+        background-color: #ffffff;
+        padding: 45px;
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        border: 1px solid rgba(220, 220, 220, 0.6);
+        position: relative;
+        z-index: 10;
+        overflow: hidden;
+        transform: translateY(0);
+        transition: transform 0.5s ease-out, box-shadow 0.5s ease-out;
+    }
+
+        .file-converter-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
         }
 
-        input[type="file"]::-webkit-file-upload-button {
-            cursor: pointer;
+    .card-background-pattern {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: radial-gradient(circle at 10% 10%, rgba(173, 216, 230, 0.1) 0%, transparent 40%), radial-gradient(circle at 90% 90%, rgba(200, 190, 240, 0.1) 0%, transparent 40%), radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.05) 0%, transparent 60%);
+        animation: subtleMove 25s ease-in-out infinite alternate;
+        z-index: 1;
+        pointer-events: none;
+    }
+
+    .form-title {
+        font-size: 3rem;
+        font-weight: 900;
+        color: #483d8b;
+        margin-bottom: 40px;
+        text-align: center;
+        position: relative;
+        z-index: 2;
+        text-shadow: 1px 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .form-group {
+        margin-bottom: 25px;
+        position: relative;
+        z-index: 2;
+    }
+
+        .form-group label {
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 10px;
+            display: block;
+            font-size: 1.15rem;
         }
 
-        input[type="file"]::file-selector-button {
-            cursor: pointer;
-        }
-    </style>
-</head>
-<body>
-    <div class="max-w-md w-full bg-white p-8 rounded-xl shadow-2xl mt-10 border border-gray-200">
-        <h2 class="text-4xl font-extrabold text-gray-900 mb-8 text-center">Конвертор на Файлове</h2>
+    .form-control {
+        border-radius: 12px;
+        padding: 15px 20px;
+        border: 1px solid #dcdcdc;
+        box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.05);
+        transition: border-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+        font-size: 1.1rem;
+        color: #555;
+    }
 
-        <form id="fileConvertForm" action="/FileConverter/Convert" method="post" enctype="multipart/form-data" class="space-y-7">
+        .form-control:focus {
+            border-color: #8a2be2;
+            box-shadow: 0 0 0 4px rgba(138, 43, 226, 0.2);
+            outline: none;
+            background-color: #f9f9f9;
+        }
+
+    .custom-file-input::-webkit-file-upload-button {
+        background: linear-gradient(45deg, #8a2be2, #6a5acd);
+        color: white;
+        border: none;
+        padding: 12px 25px;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.3s ease-in-out;
+        margin-right: 15px;
+        font-weight: 600;
+        box-shadow: 0 5px 15px rgba(138, 43, 226, 0.3);
+    }
+
+    .custom-file-input::file-selector-button {
+        background: linear-gradient(45deg, #8a2be2, #6a5acd);
+        color: white;
+        border: none;
+        padding: 12px 25px;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.3s ease-in-out;
+        margin-right: 15px;
+        font-weight: 600;
+        box-shadow: 0 5px 15px rgba(138, 43, 226, 0.3);
+    }
+
+        .custom-file-input::-webkit-file-upload-button:hover,
+        .custom-file-input::file-selector-button:hover {
+            background: linear-gradient(45deg, #6a5acd, #8a2be2);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(138, 43, 226, 0.4);
+        }
+
+    .form-check-input {
+        width: 1.3em;
+        height: 1.3em;
+        border-radius: 0.4em;
+        border: 2px solid #a0aec0;
+        transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+        cursor: pointer;
+    }
+
+        .form-check-input:checked {
+            background-color: #8a2be2;
+            border-color: #8a2be2;
+            box-shadow: 0 0 0 3px rgba(138, 43, 226, 0.2);
+        }
+
+    .form-check-label {
+        font-size: 1.05rem;
+        color: #555;
+        cursor: pointer;
+    }
+
+    .submit-btn {
+        background: linear-gradient(90deg, #6a5acd, #8a2be2);
+        border: none;
+        color: white;
+        font-size: 1.5rem;
+        font-weight: 700;
+        padding: 18px 30px;
+        border-radius: 15px;
+        box-shadow: 0 8px 20px rgba(138, 43, 226, 0.4);
+        transition: all 0.3s ease-in-out;
+        width: 100%;
+        display: block;
+        margin-top: 40px;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+    }
+
+        .submit-btn:hover {
+            background: linear-gradient(90deg, #8a2be2, #6a5acd);
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 12px 25px rgba(138, 43, 226, 0.5);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 10px rgba(138, 43, 226, 0.3);
+        }
+
+    .message-box {
+        margin-top: 30px;
+        padding: 18px;
+        border-radius: 12px;
+        font-weight: 600;
+        text-align: center;
+        font-size: 1.15rem;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+        .message-box.bg-success-light {
+            background-color: #e6ffe6;
+            color: #28a745;
+            border: 1px solid #28a745;
+        }
+
+        .message-box.bg-danger-light {
+            background-color: #ffe6e6;
+            color: #dc3545;
+            border: 1px solid #dc3545;
+        }
+
+        .message-box.bg-info-light {
+            background-color: #e6f7ff;
+            color: #17a2b8;
+            border: 1px solid #17a2b8;
+        }
+
+    
+</style>
+
+<div class="form-page-container">
+    <div class="file-converter-card">
+        <div class="card-background-pattern"></div>
+        <h2 class="form-title">Конвертор на Файлове</h2>
+
+        <form id="fileConvertForm" action="/FileConverter/Convert" method="post" enctype="multipart/form-data">
             <input type="hidden" name="ServiceId" value="@serviceId.ToString()" />
 
-            <div>
-                <label for="fileContent" class="block text-base font-semibold text-gray-800 mb-2">Изберете файл:</label>
-                <input type="file" id="fileContent" name="FileContent" class="block w-full text-lg text-gray-900
-                       file:mr-4 file:py-3 file:px-6
-                       file:rounded-full file:border-0
-                       file:text-base file:font-semibold
-                       file:bg-indigo-50 file:text-indigo-700
-                       hover:file:bg-indigo-100 cursor:pointer transition duration-150 ease-in-out" required />
+            <div class="form-group">
+                <label for="fileContent">Изберете файл:</label>
+                <input type="file" id="fileContent" name="FileContent" class="form-control-file custom-file-input" required />
             </div>
 
-            <div>
-                <label for="originalFileName" class="block text-base font-semibold text-gray-800 mb-2">Оригинално име на файла (по избор):</label>
+            <div class="form-group">
+                <label for="originalFileName">Оригинално име на файла (по избор):</label>
                 <input type="text" id="originalFileName" name="OriginalFileName" placeholder="Пример: МоятДокумент.pdf"
-                       class="mt-1 block w-full px-5 py-3 border border-gray-300 rounded-lg shadow-sm
-                              focus:ring-indigo-500 focus:border-indigo-500 sm:text-base transition duration-150 ease-in-out" />
+                       class="form-control" />
             </div>
 
-            <div>
-                <label for="targetFormat" class="block text-base font-semibold text-gray-800 mb-2">Целеви формат:</label>
-                <select id="targetFormat" name="TargetFormat"
-                        class="mt-1 block w-full px-5 py-3 border border-gray-300 rounded-lg shadow-sm
-                               focus:ring-indigo-500 focus:border-indigo-500 sm:text-base transition duration-150 ease-in-out" required>
+            <div class="form-group">
+                <label for="targetFormat">Целеви формат:</label>
+                <select id="targetFormat" name="TargetFormat" class="form-control" required>
                     <option value="">Изберете формат</option>
                     <option value="pdf">PDF</option>
                     <option value="docx">DOCX</option>
@@ -84,24 +248,22 @@
                 </select>
             </div>
 
-            <div class="flex items-center">
+            <div class="form-group form-check">
                 <input type="checkbox" id="performOCRIfApplicable" name="PerformOCRIfApplicable"
-                       class="h-5 w-5 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded-md cursor:pointer" />
-                <label for="performOCRIfApplicable" class="ml-3 block text-base text-gray-900">Извърши OCR, ако е приложимо (Само за изображения към текст)</label>
+                       class="form-check-input" />
+                <label class="form-check-label" for="performOCRIfApplicable">Извърши OCR, ако е приложимо (Само за изображения към текст)</label>
             </div>
 
-            <button type="submit"
-                    class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-lg
-                           text-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700
-                           focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500
-                           transition duration-200 ease-in-out transform hover:scale-105">
+            <button type="submit" class="btn btn-primary submit-btn">
                 Конвертирай
             </button>
         </form>
 
-        <div id="messageBox" class="hidden mt-6 p-4 rounded-lg text-base font-medium" role="alert"></div>
+        <div id="messageBox" class="message-box d-none" role="alert"></div>
     </div>
+</div>
 
+@section Scripts {
     <script>
         document.getElementById('fileConvertForm').addEventListener('submit', async function(event) {
             event.preventDefault();
@@ -110,12 +272,12 @@
             const formData = new FormData(form);
             const messageBox = document.getElementById('messageBox');
 
-            messageBox.classList.add('hidden');
-            messageBox.classList.remove('bg-red-100', 'text-red-700', 'bg-green-100', 'text-green-700', 'bg-blue-100', 'text-blue-700');
+            messageBox.classList.add('d-none');
+            messageBox.classList.remove('bg-danger-light', 'text-danger', 'bg-success-light', 'text-success', 'bg-info-light', 'text-info');
 
             messageBox.textContent = 'Конвертирането започна... Моля, изчакайте.';
-            messageBox.classList.remove('hidden');
-            messageBox.classList.add('bg-blue-100', 'text-blue-700');
+            messageBox.classList.remove('d-none');
+            messageBox.classList.add('bg-info-light', 'text-info');
 
             try {
                 const response = await fetch(form.action, {
@@ -127,7 +289,7 @@
                     const contentDisposition = response.headers.get('Content-Disposition');
                     let filename = 'converted_file';
                     if (contentDisposition && contentDisposition.indexOf('attachment') !== -1) {
-                        const filenameRegex = /filename\*?=['"]?(?:UTF-\d['"]*)?([^;\n\r"']*)['"]?;?/;
+                        const filenameRegex = /filename\*?=['"]?(?:UTF-\d['']*)?([^;\n\r"']*)['']?;?/;
                         const matches = filenameRegex.exec(contentDisposition);
                         if (matches != null && matches[1]) {
                             filename = decodeURIComponent(matches[1].replace(/^utf-8'''/, ''));
@@ -145,21 +307,20 @@
                     window.URL.revokeObjectURL(url);
 
                     messageBox.textContent = 'Файлът е успешно конвертиран и изтеглен!';
-                    messageBox.classList.remove('hidden');
-                    messageBox.classList.add('bg-green-100', 'text-green-700');
+                    messageBox.classList.remove('d-none');
+                    messageBox.classList.add('bg-success-light', 'text-success');
                 } else {
                     const errorData = await response.json();
                     messageBox.textContent = `Грешка: ${errorData.message || 'Неизвестна грешка.'}`;
-                    messageBox.classList.remove('hidden');
-                    messageBox.classList.add('bg-red-100', 'text-red-700');
+                    messageBox.classList.remove('d-none');
+                    messageBox.classList.add('bg-danger-light', 'text-danger');
                 }
             } catch (error) {
                 console.error('Fetch error:', error);
                 messageBox.textContent = `Възникна мрежова грешка: ${error.message || 'Не може да се свърже със сървъра.'}`;
-                messageBox.classList.remove('hidden');
-                messageBox.classList.add('bg-red-100', 'text-red-700');
+                messageBox.classList.remove('d-none');
+                messageBox.classList.add('bg-danger-light', 'text-danger');
             }
         });
     </script>
-</body>
-</html>
+}

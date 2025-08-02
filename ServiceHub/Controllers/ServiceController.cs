@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+
 using ServiceHub.Common;
 using ServiceHub.Common.Enum;
 using ServiceHub.Core.Models;
@@ -49,94 +50,27 @@ namespace ServiceHub.Controllers
         }
 
         [AllowAnonymous]
-        public async Task<IActionResult> All(string? categoryFilter, string? accessTypeFilter, string? filter = null, string? sort = null)
+        public async Task<IActionResult> All(string? categoryFilter, string? accessTypeFilter, string? filter = null, string? sort = null, int page = 1)
         {
             string? currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            int servicesPerPage = 9;
 
-            var allCategories = await _categoryRepository.All().OrderBy(c => c.Name).ToListAsync();
-            var categoriesList = allCategories.Select(c => new SelectListItem { Value = c.Name, Text = c.Name }).ToList();
-            categoriesList.Insert(0, new SelectListItem { Value = "", Text = "All Categories" });
-            ViewBag.Categories = new SelectList(categoriesList, "Value", "Text", categoryFilter);
-            ViewBag.CurrentCategory = categoryFilter;
+            ServiceAllViewModel viewModel = await serviceService.GetAllAsync(
+                categoryFilter,
+                accessTypeFilter,
+                filter,
+                sort,
+                currentUserId,
+                page,
+                servicesPerPage
+            );
 
-            var allAccessTypes = Enum.GetNames(typeof(AccessType))
-                                     .Select(name => new SelectListItem { Value = name, Text = name })
-                                     .ToList();
-            allAccessTypes.Insert(0, new SelectListItem { Value = "", Text = "All Access Types" });
-            ViewBag.AccessTypes = new SelectList(allAccessTypes, "Value", "Text", accessTypeFilter);
-            ViewBag.CurrentAccessType = accessTypeFilter;
+            viewModel.CurrentCategoryFilter = categoryFilter;
+            viewModel.CurrentAccessTypeFilter = accessTypeFilter;
+            viewModel.CurrentSort = sort;
+            viewModel.CurrentFilter = filter;
 
-            ViewBag.CurrentFilter = filter;
-            ViewBag.CurrentSort = sort;
-
-            var services = await serviceService.GetAllAsync(categoryFilter, accessTypeFilter, filter, sort, currentUserId);
-
-            return View(services);
-        }
-
-        [AllowAnonymous]
-        public async Task<IActionResult> Details(Guid id)
-        {
-            string? currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            await serviceService.IncrementViewsCount(id);
-            _logger.LogInformation($"Controller.Details: Извикан IncrementViewsCount за ServiceId: {id}.");
-
-            ServiceViewModel? serviceViewModel;
-            try
-            {
-                serviceViewModel = await serviceService.GetByIdAsync(id, currentUserId);
-            }
-            catch (UnauthorizedAccessException)
-            {
-                TempData["ErrorMessage"] = "Нямате право да преглеждате този шаблон за услуга.";
-                return RedirectToAction(nameof(All));
-            }
-            catch (ArgumentException)
-            {
-                TempData["ErrorMessage"] = "Услугата не е намерена.";
-                return RedirectToAction(nameof(All));
-            }
-
-            if (serviceViewModel == null)
-            {
-                _logger.LogWarning($"Controller.Details: Услуга с ID {id} не е намерена или достъпът е отказан.");
-                TempData["ErrorMessage"] = "Услугата не е намерена или не е достъпна.";
-                return RedirectToAction(nameof(All));
-            }
-
-            _logger.LogInformation($"Controller.Details: ServiceId: {serviceViewModel.Id}, ViewsCount (във ViewModel): {serviceViewModel.ViewsCount}, IsFavorite: {serviceViewModel.IsFavorite} за потребител: {currentUserId}");
-
-            bool canUseService = false;
-            if (User.Identity.IsAuthenticated)
-            {
-                var user = await userManager.GetUserAsync(User);
-                if (user != null)
-                {
-                    bool isAdmin = await userManager.IsInRoleAsync(user, "Admin");
-                    bool isBusinessUser = await userManager.IsInRoleAsync(user, "BusinessUser");
-                    bool isRegularUser = await userManager.IsInRoleAsync(user, "User");
-
-                    if (isAdmin || isBusinessUser)
-                    {
-                        canUseService = true;
-                    }
-                    else if (isRegularUser)
-                    {
-                        if (serviceViewModel.AccessType == AccessType.Free || serviceViewModel.AccessType == AccessType.Partial)
-                        {
-                            canUseService = true;
-                        }
-                    }
-                }
-            }
-
-            ViewBag.CanUseService = canUseService;
-            ViewBag.IsTemplate = serviceViewModel.IsTemplate;
-            ViewBag.IsApproved = serviceViewModel.IsApproved;
-            ViewBag.CreatedByUserName = serviceViewModel.CreatedByUserName;
-
-            return View(serviceViewModel);
+            return View(viewModel);
         }
 
         [HttpGet("Service/UseService/{id}")]
@@ -325,7 +259,7 @@ namespace ServiceHub.Controllers
         [HttpPost]
         [Authorize]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ToggleFavorite(Guid serviceId)
+        public async Task<IActionResult> ToggleFavorite(Guid serviceId, string? categoryFilter, string? accessTypeFilter, string? filter, string? sort, int page = 1)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (userId == null) return Unauthorized();
@@ -347,7 +281,57 @@ namespace ServiceHub.Controllers
             {
                 TempData["ErrorMessage"] = "Възникна грешка при промяна на любимия статус.";
             }
-            return RedirectToAction(nameof(Details), new { id = serviceId });
+
+            return RedirectToAction("All", new { categoryFilter, accessTypeFilter, filter, sort, page });
+        }
+
+        [HttpGet]
+        [Route("Service/Details/{id}")]
+        public async Task<IActionResult> Details(Guid id)
+        {
+            string? currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            try
+            {
+                var service = await serviceService.GetByIdAsync(id, currentUserId);
+                await serviceService.IncrementViewsCount(id);
+
+                // Logic to determine if the "Use Service" button should be visible
+                bool canUseService = false;
+                if (User.Identity.IsAuthenticated)
+                {
+                    var user = await userManager.GetUserAsync(User);
+                    if (user != null)
+                    {
+                        bool isAdmin = await userManager.IsInRoleAsync(user, "Admin");
+                        bool isBusinessUser = await userManager.IsInRoleAsync(user, "BusinessUser");
+                        bool isRegularUser = await userManager.IsInRoleAsync(user, "User");
+
+                        if (isAdmin || isBusinessUser)
+                        {
+                            canUseService = true;
+                        }
+                        else if (isRegularUser)
+                        {
+                            if (service.AccessType == AccessType.Free || service.AccessType == AccessType.Partial)
+                            {
+                                canUseService = true;
+                            }
+                        }
+                    }
+                }
+                ViewBag.CanUseService = canUseService;
+
+                return View(service);
+            }
+            catch (ArgumentException)
+            {
+                return NotFound();
+            }
+            catch (UnauthorizedAccessException)
+            {
+                TempData["ErrorMessage"] = "Нямате право да преглеждате този неодобрен шаблон.";
+                return RedirectToAction("All");
+            }
         }
 
         [HttpGet]
@@ -384,7 +368,7 @@ namespace ServiceHub.Controllers
             {
                 await serviceService.CreateAsync(model, adminId);
                 TempData["SuccessMessage"] = "Услугата е създадена успешно!";
-                return RedirectToAction(nameof(All));
+                return RedirectToAction("All");
             }
             catch (Exception)
             {
@@ -438,7 +422,7 @@ namespace ServiceHub.Controllers
                 {
                     TempData["SuccessMessage"] = "Шаблонът за услуга е изпратен за одобрение!";
                 }
-                return RedirectToAction(nameof(All));
+                return RedirectToAction("All");
             }
             catch (InvalidOperationException ex)
             {
@@ -476,12 +460,12 @@ namespace ServiceHub.Controllers
             catch (ArgumentException ex)
             {
                 TempData["ErrorMessage"] = ex.Message;
-                return RedirectToAction(nameof(All));
+                return RedirectToAction("All");
             }
             catch (InvalidOperationException ex)
             {
                 TempData["ErrorMessage"] = ex.Message;
-                return RedirectToAction(nameof(All));
+                return RedirectToAction("All");
             }
             catch (UnauthorizedAccessException)
             {
@@ -491,7 +475,7 @@ namespace ServiceHub.Controllers
             catch (Exception)
             {
                 TempData["ErrorMessage"] = "Възникна грешка при извличане на услугата за редактиране.";
-                return RedirectToAction(nameof(All));
+                return RedirectToAction("All");
             }
         }
 
@@ -520,17 +504,17 @@ namespace ServiceHub.Controllers
             {
                 await serviceService.UpdateAsync(id, model, userId, isAdmin);
                 TempData["SuccessMessage"] = "Услугата е редактирана успешно!";
-                return RedirectToAction(nameof(Details), new { id = id });
+                return RedirectToAction("Details", new { id = id });
             }
             catch (ArgumentException ex)
             {
                 TempData["ErrorMessage"] = ex.Message;
-                return RedirectToAction(nameof(All));
+                return RedirectToAction("All");
             }
             catch (InvalidOperationException ex)
             {
                 TempData["ErrorMessage"] = ex.Message;
-                return RedirectToAction(nameof(All));
+                return RedirectToAction("All");
             }
             catch (UnauthorizedAccessException)
             {
@@ -563,27 +547,27 @@ namespace ServiceHub.Controllers
             {
                 await serviceService.DeleteAsync(id, userId, isAdmin);
                 TempData["SuccessMessage"] = "Услугата е изтрита успешно!";
-                return RedirectToAction(nameof(All));
+                return RedirectToAction("All");
             }
             catch (ArgumentException ex)
             {
                 TempData["ErrorMessage"] = ex.Message;
-                return RedirectToAction(nameof(All));
+                return RedirectToAction("All");
             }
             catch (UnauthorizedAccessException ex)
             {
                 TempData["ErrorMessage"] = ex.Message;
-                return RedirectToAction(nameof(All));
+                return RedirectToAction("All");
             }
             catch (InvalidOperationException ex)
             {
                 TempData["ErrorMessage"] = ex.Message;
-                return RedirectToAction(nameof(All));
+                return RedirectToAction("All");
             }
             catch (Exception)
             {
                 TempData["ErrorMessage"] = "Възникна грешка при изтриване на услугата.";
-                return RedirectToAction(nameof(All));
+                return RedirectToAction("All");
             }
         }
     }

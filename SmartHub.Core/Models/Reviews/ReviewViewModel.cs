@@ -14,5 +14,6 @@ namespace ServiceHub.Core.Models.Reviews
         public int Rating { get; set; }
         public string Comment { get; set; } = null!;
         public DateTime CreatedOn { get; set; }
+        public string ServiceName { get; set; }
     }
 }

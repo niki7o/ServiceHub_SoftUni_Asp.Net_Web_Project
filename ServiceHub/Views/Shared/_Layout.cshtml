@@ -4,22 +4,98 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - ServiceHub</title>
+
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="shortlink" href="~/json/quotes.json" asp-append-version="true" />
     <link rel="stylesheet" href="~/ServiceHub.styles.css" asp-append-version="true" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" xintegrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer" />
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #a8dadc 0%, #457b9d 100%);
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        .navbar {
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .navbar-brand img {
+            height: 40px;
+            width: auto;
+            margin-right: 10px;
+        }
+
+        .navbar-nav .nav-link {
+            font-weight: 500;
+            transition: color 0.2s ease-in-out;
+        }
+
+            .navbar-nav .nav-link:hover {
+                color: #007bff !important;
+            }
+
+        .navbar-toggler {
+            border: none;
+        }
+
+        .navbar-toggler-icon {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%280, 0, 0, 0.55%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+        }
+
+        .main-content-wrapper {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            width: 100%;
+            padding: 20px 0;
+            box-sizing: border-box;
+        }
+
+        main[role="main"] {
+            width: 100%;
+            max-width: 1400px;
+            margin: auto;
+            box-sizing: border-box;
+        }
+
+        .dynamic-footer {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            padding: 1.5rem 0;
+            font-size: 0.9rem;
+            margin-top: auto;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .fade-in {
+            opacity: 1;
+            transition: opacity 0.5s ease-in;
+        }
+
+        .fade-out {
+            opacity: 0;
+            transition: opacity 0.5s ease-out;
+        }
+    </style>
 </head>
 <body>
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
+        <nav class="navbar navbar-expand-sm navbar-light bg-white border-bottom box-shadow mb-3">
+            <div class="container-fluid px-4">
                 <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">
-                <img src="~/Images/LogoServiceHub.png" alt="ServiceHub Logo" style="height: 40px; width: auto; margin-right: 10px;" />
-                
+                    <img src="~/Images/LogoServiceHub.png" alt="ServiceHub Logo" />
                 </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
                         aria-expanded="false" aria-label="Toggle navigation">
@@ -40,15 +116,12 @@
                                 <a class="nav-link text-dark" asp-area="Admin" asp-controller="Admin" asp-action="AllUsers">Админ Панел</a>
                             </li>
                         }
-
-                        
                         else if (User.IsInRole("User"))
                         {
                             <li class="nav-item">
                                 <a class="nav-link text-dark" asp-controller="Home" asp-action="Plans">Upgrade</a>
                             </li>
                         }
-
                     </ul>
                     <partial name="_LoginPartial" />
                 </div>
@@ -61,11 +134,11 @@
         </main>
     </div>
 
-    <footer class="dynamic-footer bg-dark text-white py-3">
+    <footer class="dynamic-footer">
         <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center">
             <span class="mb-2 mb-md-0">&copy; @DateTime.Now.Year - ServiceHub</span>
             <div class="d-flex flex-column flex-md-row align-items-center">
-                <span id="footer-quote" class="me-md-3 mb-2 mb-md-0 text-center text-md-start">Loading a wise quote...</span>
+                <span id="footer-quote" class="me-md-3 mb-2 mb-md-0 text-center text-md-start fade-in">Loading a wise quote...</span>
                 <button id="new-quote-btn" class="btn btn-outline-light btn-sm">
                     <i class="fas fa-sync-alt"></i> Нов Цитат
                 </button>
@@ -76,10 +149,45 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
-    <script src="~/js/footer-quotes.js" asp-append-version="true"></script>
-        
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const quotes = [
+                "„Единственият начин да вършиш страхотна работа е да обичаш това, което правиш.“ – Стив Джобс",
+                "„Бъдещето принадлежи на тези, които вярват в красотата на мечтите си.“ – Елинор Рузвелт",
+                "„Неуспехът е просто възможност да започнеш отново, този път по-интелигентно.“ – Хенри Форд",
+                "„Вярвай, че можеш и си наполовина там.“ – Теодор Рузвелт",
+                "„Трудолюбието е майка на късмета.“ – Бенджамин Франклин",
+                "„Пътят към успеха и пътят към провала са почти едни и същи.“ – Колин Пауъл",
+                "„Не се страхувайте да се откажете от доброто, за да отидете за великото.“ – Джон Д. Рокфелер",
+                "„Успехът не е окончателен, провалът не е фатален: смелостта да продължиш е това, което има значение.“ – Уинстън Чърчил"
+            ];
+            let currentQuoteIndex = 0;
+            const footerQuoteElement = document.getElementById('footer-quote');
+            const newQuoteBtn = document.getElementById('new-quote-btn');
+
+            function updateQuote() {
+                footerQuoteElement.classList.remove('fade-in');
+                footerQuoteElement.classList.add('fade-out');
+
+                setTimeout(() => {
+                    currentQuoteIndex = (currentQuoteIndex + 1) % quotes.length;
+                    footerQuoteElement.textContent = quotes[currentQuoteIndex];
+                    footerQuoteElement.classList.remove('fade-out');
+                    footerQuoteElement.classList.add('fade-in');
+                }, 500);
+            }
+
+            footerQuoteElement.textContent = quotes[currentQuoteIndex];
+
+            setInterval(updateQuote, 10000);
+
+            if (newQuoteBtn) {
+                newQuoteBtn.addEventListener('click', updateQuote);
+            }
+        });
+    </script>
+
     @await RenderSectionAsync("Scripts", required: false)
 
-   
 </body>
 </html>

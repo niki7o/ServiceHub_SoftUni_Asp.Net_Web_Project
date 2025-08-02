@@ -11,7 +11,7 @@
        
         var displayUserName = currentUser?.UserName;
     <li class="nav-item">
-            <a class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Manage/Index" title="Manage">Hello @displayUserName!</a>
+            <a class="nav-link text-dark" asp-area="Identity" asp-page="/Views/UserProfile" title="Manage">Hello @displayUserName!</a>
     </li>
     <li class="nav-item">
         <form  class="form-inline" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })">

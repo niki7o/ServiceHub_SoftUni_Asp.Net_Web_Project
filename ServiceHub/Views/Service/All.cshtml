@@ -1,107 +1,604 @@
-﻿@model IEnumerable<ServiceHub.Core.Models.Service.ServiceViewModel>
+﻿@model ServiceHub.Core.Models.ServiceAllViewModel
+@using ServiceHub.Common.Enum
+@using System.Text.RegularExpressions
+
 @{
-    ViewData["Title"] = "All Services";
+    ViewData["Title"] = "Всички Услуги";
+
+    var currentCategoryFilter = Model.CurrentCategoryFilter;
+    var currentAccessTypeFilter = Model.CurrentAccessTypeFilter;
+    var currentSort = Model.CurrentSort;
+    var currentFilter = Model.CurrentFilter;
+    var currentPage = Model.CurrentPage;
+    var totalPages = Model.TotalPages;
 }
 
-<h2 class="text-center">All Services</h2>
-<hr />
+<style>
+    body {
+        font-family: 'Inter', sans-serif;
+        background: linear-gradient(135deg, #a8dadc 0%, #457b9d 100%);
+        color: #333;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow-x: hidden;
+    }
 
-@if (TempData["SuccessMessage"] != null)
-{
-    <div class="alert alert-success" role="alert">
-        @TempData["SuccessMessage"]
-    </div>
-}
+    .services-page-container {
+        padding: 60px 30px;
+        max-width: 1200px;
+        margin: 0 auto;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background: linear-gradient(135deg, #a8dadc 0%, #457b9d 100%);
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        color: #fff;
+    }
 
-@if (TempData["ErrorMessage"] != null)
-{
-    <div class="alert alert-danger" role="alert">
-        @TempData["ErrorMessage"]
-    </div>
-}
+    .page-title {
+        font-size: 3.2rem;
+        font-weight: 800;
+        color: #fff;
+        margin-bottom: 50px;
+        text-align: center;
+        letter-spacing: -0.03em;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+    }
 
-@if (User.IsInRole("BusinessUser") || User.IsInRole("Admin"))
-{
-    <p>
-        <a asp-action="CreateTemplate" class="btn btn-primary">Създай услуга шаблон</a>
-    </p>
-}
+    .alert {
+        border-radius: 10px;
+        padding: 16px 22px;
+        font-size: 1rem;
+        margin-bottom: 25px;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        font-weight: 500;
+    }
 
-<div class="row mb-3">
-    <div class="col-md-4">
-        <form asp-action="All" method="get">
-            <div class="form-group">
-                <label for="categoryFilter">Категория:</label>
-                <select name="categoryFilter" id="categoryFilter" class="form-control" asp-items="ViewBag.Categories" onchange="this.form.submit()">
-                    <option value="">All Categories</option>
-                </select>
-            </div>
-        </form>
-    </div>
-    <div class="col-md-4">
-        <form asp-action="All" method="get">
-            <div class="form-group">
-                <label for="accessTypeFilter">Тип достъп:</label>
-                <select name="accessTypeFilter" id="accessTypeFilter" class="form-control" asp-items="ViewBag.AccessTypes" onchange="this.form.submit()">
-                    <option value="">All Access Types</option>
-                </select>
-            </div>
-        </form>
-    </div>
-    <div class="col-md-4">
-        <form asp-action="All" method="get">
-            <div class="form-group">
-                <label for="sort">Сортирай по:</label>
-                <select name="sort" id="sort" class="form-control" onchange="this.form.submit()">
-                    <option value="">Default</option>
-                    <option value="az" selected="@(ViewBag.CurrentSort == "az")">Име (А-Я)</option>
-                    <option value="za" selected="@(ViewBag.CurrentSort == "za")">Име (Я-А)</option>
-                    <option value="recent" selected="@(ViewBag.CurrentSort == "recent")">Най-нови</option>
-                    <option value="mostviewed" selected="@(ViewBag.CurrentSort == "mostviewed")">Най-гледани</option>
-                </select>
-            </div>
-        </form>
-    </div>
-</div>
+    .alert-success {
+        background-color: #d4edda;
+        color: #155724;
+        border-color: #c3e6cb;
+    }
 
-<div class="row">
-    @foreach (var service in Model)
+    .alert-danger {
+        background-color: #f8d7da;
+        color: #721c24;
+        border-color: #f5c6cb;
+    }
+
+    .alert-info {
+        background-color: #d1ecf1;
+        color: #0c5460;
+        border-color: #bee5eb;
+    }
+
+    .create-service-btn {
+        background-color: #28a745;
+        border: none;
+        color: white;
+        padding: 14px 28px;
+        border-radius: 8px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        transition: all 0.2s ease-in-out;
+        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+        margin-bottom: 40px;
+    }
+
+        .create-service-btn:hover {
+            background-color: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(40, 167, 69, 0.4);
+        }
+
+    .filter-sort-section {
+        background-color: rgba(255, 255, 255, 0.2);
+        padding: 25px 35px;
+        border-radius: 12px;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+        margin-bottom: 40px;
+        width: 100%;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+        .filter-sort-section label {
+            color: #fff;
+            font-weight: 500;
+            margin-bottom: 6px;
+            font-size: 0.95rem;
+        }
+
+        .filter-sort-section .form-control,
+        .filter-sort-section .form-select {
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            color: #fff;
+            border-radius: 6px;
+            padding: 10px 15px;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+            .filter-sort-section .form-control::placeholder,
+            .filter-sort-section .form-select option {
+                color: rgba(255, 255, 255, 0.7);
+            }
+
+            .filter-sort-section .form-select option {
+                background-color: #457b9d;
+                color: #fff;
+            }
+
+            .filter-sort-section .form-control:focus,
+            .filter-sort-section .form-select:focus {
+                border-color: #f1faee;
+                box-shadow: 0 0 0 0.2rem rgba(241, 250, 238, 0.25);
+                background-color: rgba(255, 255, 255, 0.25);
+            }
+
+    .apply-filters-btn {
+        background-color: #1d3557;
+        border: none;
+        color: white;
+        padding: 12px 25px;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        transition: all 0.2s ease-in-out;
+        box-shadow: 0 4px 12px rgba(29, 53, 87, 0.3);
+    }
+
+        .apply-filters-btn:hover {
+            background-color: #142840;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(29, 53, 87, 0.4);
+        }
+
+    .row {
+        display: flex;
+        flex-wrap: wrap;
+        margin-left: -15px;
+        margin-right: -15px;
+        justify-content: center;
+    }
+
+    .col-md-4 {
+        flex: 0 0 33.333333%;
+        max-width: 33.333333%;
+        padding-left: 15px;
+        padding-right: 15px;
+        box-sizing: border-box;
+    }
+
+    .service-card {
+        background-color: rgba(255, 255, 255, 0.9);
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.5);
+    }
+
+        .service-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+
+    .card-body {
+        padding: 25px;
+        flex-grow: 1;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        color: #333;
+    }
+
+    .card-title {
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: #1d3557;
+        margin-bottom: 8px;
+        line-height: 1.3;
+    }
+
+    .card-subtitle {
+        font-size: 0.95rem;
+        color: #457b9d;
+        margin-bottom: 15px;
+        font-weight: 500;
+    }
+
+    .card-text {
+        font-size: 0.88rem;
+        color: #555;
+        line-height: 1.6;
+        flex-grow: 1;
+        margin-bottom: 20px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 7;
+        -webkit-box-orient: vertical;
+    }
+
+    .access-badge {
+        display: inline-block;
+        padding: 5px 10px;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        position: absolute;
+        top: 10px;
+        right: 18px;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+
+    .badge-free {
+        background-color: #2ecc71;
+        color: white;
+    }
+
+    .badge-premium {
+        background-color: #e67e22;
+        color: white;
+    }
+
+    .badge-partial {
+        background-color: #3498db;
+        color: white;
+    }
+
+    .template-info {
+        background-color: rgba(0, 0, 0, 0.05);
+        border-radius: 6px;
+        padding: 10px 15px;
+        font-size: 0.85rem;
+        color: #6c757d;
+        margin-top: 15px;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+
+    .card-footer-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: auto;
+        padding-top: 15px;
+        border-top: 1px solid #f1f3f5;
+    }
+
+    .action-btn {
+        background-color: #1d3557;
+        border: none;
+        color: white;
+        padding: 9px 18px;
+        border-radius: 6px;
+        font-size: 0.88rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 8px rgba(29, 53, 87, 0.2);
+        margin-right: 5px;
+    }
+
+        .action-btn:hover {
+            background-color: #142840;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(29, 53, 87, 0.3);
+        }
+
+    .favorite-btn {
+        background-color: #f1faee;
+        border: 1px solid #a8dadc;
+        color: #1d3557;
+        padding: 9px 18px;
+        border-radius: 6px;
+        font-size: 0.88rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        margin-right: 10px;
+    }
+
+        .favorite-btn:hover {
+            background-color: #e0e0e0;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+        }
+
+        .favorite-btn.active {
+            background-color: #e67e22;
+            border-color: #e67e22;
+            color: white;
+        }
+
+    .stats-text {
+        color: #457b9d;
+        font-size: 0.8rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+        .stats-text i {
+            margin-right: 0;
+            color: #1d3557;
+        }
+
+        .stats-text .fa-star.gold {
+            color: gold;
+        }
+
+    .pagination-container {
+        margin-top: 40px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .pagination-btn {
+        background-color: #1d3557;
+        border: none;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 8px rgba(29, 53, 87, 0.2);
+    }
+
+        .pagination-btn:hover:not(:disabled) {
+            background-color: #142840;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(29, 53, 87, 0.3);
+        }
+
+        .pagination-btn:disabled {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.7);
+            cursor: not-allowed;
+            opacity: 0.6;
+            box-shadow: none;
+        }
+
+    .pagination-info {
+        color: #fff;
+        font-size: 0.95rem;
+        font-weight: 500;
+    }
+
+    .pagination-page-number {
+        background-color: rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        color: #fff;
+        padding: 8px 14px;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        text-decoration: none;
+    }
+
+        .pagination-page-number:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+            color: #fff;
+        }
+
+        .pagination-page-number.active {
+            background-color: #1d3557;
+            border-color: #1d3557;
+            color: white;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+        }
+</style>
+
+<div class="services-page-container">
+    <h2 class="page-title">Всички Услуги</h2>
+
+    @if (TempData["SuccessMessage"] != null)
     {
-        <div class="col-md-4 mb-4">
-            <div class="card shadow-sm h-100">
-                <div class="card-body d-flex flex-column">
-                    <h5 class="card-title">@service.Title</h5>
-                    <h6 class="card-subtitle mb-2 text-muted">@service.CategoryName</h6>
-                    <p class="card-text flex-grow-1">
-                        @(service.Description.Length > 100 ? service.Description.Substring(0, 100) + "..." : service.Description)
-                    </p>
+        <div class="alert alert-success" role="alert">
+            @TempData["SuccessMessage"]
+        </div>
+    }
 
-                    @if (service.IsTemplate && !service.IsApproved)
-                    {
-                        <div class="alert alert-info py-1 px-2 text-sm" role="alert">
-                            Създадена услуга от @service.CreatedByUserName, но е още в разработка.
-                        </div>
-                    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger" role="alert">
+            @TempData["ErrorMessage"]
+        </div>
+    }
 
-                    <div class="d-flex justify-content-between align-items-center mt-auto">
-                        <div class="btn-group">
-                            <a asp-action="Details" asp-route-id="@service.Id" class="btn btn-sm btn-outline-secondary">Детайли</a>
-                            @if (User.Identity.IsAuthenticated)
-                            {
-                                <form asp-action="ToggleFavorite" asp-route-serviceId="@service.Id" method="post" class="d-inline">
-                                    <button type="submit" class="btn btn-sm @(service.IsFavorite ? "btn-warning" : "btn-outline-warning")">
-                                        <i class="fas fa-star"></i> Любими
-                                    </button>
-                                </form>
-                            }
-                        </div>
-                        <small class="text-muted">
-                            <i class="fas fa-eye"></i> @service.ViewsCount
-                            <i class="fas fa-star" style="color: gold;"></i> @service.AverageRating.ToString("F1") (@service.ReviewCount)
-                        </small>
+    @if (User.IsInRole("BusinessUser") || User.IsInRole("Admin"))
+    {
+        <p>
+            <a asp-action="CreateTemplate" class="btn create-service-btn">Създай услуга шаблон</a>
+        </p>
+    }
+
+    <div class="filter-sort-section mb-4">
+        <form asp-action="All" method="get" id="filterForm">
+            <input type="hidden" name="page" value="1" />
+            <input type="hidden" name="filter" value="@(Model.CurrentFilter)" />
+
+            <div class="row">
+                <div class="col-md-3 mb-3">
+                    <div class="form-group">
+                        <label for="categoryFilter">Категория:</label>
+                        <select name="categoryFilter" id="categoryFilter" class="form-select" asp-items="Model.Categories">
+                            <option value="">Всички Категории</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="form-group">
+                        <label for="accessTypeFilter">Тип достъп:</label>
+                        <select name="accessTypeFilter" id="accessTypeFilter" class="form-select" asp-items="Model.AccessTypes">
+                            <option value="">Всички Типове Достъп</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="form-group">
+                        <label for="sort">Сортирай по:</label>
+                        <select name="sort" id="sort" class="form-select">
+                            <option value="">По подразбиране</option>
+                            <option value="az" selected="@(Model.CurrentSort == "az")">Име (А-Я)</option>
+                            <option value="za" selected="@(Model.CurrentSort == "za")">Име (Я-А)</option>
+                            <option value="recent" selected="@(Model.CurrentSort == "recent")">Най-нови</option>
+                            <option value="mostviewed" selected="@(Model.CurrentSort == "mostviewed")">Най-гледани</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="form-group">
+                        <label for="filter">Филтрирай:</label>
+                        <select name="filter" id="filter" class="form-select">
+                            <option value="">Всички Услуги</option>
+                            <option value="favorite" selected="@(Model.CurrentFilter == "favorite")">Моите Любими</option>
+                        </select>
                     </div>
                 </div>
             </div>
+            <div class="d-flex justify-content-end mt-3">
+                <button type="submit" class="btn apply-filters-btn">Приложи филтри</button>
+            </div>
+        </form>
+    </div>
+
+    @if (!Model.Services.Any())
+    {
+        <p class="text-center text-light lead">Няма намерени услуги, отговарящи на избраните критерии.</p>
+    }
+    else
+    {
+        <div class="row">
+            @foreach (var service in Model.Services)
+            {
+                <div class="col-md-4 mb-4">
+                    <div class="service-card h-100">
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title">@service.Title</h5>
+                            <h6 class="card-subtitle">@service.CategoryName</h6>
+                            <span class="access-badge badge @(service.AccessType == AccessType.Free ? "badge-free" : service.AccessType == AccessType.Premium ? "badge-premium" : "badge-partial")">
+                                @service.AccessType
+                            </span>
+                            <p class="card-text flex-grow-1">
+                                @(service.Description.Length > 120 ? service.Description.Substring(0, 120) + "..." : service.Description)
+                            </p>
+
+                            @if (service.IsTemplate && !service.IsApproved)
+                            {
+                                <div class="template-info">
+                                    Създадена от: @service.CreatedByUserName <br />
+                                    <small><i>(Услугата е в разработка и чака одобрение)</i></small>
+                                </div>
+                            }
+
+                            <div class="card-footer-actions">
+                                <div class="btn-group">
+                                    <a asp-action="Details" asp-route-id="@service.Id" class="btn action-btn">Детайли</a>
+                                    @if (User.Identity.IsAuthenticated)
+                                    {
+                                        <form asp-action="ToggleFavorite"
+                                              asp-route-serviceId="@service.Id"
+                                              asp-route-categoryFilter="@currentCategoryFilter"
+                                              asp-route-accessTypeFilter="@currentAccessTypeFilter"
+                                              asp-route-sort="@currentSort"
+                                              asp-route-filter="@currentFilter"
+                                              asp-route-page="@currentPage"
+                                              method="post" class="d-inline">
+                                            <button type="submit" class="btn favorite-btn @(service.IsFavorite ? "active" : "")">
+                                                <i class="fas fa-star"></i> Любими
+                                            </button>
+                                        </form>
+                                    }
+                                </div>
+                                <small class="stats-text">
+                                    <i class="fas fa-eye"></i> @service.ViewsCount
+                                    <i class="fas fa-star gold"></i> @service.AverageRating.ToString("F1") (@service.ReviewCount)
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
         </div>
+
+        @if (totalPages > 1)
+        {
+            <div class="pagination-container">
+                <a asp-action="All" asp-route-page="@(currentPage - 1)"
+                   asp-route-categoryFilter="@currentCategoryFilter"
+                   asp-route-accessTypeFilter="@currentAccessTypeFilter"
+                   asp-route-sort="@currentSort"
+                   asp-route-filter="@currentFilter"
+                   class="btn pagination-btn @(currentPage == 1 ? "disabled" : "")">
+                    Предишна
+                </a>
+
+                @for (int i = 1; i <= totalPages; i++)
+                {
+                    <a asp-action="All" asp-route-page="@i"
+                       asp-route-categoryFilter="@currentCategoryFilter"
+                       asp-route-accessTypeFilter="@currentAccessTypeFilter"
+                       asp-route-sort="@currentSort"
+                       asp-route-filter="@currentFilter"
+                       class="btn pagination-page-number @(i == currentPage ? "active" : "")">
+                        @i
+                    </a>
+                }
+
+                <a asp-action="All" asp-route-page="@(currentPage + 1)"
+                   asp-route-categoryFilter="@currentCategoryFilter"
+                   asp-route-accessTypeFilter="@currentAccessTypeFilter"
+                   asp-route-sort="@currentSort"
+                   asp-route-filter="@currentFilter"
+                   class="btn pagination-btn @(currentPage == totalPages ? "disabled" : "")">
+                    Следваща
+                </a>
+            </div>
+        }
     }
 </div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const categoryFilter = document.getElementById('categoryFilter');
+            const accessTypeFilter = document.getElementById('accessTypeFilter');
+            const sortFilter = document.getElementById('sort');
+            const filterDropdown = document.getElementById('filter');
+
+            const currentCategory = "@(Model.CurrentCategoryFilter ?? "")";
+            if (categoryFilter) {
+                categoryFilter.value = currentCategory;
+            }
+
+            const currentAccessType = "@(Model.CurrentAccessTypeFilter ?? "")";
+            if (accessTypeFilter) {
+                accessTypeFilter.value = currentAccessType;
+            }
+
+            const currentSort = "@(Model.CurrentSort ?? "")";
+            if (sortFilter) {
+                sortFilter.value = currentSort;
+            }
+
+            const currentFilterValue = "@(Model.CurrentFilter ?? "")";
+            if (filterDropdown) {
+                filterDropdown.value = currentFilterValue;
+            }
+        });
+    </script>
+}
