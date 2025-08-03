@@ -35,6 +35,7 @@ namespace ServiceHub.Services.Interfaces
         Task<IEnumerable<ServiceViewModel>> GetFavoriteServicesByUserIdAsync(string userId);
         Task<IEnumerable<ReviewViewModel>> GetReviewsByUserIdAsync(string userId);
         Task<int> GetApprovedServicesCountByUserIdAsync(string userId);
+        Task<IEnumerable<ServiceViewModel>> SearchServicesByTitleAsync(string searchTerm);
     }
 
    

@@ -75,22 +75,83 @@
         border-color: #bee5eb;
     }
 
-    .create-service-btn {
-        background-color: #28a745;
-        border: none;
-        color: white;
-        padding: 14px 28px;
-        border-radius: 8px;
-        font-size: 1.1rem;
-        font-weight: 600;
-        transition: all 0.2s ease-in-out;
-        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
-        margin-bottom: 40px;
+    .search-and-create-container {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 25px;
+        align-items: center;
+        flex-wrap: wrap;
+        width: 100%;
+        justify-content: center;
     }
 
-        .create-service-btn:hover {
+    .search-input {
+        flex-grow: 1;
+        padding: 12px 20px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        font-size: 1rem;
+        box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        max-width: 400px;
+        background-color: rgba(255, 255, 255, 0.9);
+        color: #333;
+    }
+
+        .search-input::placeholder {
+            color: #888;
+        }
+
+        .search-input:focus {
+            border-color: #457b9d;
+            box-shadow: 0 0 0 3px rgba(69, 123, 157, 0.2);
+            outline: none;
+        }
+
+    .search-results-container {
+        background-color: rgba(255, 255, 255, 0.95);
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 15px;
+        margin-top: 15px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        width: 100%;
+        max-width: 400px;
+        z-index: 100;
+        text-align: center;
+        display: none;
+        opacity: 0; /* Initial state for animation */
+        transition: opacity 0.3s ease-in-out;
+    }
+
+        .search-results-container.show {
+            opacity: 1;
+        }
+
+    .no-results {
+        color: #6c757d;
+        padding: 10px;
+        margin: 0;
+    }
+
+    .create-template-btn {
+        background-color: #28a745;
+        color: white;
+        padding: 12px 25px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: background-color 0.3s ease, transform 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+    }
+
+        .create-template-btn:hover {
             background-color: #218838;
             transform: translateY(-2px);
+            color: white;
             box-shadow: 0 6px 15px rgba(40, 167, 69, 0.4);
         }
 
@@ -172,6 +233,17 @@
         padding-right: 15px;
         box-sizing: border-box;
     }
+
+    .service-card-wrapper {
+        transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out; /* Smooth transition for showing/hiding */
+        transform: scale(1); /* Initial scale */
+    }
+
+        .service-card-wrapper.hide {
+            opacity: 0;
+            transform: scale(0.95); /* Slightly shrink when hiding */
+            /* Will set display: none after transition in JS */
+        }
 
     .service-card {
         background-color: rgba(255, 255, 255, 0.9);
@@ -343,7 +415,14 @@
         justify-content: center;
         align-items: center;
         gap: 10px;
+        opacity: 1; /* Initial state */
+        transition: opacity 0.3s ease-in-out;
     }
+
+        .pagination-container.hide {
+            opacity: 0;
+            pointer-events: none; /* Disable clicks during transition */
+        }
 
     .pagination-btn {
         background-color: #1d3557;
@@ -400,6 +479,16 @@
             color: white;
             box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
         }
+
+    .no-services-message {
+        margin-top: 20px;
+        opacity: 1;
+        transition: opacity 0.3s ease-in-out;
+    }
+
+        .no-services-message.hide {
+            opacity: 0;
+        }
 </style>
 
 <div class="services-page-container">
@@ -419,12 +508,19 @@
         </div>
     }
 
-    @if (User.IsInRole("BusinessUser") || User.IsInRole("Admin"))
-    {
-        <p>
-            <a asp-action="CreateTemplate" class="btn create-service-btn">Създай услуга шаблон</a>
-        </p>
-    }
+    <div class="search-and-create-container">
+        <input type="text" id="searchInput" class="form-control search-input" placeholder="Търсене на услуги по име или потребител" />
+        @if (User.Identity.IsAuthenticated && User.IsInRole("BusinessUser"))
+        {
+            <a asp-action="CreateTemplate" class="btn btn-success create-template-btn">
+                <i class="fas fa-plus-circle"></i> Създай шаблон
+            </a>
+        }
+    </div>
+
+    <div id="searchResults" class="search-results-container">
+        <p class="no-results"></p>
+    </div>
 
     <div class="filter-sort-section mb-4">
         <form asp-action="All" method="get" id="filterForm">
@@ -476,16 +572,16 @@
         </form>
     </div>
 
-    @if (!Model.Services.Any())
-    {
-        <p class="text-center text-light lead">Няма намерени услуги, отговарящи на избраните критерии.</p>
-    }
-    else
-    {
-        <div class="row">
+    <div id="servicesListContainer" class="row">
+        @if (!Model.Services.Any())
+        {
+            <p class="text-center text-light lead no-services-message">Няма намерени услуги, отговарящи на избраните критерии.</p>
+        }
+        else
+        {
             @foreach (var service in Model.Services)
             {
-                <div class="col-md-4 mb-4">
+                <div class="col-md-4 mb-4 service-card-wrapper" data-service-id="@service.Id">
                     <div class="service-card h-100">
                         <div class="card-body d-flex flex-column">
                             <h5 class="card-title">@service.Title</h5>
@@ -533,46 +629,47 @@
                     </div>
                 </div>
             }
-        </div>
-
-        @if (totalPages > 1)
-        {
-            <div class="pagination-container">
-                <a asp-action="All" asp-route-page="@(currentPage - 1)"
-                   asp-route-categoryFilter="@currentCategoryFilter"
-                   asp-route-accessTypeFilter="@currentAccessTypeFilter"
-                   asp-route-sort="@currentSort"
-                   asp-route-filter="@currentFilter"
-                   class="btn pagination-btn @(currentPage == 1 ? "disabled" : "")">
-                    Предишна
-                </a>
-
-                @for (int i = 1; i <= totalPages; i++)
-                {
-                    <a asp-action="All" asp-route-page="@i"
-                       asp-route-categoryFilter="@currentCategoryFilter"
-                       asp-route-accessTypeFilter="@currentAccessTypeFilter"
-                       asp-route-sort="@currentSort"
-                       asp-route-filter="@currentFilter"
-                       class="btn pagination-page-number @(i == currentPage ? "active" : "")">
-                        @i
-                    </a>
-                }
-
-                <a asp-action="All" asp-route-page="@(currentPage + 1)"
-                   asp-route-categoryFilter="@currentCategoryFilter"
-                   asp-route-accessTypeFilter="@currentAccessTypeFilter"
-                   asp-route-sort="@currentSort"
-                   asp-route-filter="@currentFilter"
-                   class="btn pagination-btn @(currentPage == totalPages ? "disabled" : "")">
-                    Следваща
-                </a>
-            </div>
         }
+    </div>
+
+    @if (totalPages > 1)
+    {
+        <div class="pagination-container">
+            <a asp-action="All" asp-route-page="@(currentPage - 1)"
+               asp-route-categoryFilter="@currentCategoryFilter"
+               asp-route-accessTypeFilter="@currentAccessTypeFilter"
+               asp-route-sort="@currentSort"
+               asp-route-filter="@currentFilter"
+               class="btn pagination-btn @(currentPage == 1 ? "disabled" : "")">
+                Предишна
+            </a>
+
+            @for (int i = 1; i <= totalPages; i++)
+            {
+                <a asp-action="All" asp-route-page="@i"
+                   asp-route-categoryFilter="@currentCategoryFilter"
+                   asp-route-accessTypeFilter="@currentAccessTypeFilter"
+                   asp-route-sort="@currentSort"
+                   asp-route-filter="@currentFilter"
+                   class="btn pagination-page-number @(i == currentPage ? "active" : "")">
+                    @i
+                </a>
+            }
+
+            <a asp-action="All" asp-route-page="@(currentPage + 1)"
+               asp-route-categoryFilter="@currentCategoryFilter"
+               asp-route-accessTypeFilter="@currentAccessTypeFilter"
+               asp-route-sort="@currentSort"
+               asp-route-filter="@currentFilter"
+               class="btn pagination-btn @(currentPage == totalPages ? "disabled" : "")">
+                Следваща
+            </a>
+        </div>
     }
 </div>
 
 @section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const categoryFilter = document.getElementById('categoryFilter');
@@ -599,6 +696,186 @@
             if (filterDropdown) {
                 filterDropdown.value = currentFilterValue;
             }
+
+            const connection = new signalR.HubConnectionBuilder()
+                .withUrl("/searchHub")
+                .build();
+
+            const searchInput = document.getElementById('searchInput');
+            const searchResultsDiv = document.getElementById('searchResults');
+            const noResultsMessageElement = searchResultsDiv.querySelector('.no-results'); // The <p> inside searchResultsDiv
+            const servicesListContainer = document.getElementById('servicesListContainer');
+            const allServiceCards = servicesListContainer.querySelectorAll('.service-card-wrapper');
+            const initialNoServicesMessage = servicesListContainer.querySelector('.no-services-message'); // The initial "no services" message
+            const paginationContainer = document.querySelector('.pagination-container');
+
+            let searchTimeout;
+            const transitionDuration = 300; // Match CSS transition duration in ms
+
+            connection.on("ReceiveSearchResults", (services) => {
+                const foundServiceIds = new Set(services.map(s => s.id));
+                let foundCount = 0;
+
+                allServiceCards.forEach(card => {
+                    const serviceId = card.dataset.serviceId;
+                    if (foundServiceIds.has(serviceId)) {
+                        // Show card smoothly
+                        card.style.display = ''; // Make it visible for transition
+                        setTimeout(() => {
+                            card.classList.remove('hide');
+                        }, 10); // Small delay to ensure display property is applied before transition
+                        foundCount++;
+                    } else {
+                        // Hide card smoothly
+                        card.classList.add('hide');
+                        setTimeout(() => {
+                            card.style.display = 'none'; // Hide after transition
+                        }, transitionDuration);
+                    }
+                });
+
+                // Handle "no results" message and pagination visibility
+                if (foundCount === 0 && searchInput.value.trim().length > 0) {
+                    noResultsMessageElement.textContent = 'Няма намерени услуги.';
+                    searchResultsDiv.classList.add('show'); // Show with fade
+                    searchResultsDiv.style.display = 'block'; // Make sure it's block for transition
+                    if (initialNoServicesMessage) initialNoServicesMessage.classList.add('hide');
+                    if (paginationContainer) {
+                        paginationContainer.classList.add('hide');
+                        setTimeout(() => { paginationContainer.style.display = 'none'; }, transitionDuration);
+                    }
+                } else {
+                    noResultsMessageElement.textContent = '';
+                    searchResultsDiv.classList.remove('show'); // Hide with fade
+                    setTimeout(() => { searchResultsDiv.style.display = 'none'; }, transitionDuration);
+
+                    // Restore initial no services message if relevant
+                    if (initialNoServicesMessage && allServiceCards.length === 0 && searchInput.value.trim().length === 0) {
+                        initialNoServicesMessage.classList.remove('hide');
+                        initialNoServicesMessage.style.display = 'block';
+                    } else if (initialNoServicesMessage) {
+                        initialNoServicesMessage.classList.add('hide');
+                        setTimeout(() => { initialNoServicesMessage.style.display = 'none'; }, transitionDuration);
+                    }
+
+                    // Show pagination if no active search or results
+                    if (paginationContainer) {
+                        paginationContainer.style.display = '';
+                        setTimeout(() => { paginationContainer.classList.remove('hide'); }, 10);
+                    }
+                }
+            });
+
+            connection.start().catch(err => console.error(err.toString()));
+
+            searchInput.addEventListener('keyup', () => {
+                clearTimeout(searchTimeout);
+                const searchTerm = searchInput.value.trim();
+
+                if (searchTerm.length > 2) {
+                    searchTimeout = setTimeout(() => {
+                        connection.invoke("SearchServices", searchTerm).catch(err => console.error(err.toString()));
+                    }, 300);
+                } else if (searchTerm.length === 0) {
+                    // If search input is cleared, show all original cards smoothly
+                    allServiceCards.forEach(card => {
+                        card.style.display = '';
+                        setTimeout(() => { card.classList.remove('hide'); }, 10);
+                    });
+                    noResultsMessageElement.textContent = '';
+                    searchResultsDiv.classList.remove('show');
+                    setTimeout(() => { searchResultsDiv.style.display = 'none'; }, transitionDuration);
+
+                    if (initialNoServicesMessage && Model.Services.length === 0) { // Only re-show if model was initially empty
+                        initialNoServicesMessage.classList.remove('hide');
+                        initialNoServicesMessage.style.display = 'block';
+                    } else if (initialNoServicesMessage) {
+                        initialNoServicesMessage.classList.add('hide');
+                        setTimeout(() => { initialNoServicesMessage.style.display = 'none'; }, transitionDuration);
+                    }
+
+                    if (paginationContainer) {
+                        paginationContainer.style.display = '';
+                        setTimeout(() => { paginationContainer.classList.remove('hide'); }, 10);
+                    }
+                } else {
+                    // If less than 3 characters and not empty, show all cards and hide search results smoothly
+                    allServiceCards.forEach(card => {
+                        card.style.display = '';
+                        setTimeout(() => { card.classList.remove('hide'); }, 10);
+                    });
+                    noResultsMessageElement.textContent = '';
+                    searchResultsDiv.classList.remove('show');
+                    setTimeout(() => { searchResultsDiv.style.display = 'none'; }, transitionDuration);
+
+                    if (initialNoServicesMessage) {
+                        initialNoServicesMessage.classList.add('hide');
+                        setTimeout(() => { initialNoServicesMessage.style.display = 'none'; }, transitionDuration);
+                    }
+
+                    if (paginationContainer) {
+                        paginationContainer.style.display = '';
+                        setTimeout(() => { paginationContainer.classList.remove('hide'); }, 10);
+                    }
+                }
+            });
+
+            searchInput.addEventListener('focus', () => {
+                const searchTerm = searchInput.value.trim();
+                if (searchTerm.length > 0) {
+                    connection.invoke("SearchServices", searchTerm).catch(err => console.error(err.toString()));
+                } else {
+                    allServiceCards.forEach(card => {
+                        card.style.display = '';
+                        setTimeout(() => { card.classList.remove('hide'); }, 10);
+                    });
+                    noResultsMessageElement.textContent = '';
+                    searchResultsDiv.classList.remove('show');
+                    setTimeout(() => { searchResultsDiv.style.display = 'none'; }, transitionDuration);
+
+                    if (initialNoServicesMessage && allServiceCards.length === 0) {
+                        initialNoServicesMessage.classList.remove('hide');
+                        initialNoServicesMessage.style.display = 'block';
+                    } else if (initialNoServicesMessage) {
+                        initialNoServicesMessage.classList.add('hide');
+                        setTimeout(() => { initialNoServicesMessage.style.display = 'none'; }, transitionDuration);
+                    }
+
+                    if (paginationContainer) {
+                        paginationContainer.style.display = '';
+                        setTimeout(() => { paginationContainer.classList.remove('hide'); }, 10);
+                    }
+                }
+            });
+
+            document.addEventListener('click', (event) => {
+                if (!searchInput.contains(event.target) && !searchResultsDiv.contains(event.target)) {
+                    // Only hide if it's showing "no results" or if search input is empty
+                    if (noResultsMessageElement.textContent !== '' || searchInput.value.trim().length === 0) {
+                        noResultsMessageElement.textContent = '';
+                        searchResultsDiv.classList.remove('show');
+                        setTimeout(() => { searchResultsDiv.style.display = 'none'; }, transitionDuration);
+
+                        if (searchInput.value.trim().length === 0) {
+                            allServiceCards.forEach(card => {
+                                card.style.display = '';
+                                setTimeout(() => { card.classList.remove('hide'); }, 10);
+                            });
+                            if (paginationContainer) {
+                                paginationContainer.style.display = '';
+                                setTimeout(() => { paginationContainer.classList.remove('hide'); }, 10);
+                            }
+                            if (initialNoServicesMessage && allServiceCards.length === 0) {
+                                initialNoServicesMessage.classList.remove('hide');
+                                initialNoServicesMessage.style.display = 'block';
+                            } else if (initialNoServicesMessage) {
+                                initialNoServicesMessage.classList.add('hide');
+                                setTimeout(() => { initialNoServicesMessage.style.display = 'none'; }, transitionDuration);
+                            }
+                        }
+                    }
+                }
+            });
         });
     </script>
 }

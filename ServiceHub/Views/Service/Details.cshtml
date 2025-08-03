@@ -1,107 +1,345 @@
-﻿@model ServiceHub.Core.Models.Service.ServiceViewModel
+﻿@model ServiceHub.Core.Models.Tools.CodeSnippetConvertRequestModel
 @{
-    ViewData["Title"] = Model.Title;
+    ViewData["Title"] = "Конвертор на Кодови Снипети";
+    var supportedLanguages = ViewBag.SupportedLanguages as List<string> ?? new List<string> { "C#", "Python", "JavaScript", "PHP" };
+    var isBusinessUser = ViewBag.IsBusinessUser ?? false;
+    var lockedLanguages = new HashSet<string> { "JavaScript", "PHP" }; // Езиците, които са заключени
+    var subscriptionPageUrl = "/Subscription/Index"; // Моля, коригирайте този URL, ако е различен!
 }
 
-<h2 class="text-center">@Model.Title</h2>
-<hr />
+<style>
+    /* Общи стилове за елементите */
+    .form-control-lg.rounded-pill {
+        border-radius: 50px;
+        padding-left: 20px;
+        padding-right: 20px;
+    }
 
-@if (TempData["SuccessMessage"] != null)
-{
-    <div class="alert alert-success" role="alert">
-        @TempData["SuccessMessage"]
-    </div>
-}
+    .btn-lg.rounded-pill {
+        border-radius: 50px;
+        padding: 15px 30px;
+        font-size: 1.25rem;
+    }
 
-@if (TempData["ErrorMessage"] != null)
-{
-    <div class="alert alert-danger" role="alert">
-        @TempData["ErrorMessage"]
-    </div>
-}
+    .card.shadow-lg.rounded-lg {
+        border-radius: 15px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    }
 
-<div class="row">
-    <div class="col-md-8 offset-md-2">
-        <div class="card shadow-sm">
-            <div class="card-body">
-                <h5 class="card-title">@Model.Title</h5>
-                <h6 class="card-subtitle mb-2 text-muted">Категория: @Model.CategoryName</h6>
-                <p class="card-text">@Model.Description</p>
-                <p class="card-text">
-                    <small class="text-muted">
-                        <i class="fas fa-eye"></i> Преглеждания: @Model.ViewsCount
-                        <i class="fas fa-star" style="color: gold;"></i> Рейтинг: @Model.AverageRating.ToString("F1") (@Model.ReviewCount ревюта)
-                    </small>
-                </p>
-                <p class="card-text">
-                    <small class="text-muted">
-                        Създадена от: @Model.CreatedByUserName
-                    </small>
-                </p>
+    .card-body.p-4.p-md-5 {
+        padding: 2.5rem !important;
+    }
 
-                @if (Model.IsTemplate && !Model.IsApproved)
-                {
-                    <div class="alert alert-warning" role="alert">
-                        Тази услуга е шаблон и е в процес на преглед. Тя не е публично достъпна за използване.
-                    </div>
-                }
+    .text-primary {
+        color: #1d3557 !important; /* Тъмно син */
+    }
 
-                <div class="d-flex justify-content-between align-items-center mt-3">
-                    <div class="btn-group">
-                        @if (ViewBag.CanUseService != null && ViewBag.CanUseService && !Model.IsTemplate)
-                        {
-                            <a asp-action="UseService" asp-route-id="@Model.Id" class="btn btn-success">Използвай услугата</a>
-                        }
-                        else if (User.Identity.IsAuthenticated && User.IsInRole("User") && Model.AccessType != ServiceHub.Common.Enum.AccessType.Free && Model.AccessType != ServiceHub.Common.Enum.AccessType.Partial)
-                        {
-                            <a asp-controller="Home" asp-action="Plans" class="btn btn-info">Надгради абонамент</a>
-                        }
+    .text-secondary {
+        color: #457b9d !important; /* Средно син */
+    }
 
-                        @if (User.Identity.IsAuthenticated && !Model.IsTemplate)
-                        {
-                            <form asp-action="ToggleFavorite" asp-route-serviceId="@Model.Id" method="post" class="d-inline">
-                                <button type="submit" class="btn @(Model.IsFavorite ? "btn-warning" : "btn-outline-warning")">
-                                    <i class="fas fa-star"></i> @(Model.IsFavorite ? "Премахни от любими" : "Добави в любими")
-                                </button>
-                            </form>
-                            <a asp-controller="Review" asp-action="CreateReview" asp-route-serviceId="@Model.Id" class="btn btn-info">Остави ревю</a>
-                        }
+    .btn-primary {
+        background-color: #1d3557;
+        border-color: #1d3557;
+    }
 
-                        @if (User.IsInRole("Admin"))
-                        {
-                            @if (!Model.IsTemplate)
+        .btn-primary:hover {
+            background-color: #142840;
+            border-color: #142840;
+        }
+
+    /* Стилове за съобщенията за валидация/грешка */
+    .alert-info {
+        background-color: #d1ecf1;
+        color: #0c5460;
+    }
+
+    .alert-danger {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+
+    .alert-success {
+        background-color: #d4edda;
+        color: #155724;
+    }
+
+    .alert-warning {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+
+    /* Стилове за заключените опции в падащото меню */
+    select option:disabled {
+        background-color: #f0f0f0;
+        color: #a0a0a0;
+        cursor: not-allowed;
+    }
+
+    /* Стилове за Premium съобщението под падащото меню */
+    .premium-feature-message {
+        background-color: #fff3cd; /* Светло жълт фон */
+        border: 1px solid #ffeeba; /* Жълта рамка */
+        color: #856404; /* Тъмно жълт текст */
+        padding: 10px 15px;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        margin-top: 10px; /* Разстояние от select-а */
+    }
+
+        .premium-feature-message .badge {
+            font-size: 0.8em;
+            padding: 0.4em 0.7em;
+            border-radius: 5px;
+            background-color: #e9c46a; /* По-наситен жълт за баджа */
+            color: #1d3557; /* Тъмно син текст върху баджа */
+            font-weight: 700;
+        }
+
+        .premium-feature-message a {
+            color: #007bff; /* Стандартен син цвят за линк */
+            text-decoration: underline;
+            font-weight: bold;
+            transition: color 0.2s ease;
+        }
+
+            .premium-feature-message a:hover {
+                color: #0056b3;
+            }
+
+    /* Стилове за иконата на катинарчето */
+    .option-text-with-icon {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+        .option-text-with-icon .lock-icon {
+            color: #e76f51;
+            font-size: 0.8em;
+        }
+</style>
+
+<h2 class="text-center my-4 text-primary font-weight-bold">Конвертор на Кодови Снипети</h2>
+<p class="text-center text-muted mb-4">Конвертирайте програмни кодове между различни езици бързо и лесно.</p>
+
+<div class="container mt-4">
+    <div class="card shadow-lg rounded-lg">
+        <div class="card-body p-4 p-md-5">
+            <div class="row">
+                <div class="col-md-6 border-right pr-md-4">
+                    <h3 class="h5 text-secondary mb-3">Въведете код за конвертиране</h3>
+                    <div class="form-group mb-3">
+                        <label for="sourceLanguage" class="form-label font-weight-bold">Изходен език:</label>
+                        <select id="sourceLanguage" class="form-control form-control-lg rounded-pill">
+                            <option value="">-- Изберете изходен език --</option>
+                            @foreach (var lang in supportedLanguages)
                             {
-                                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Редактирай</a>
-                                <form asp-action="Delete" asp-route-id="@Model.Id" method="post" class="d-inline" onsubmit="return confirm('Сигурни ли сте, че искате да изтриете тази услуга?');">
-                                    <button type="submit" class="btn btn-danger">Изтрий</button>
-                                </form>
+                                var isLocked = lockedLanguages.Contains(lang);
+                                var optionText = lang;
+                                var optionAttributes = $"value=\"{lang}\" data-is-locked=\"{isLocked.ToString().ToLower()}\"";
+
+                                if (isLocked && !isBusinessUser)
+                                {
+                                    optionText += " (ПРЕМИУМ)";
+                                    optionAttributes += " disabled"; // Добавяме disabled като прост стринг
+                                }
+                                @Html.Raw($"<option {optionAttributes}>{optionText}</option>") @* Генерираме целия таг като стринг *@
                             }
-                        }
+                        </select>
+                        <div id="sourceLanguagePremiumMessage" class="premium-feature-message" style="display:none;">
+                            <i class="fas fa-crown me-2 text-warning"></i> Тази функция е част от <span class="badge bg-warning text-dark">ПРЕМИУМ</span> абонамента. <a href="@subscriptionPageUrl" class="text-info font-weight-bold">Абонирайте се сега!</a>
+                        </div>
                     </div>
+
+                    <div class="form-group mb-3">
+                        <label for="targetLanguage" class="form-label font-weight-bold">Целеви език:</label>
+                        <select id="targetLanguage" class="form-control form-control-lg rounded-pill">
+                            <option value="">-- Изберете целеви език --</option>
+                            @foreach (var lang in supportedLanguages)
+                            {
+                                var isLocked = lockedLanguages.Contains(lang);
+                                var optionText = lang;
+                                var optionAttributes = $"value=\"{lang}\" data-is-locked=\"{isLocked.ToString().ToLower()}\"";
+
+                                if (isLocked && !isBusinessUser)
+                                {
+                                    optionText += " (ПРЕМИУМ)";
+                                    optionAttributes += " disabled"; // Добавяме disabled като прост стринг
+                                }
+                                @Html.Raw($"<option {optionAttributes}>{optionText}</option>") @* Генерираме целия таг като стринг *@
+                            }
+                        </select>
+                        <div id="targetLanguagePremiumMessage" class="premium-feature-message" style="display:none;">
+                            <i class="fas fa-crown me-2 text-warning"></i> Тази функция е част от <span class="badge bg-warning text-dark">ПРЕМИУМ</span> абонамента. <a href="@subscriptionPageUrl" class="text-info font-weight-bold">Абонирайте се сега!</a>
+                        </div>
+                    </div>
+
+                    <div class="form-group mb-4">
+                        <label for="sourceCode" class="form-label font-weight-bold">Изходен код:</label>
+                        <textarea id="sourceCode" rows="12" class="form-control rounded-lg" placeholder="Въведете вашия код тук..."></textarea>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button id="convertCodeButton" class="btn btn-primary btn-lg rounded-pill shadow-sm">
+                            <i class="fas fa-sync-alt me-2"></i> Конвертирай Код
+                        </button>
+                    </div>
+                </div>
+
+                <div class="col-md-6 pl-md-4 mt-4 mt-md-0">
+                    <h3 class="h5 text-secondary mb-3">Конвертиран код</h3>
+                    <div class="form-group mb-4">
+                        <textarea id="convertedCode" rows="18" class="form-control rounded-lg bg-light text-dark" readonly></textarea>
+                    </div>
+                    <div id="conversionMessage" class="mt-2 p-3 rounded" style="display:none;"></div>
                 </div>
             </div>
         </div>
-
-        <h4 class="mt-4">Ревюта</h4>
-        @if (Model.Reviews != null && Model.Reviews.Any())
-        {
-            <div class="list-group mb-4">
-                @foreach (var review in Model.Reviews)
-                {
-                    <div class="list-group-item list-group-item-action flex-column align-items-start">
-                        <div class="d-flex w-100 justify-content-between">
-                            <h5 class="mb-1">@review.UserName</h5>
-                            <small>@review.CreatedOn.ToShortDateString()</small>
-                        </div>
-                        <p class="mb-1">@review.Comment</p>
-                        <small>Рейтинг: @review.Rating <i class="fas fa-star" style="color: gold;"></i></small>
-                    </div>
-                }
-            </div>
-        }
-        else
-        {
-            <p>Все още няма ревюта за тази услуга.</p>
-        }
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        const isBusinessUser = @(isBusinessUser.ToString().ToLower());
+        const lockedLanguages = new Set(['JavaScript', 'PHP']);
+        const subscriptionPageUrl = "@subscriptionPageUrl";
+
+        // Функция за показване на съобщение за валидация/грешка
+        function showConversionMessage(message, type) {
+            const conversionMessage = document.getElementById('conversionMessage');
+            conversionMessage.textContent = message;
+            conversionMessage.className = `mt-2 p-3 rounded alert alert-${type}`;
+            conversionMessage.style.display = 'block';
+        }
+
+        // Функция за управление на Premium съобщенията под select-ите
+        function handlePremiumMessage(selectElement, premiumMessageElement) {
+            const selectedLanguage = selectElement.value;
+            if (lockedLanguages.has(selectedLanguage) && !isBusinessUser) {
+                premiumMessageElement.style.display = 'flex'; // Показваме съобщението
+                showConversionMessage('Моля, надстройте акаунта си, за да използвате този език.', 'warning');
+            } else {
+                premiumMessageElement.style.display = 'none'; // Скриваме съобщението
+                // Ако няма други активни съобщения, може да изчистим и основното
+                if (document.getElementById('conversionMessage').style.display !== 'block') {
+                    showConversionMessage('', 'none');
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const sourceLanguageSelect = document.getElementById('sourceLanguage');
+            const targetLanguageSelect = document.getElementById('targetLanguage');
+            const sourceLanguagePremiumMessage = document.getElementById('sourceLanguagePremiumMessage');
+            const targetLanguagePremiumMessage = document.getElementById('targetLanguagePremiumMessage');
+
+            // Добавяме Unicode символ за катинар към заключените езици чрез JavaScript
+            const selects = document.querySelectorAll('#sourceLanguage, #targetLanguage');
+            selects.forEach(select => {
+                Array.from(select.options).forEach(option => {
+                    const isOptionLocked = option.dataset.isLocked === 'true';
+
+                    if (isOptionLocked && !isBusinessUser) {
+                        // Добавяме Unicode символ за катинар след текста
+                        option.textContent = option.textContent + ' \u{1F512}';
+                    }
+                });
+            });
+
+
+            // Добавяме слушатели за промяна на езика
+            sourceLanguageSelect.addEventListener('change', () => {
+                handlePremiumMessage(sourceLanguageSelect, sourceLanguagePremiumMessage);
+            });
+            targetLanguageSelect.addEventListener('change', () => {
+                handlePremiumMessage(targetLanguageSelect, targetLanguagePremiumMessage);
+            });
+
+            // Инициализираме съобщенията при зареждане на страницата, ако има избрани заключени езици
+            handlePremiumMessage(sourceLanguageSelect, sourceLanguagePremiumMessage);
+            handlePremiumMessage(targetLanguageSelect, targetLanguagePremiumMessage);
+        });
+
+
+        document.getElementById('convertCodeButton').addEventListener('click', async () => {
+            const sourceCode = document.getElementById('sourceCode').value;
+            const sourceLanguage = document.getElementById('sourceLanguage').value;
+            const targetLanguage = document.getElementById('targetLanguage').value;
+            const convertedCodeOutput = document.getElementById('convertedCode');
+
+            convertedCodeOutput.value = '';
+            showConversionMessage('', 'none'); // Изчистваме предишни съобщения
+
+            // Клиентска валидация за празни полета
+            if (!sourceCode.trim()) {
+                showConversionMessage('Моля, въведете изходен код.', 'danger');
+                return;
+            }
+            if (!sourceLanguage) {
+                showConversionMessage('Моля, изберете изходен език.', 'danger');
+                return;
+            }
+            if (!targetLanguage) {
+                showConversionMessage('Моля, изберете целеви език.', 'danger');
+                return;
+            }
+            if (sourceLanguage === targetLanguage) {
+                showConversionMessage('Изходният и целевият език не могат да бъдат еднакви. Върнат е оригиналният код.', 'warning');
+                convertedCodeOutput.value = sourceCode;
+                return;
+            }
+
+            // Клиентска валидация за заключени езици преди изпращане на заявката
+            if (!isBusinessUser && (lockedLanguages.has(sourceLanguage) || lockedLanguages.has(targetLanguage))) {
+                showConversionMessage('Достъпът до JavaScript и PHP конвертиране е само за Бизнес Потребители. Моля, надстройте акаунта си.', 'warning');
+                return;
+            }
+
+            try {
+                showConversionMessage('Конвертиране на кода... Моля, изчакайте.', 'info');
+                document.getElementById('convertCodeButton').disabled = true;
+
+                const response = await fetch('/api/CodeSnippetConverter/convert', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        sourceCode: sourceCode,
+                        sourceLanguage: sourceLanguage,
+                        targetLanguage: targetLanguage
+                    })
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    convertedCodeOutput.value = result.convertedCode;
+                    showConversionMessage(result.message || 'Конвертирането е успешно.', 'success');
+                } else {
+                    let errorMessage = `Грешка: ${response.status} ${response.statusText}`;
+                    try {
+                        const errorData = await response.json();
+                        errorMessage = errorData.errors ? Object.values(errorData.errors).flat().join('; ') : (errorData.message || errorData.title || errorMessage);
+                    } catch (jsonError) {
+                        errorMessage = `Грешка: ${response.status} ${response.statusText}. Невалиден отговор от сървъра.`;
+                        console.error('Failed to parse error response as JSON:', jsonError);
+                    }
+                    convertedCodeOutput.value = '';
+                    showConversionMessage(errorMessage, 'danger');
+                }
+            } catch (error) {
+                console.error('Fetch error:', error);
+                convertedCodeOutput.value = '';
+                showConversionMessage(`Възникна мрежова грешка: ${error.message}.`, 'danger');
+            } finally {
+                document.getElementById('convertCodeButton').disabled = false;
+            }
+        });
+    </script>
+}

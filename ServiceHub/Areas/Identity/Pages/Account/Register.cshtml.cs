@@ -45,7 +45,7 @@ namespace ServiceHub.Areas.Identity.Pages.Account
             _signInManager = signInManager;
             _logger = logger;
             _emailSender = emailSender;
-                _roleManager = roleManager;
+            _roleManager = roleManager;
         }
 
         /// <summary>
@@ -121,7 +121,8 @@ namespace ServiceHub.Areas.Identity.Pages.Account
             {
                 var user = new ApplicationUser { UserName = Input.Username, Email = Input.Email };
 
-                await _userStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
+                
+                await _userStore.SetUserNameAsync(user, Input.Username, CancellationToken.None);
                 await _emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
                 var result = await _userManager.CreateAsync(user, Input.Password);
 
@@ -134,7 +135,7 @@ namespace ServiceHub.Areas.Identity.Pages.Account
                         await _roleManager.CreateAsync(new IdentityRole("User"));
                     }
 
-                    
+
                     var roleResult = await _userManager.AddToRoleAsync(user, "User");
                     if (roleResult.Succeeded)
                     {
@@ -143,12 +144,12 @@ namespace ServiceHub.Areas.Identity.Pages.Account
                     else
                     {
                         _logger.LogError($"Failed to add user {user.UserName} to 'User' role: {string.Join(", ", roleResult.Errors.Select(e => e.Description))}");
-                       
+
                         foreach (var error in roleResult.Errors)
                         {
                             ModelState.AddModelError(string.Empty, $"Role assignment error: {error.Description}");
                         }
-                      
+
                     }
                     var userId = await _userManager.GetUserIdAsync(user);
                     var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);

@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using ServiceHub.Core.Models;
 using System.Diagnostics;
 
@@ -15,7 +15,9 @@ namespace ServiceHub.Controllers
 
         public IActionResult Index()
         {
+            //  throw new InvalidOperationException("Това е тестова вътрешна сървърна грешка. Моля, игнорирайте я.");
             return View();
+
         }
 
         public IActionResult Plans()

@@ -45,5 +45,6 @@
   <ItemGroup>
     <None Include="wwwroot\json\quotes.json" />
   </ItemGroup>
+	
 
 </Project>

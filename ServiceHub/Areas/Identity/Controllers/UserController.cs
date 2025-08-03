@@ -12,6 +12,7 @@ namespace ServiceHub.Areas.Identity.Controllers
 {
 
     [Authorize]
+    [Area("Identity")]
     public class UserController : Controller
     {
         private readonly UserManager<ApplicationUser> userManager;
@@ -24,7 +25,7 @@ namespace ServiceHub.Areas.Identity.Controllers
         }
 
         [HttpGet]
-        [Route("Profile/{id?}")]
+        
         public async Task<IActionResult> UserProfile(string? id)
         {
             string currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -75,7 +76,7 @@ namespace ServiceHub.Areas.Identity.Controllers
                 Reviews = reviews
             };
 
-            return View(viewModel);
+            return View("~/Areas/Identity/Views/UserProfile.cshtml",viewModel);
         }
     }
     

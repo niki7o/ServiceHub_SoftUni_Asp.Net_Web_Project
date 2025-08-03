@@ -10,43 +10,227 @@
     bool isAdmin = await UserManager.IsInRoleAsync(await UserManager.FindByIdAsync(currentUserId), "Admin");
 }
 
-<div class="container mx-auto p-4 sm:p-6 lg:p-8 font-inter">
-    <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
-        <div class="p-6 sm:p-8">
-            <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-6 text-center">
+<style>
+    /* General container and card styling */
+    body {
+        background-color: #f0f2f5; /* Light gray background for the whole page */
+    }
+
+    .profile-container {
+        max-width: 960px;
+        margin: 40px auto; /* Add some top/bottom margin */
+        padding: 20px;
+        font-family: 'Inter', sans-serif;
+    }
+
+    .profile-card {
+        background-color: #ffffff;
+        border-radius: 15px; /* More rounded corners */
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15); /* Stronger, more appealing shadow */
+        overflow: hidden;
+        border: none; /* Remove default border if shadow is strong enough */
+        transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+    }
+
+        .profile-card:hover {
+            transform: translateY(-5px); /* Slight lift on hover */
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        }
+
+    .profile-card-body {
+        padding: 40px; /* More padding */
+    }
+
+    /* Headings and text */
+    .profile-title {
+        font-size: 2.8rem; /* Larger title */
+        font-weight: 900; /* Extra bold */
+        color: #2c3e50; /* Darker blue-gray */
+        margin-bottom: 30px;
+        text-align: center;
+        text-shadow: 1px 1px 4px rgba(0,0,0,0.1);
+    }
+
+    .profile-title-current-user {
+        color: #3498db; /* Brighter blue for "Your Profile" */
+        font-size: 1.8rem;
+        display: block; /* New line for better readability */
+        margin-top: 5px;
+    }
+
+    .section-heading {
+        font-size: 1.5rem; /* Larger section headings */
+        font-weight: 700; /* Bold */
+        color: #34495e; /* Dark blue-gray */
+        margin-bottom: 15px;
+        border-bottom: 2px solid #ecf0f1; /* Subtle underline */
+        padding-bottom: 8px;
+    }
+
+    /* Grid layout */
+    .grid-layout {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 30px; /* More space between columns */
+        margin-bottom: 40px;
+    }
+
+    @@media (min-width: 768px) {
+        .grid-layout {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    /* Information boxes */
+    .info-box {
+        background-color: #fdfefe; /* Lighter background */
+        padding: 25px; /* More padding */
+        border-radius: 12px; /* Nicer rounding */
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08); /* Softer shadow */
+        transition: transform 0.2s ease-in-out;
+    }
+
+        .info-box:hover {
+            transform: translateY(-3px); /* Slight lift on hover */
+        }
+
+    .info-text {
+        color: #555; /* Slightly darker text */
+        margin-bottom: 8px;
+        font-size: 1.05rem;
+        display: flex; /* For icon alignment */
+        align-items: center;
+    }
+
+        .info-text i {
+            margin-right: 10px; /* Space for icons */
+            color: #3498db; /* Icon color */
+        }
+
+    .info-label {
+        font-weight: 600; /* Semi-bold label */
+        color: #333;
+    }
+
+    /* Lists */
+    .list-style-disc {
+        list-style-type: none; /* Remove default disc */
+        padding-left: 0;
+    }
+
+    .list-item-spacing > li {
+        margin-bottom: 10px;
+        position: relative;
+        padding-left: 25px; /* Space for custom bullet */
+    }
+
+        .list-item-spacing > li::before {
+            content: "\f00c"; /* Font Awesome check icon */
+            font-family: "Font Awesome 5 Free";
+            font-weight: 900;
+            color: #27ae60; /* Green checkmark */
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+
+    .link-style {
+        color: #2980b9; /* Stronger blue for links */
+        text-decoration: none;
+        font-weight: 600;
+        transition: color 0.2s ease-in-out;
+    }
+
+        .link-style:hover {
+            color: #3498db;
+            text-decoration: underline;
+        }
+
+    /* Reviews section */
+    .review-item {
+        border-bottom: 1px dashed #e0e0e0; /* Dashed separator */
+        padding-bottom: 15px;
+        margin-bottom: 15px;
+    }
+
+        .review-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+    .review-comment {
+        color: #666;
+        font-size: 0.95rem;
+        line-height: 1.4;
+    }
+
+    .review-date {
+        color: #888;
+        font-size: 0.8rem;
+        margin-top: 5px;
+    }
+
+    /* Responsive adjustments */
+    @@media (max-width: 600px) {
+        .profile-card-body {
+            padding: 20px;
+        }
+
+        .profile-title {
+            font-size: 2rem;
+        }
+
+        .profile-title-current-user {
+            font-size: 1.4rem;
+        }
+
+        .section-heading {
+            font-size: 1.3rem;
+        }
+
+        .info-box {
+            padding: 15px;
+        }
+    }
+</style>
+
+<div class="profile-container">
+    <div class="profile-card">
+        <div class="profile-card-body">
+            <h1 class="profile-title">
                 Профил на @Model.UserName
                 @if (isCurrentUser)
                 {
-                    <span class="text-indigo-600">(Вашият профил)</span>
+                    <span class="profile-title-current-user">(Вашият профил)</span>
                 }
             </h1>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
-                    <h2 class="text-xl font-semibold text-gray-800 mb-3">Основна информация</h2>
-                    <p class="text-gray-700 mb-2"><span class="font-medium">Имейл:</span> @Model.Email</p>
-                    <p class="text-gray-700 mb-2"><span class="font-medium">Роли:</span> @string.Join(", ", Model.Roles)</p>
-                    <p class="text-gray-700 mb-2"><span class="font-medium">Бизнес потребител:</span> @(Model.IsBusiness ? "Да" : "Не")</p>
+            <div class="grid-layout">
+                <div class="info-box">
+                    <h2 class="section-heading"><i class="fas fa-info-circle"></i> Основна информация</h2>
+                    <p class="info-text"><span class="info-label"><i class="fas fa-envelope"></i> Имейл:</span> @Model.Email</p>
+                    <p class="info-text"><span class="info-label"><i class="fas fa-user-tag"></i> Роли:</span> @string.Join(", ", Model.Roles)</p>
+                    <p class="info-text"><span class="info-label"><i class="fas fa-briefcase"></i> Бизнес потребител:</span> @(Model.IsBusiness ? "Да" : "Не")</p>
                     @if (Model.IsBusiness && Model.BusinessExpiresOn.HasValue)
                     {
-                        <p class="text-gray-700 mb-2"><span class="font-medium">Абонамент изтича:</span> @Model.BusinessExpiresOn.Value.ToString("dd.MM.yyyy HH:mm")</p>
+                        <p class="info-text"><span class="info-label"><i class="fas fa-calendar-alt"></i> Абонамент изтича:</span> @Model.BusinessExpiresOn.Value.ToString("dd.MM.yyyy HH:mm")</p>
                     }
                     @if (Model.LastServiceCreationDate.HasValue)
                     {
-                        <p class="text-gray-700 mb-2"><span class="font-medium">Последно създаване на услуга:</span> @Model.LastServiceCreationDate.Value.ToString("dd.MM.yyyy HH:mm")</p>
+                        <p class="info-text"><span class="info-label"><i class="fas fa-plus-circle"></i> Последно създаване на услуга:</span> @Model.LastServiceCreationDate.Value.ToString("dd.MM.yyyy HH:mm")</p>
                     }
-                    <p class="text-gray-700 mb-2"><span class="font-medium">Одобрени услуги:</span> @Model.ApprovedServicesCount</p>
+                    <p class="info-text"><span class="info-label"><i class="fas fa-check-circle"></i> Одобрени услуги:</span> @Model.ApprovedServicesCount</p>
                 </div>
 
                 @if (Model.CreatedServices.Any())
                 {
-                    <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
-                        <h2 class="text-xl font-semibold text-gray-800 mb-3">Създадени услуги (@Model.CreatedServices.Count())</h2>
-                        <ul class="list-disc list-inside text-gray-700 space-y-1">
+                    <div class="info-box">
+                        <h2 class="section-heading"><i class="fas fa-tools"></i> Създадени услуги (@Model.CreatedServices.Count())</h2>
+                        <ul class="list-style-disc list-inside list-item-spacing">
                             @foreach (var service in Model.CreatedServices)
                             {
                                 <li>
-                                    <a asp-controller="Service" asp-action="Details" asp-route-id="@service.Id" class="text-indigo-600 hover:underline">
+                                    <a asp-controller="Service" asp-action="Details" asp-route-id="@service.Id" class="link-style">
                                         @service.Title
                                     </a>
                                     (@service.CategoryName) - Рейтинг: @service.AverageRating.ToString("F1") (@service.ReviewCount ревюта)
@@ -59,13 +243,14 @@
 
             @if (Model.FavoriteServices.Any())
             {
-                <div class="bg-gray-50 p-4 rounded-lg shadow-sm mb-8">
-                    <h2 class="text-xl font-semibold text-gray-800 mb-3">Любими услуги (@Model.FavoriteServices.Count())</h2>
-                    <ul class="list-disc list-inside text-gray-700 space-y-1">
+                <div class="info-box" style="margin-bottom: 40px;">
+                    @* Добавяме mb-8 еквивалент тук, тъй като е извън grid-layout *@
+                    <h2 class="section-heading"><i class="fas fa-star"></i> Любими услуги (@Model.FavoriteServices.Count())</h2>
+                    <ul class="list-style-disc list-inside list-item-spacing">
                         @foreach (var service in Model.FavoriteServices)
                         {
                             <li>
-                                <a asp-controller="Service" asp-action="Details" asp-route-id="@service.Id" class="text-indigo-600 hover:underline">
+                                <a asp-controller="Service" asp-action="Details" asp-route-id="@service.Id" class="link-style">
                                     @service.Title
                                 </a>
                                 (@service.CategoryName)
@@ -77,20 +262,21 @@
 
             @if (Model.Reviews.Any())
             {
-                <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
-                    <h2 class="text-xl font-semibold text-gray-800 mb-3">Моите ревюта (@Model.Reviews.Count())</h2>
+                <div class="info-box">
+                    <h2 class="section-heading"><i class="fas fa-comments"></i> Моите ревюта (@Model.Reviews.Count())</h2>
                     <div class="space-y-4">
+                        @* Запазваме space-y-4 за по-лесно управление на разстоянията между ревютата *@
                         @foreach (var review in Model.Reviews)
                         {
-                            <div class="border-b pb-3 last:border-b-0">
+                            <div class="review-item">
                                 <p class="text-gray-800 font-medium">
-                                    <a asp-controller="Service" asp-action="Details" asp-route-id="@review.ServiceId" class="text-indigo-600 hover:underline">
+                                    <a asp-controller="Service" asp-action="Details" asp-route-id="@review.ServiceId" class="link-style">
                                         @review.ServiceName
                                     </a>
                                     - Рейтинг: @review.Rating / 5
                                 </p>
-                                <p class="text-gray-700 text-sm">Коментар: @review.Comment</p>
-                                <p class="text-gray-500 text-xs">Дата: @review.CreatedOn.ToString("dd.MM.yyyy HH:mm")</p>
+                                <p class="review-comment">Коментар: @review.Comment</p>
+                                <p class="review-date">Дата: @review.CreatedOn.ToString("dd.MM.yyyy HH:mm")</p>
                             </div>
                         }
                     </div>

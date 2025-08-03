@@ -14,6 +14,7 @@ using ServiceHub.Core.Models.Tools;
 
 using ServiceHub.Data.Models;
 using ServiceHub.Services.Interfaces;
+using ServiceHub.Services.Services;
 using System.Diagnostics;
 using System.Security.Claims;
 
@@ -284,55 +285,46 @@ namespace ServiceHub.Controllers
 
             return RedirectToAction("All", new { categoryFilter, accessTypeFilter, filter, sort, page });
         }
-
-        [HttpGet]
-        [Route("Service/Details/{id}")]
+        [HttpGet("Service/Details/{id}")]
         public async Task<IActionResult> Details(Guid id)
         {
             string? currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
             try
             {
-                var service = await serviceService.GetByIdAsync(id, currentUserId);
-                await serviceService.IncrementViewsCount(id);
+                var serviceViewModel = await serviceService.GetByIdAsync(id, currentUserId);
 
-                // Logic to determine if the "Use Service" button should be visible
-                bool canUseService = false;
-                if (User.Identity.IsAuthenticated)
-                {
-                    var user = await userManager.GetUserAsync(User);
-                    if (user != null)
-                    {
-                        bool isAdmin = await userManager.IsInRoleAsync(user, "Admin");
-                        bool isBusinessUser = await userManager.IsInRoleAsync(user, "BusinessUser");
-                        bool isRegularUser = await userManager.IsInRoleAsync(user, "User");
+              
+                _ = serviceService.IncrementViewsCount(id); 
 
-                        if (isAdmin || isBusinessUser)
-                        {
-                            canUseService = true;
-                        }
-                        else if (isRegularUser)
-                        {
-                            if (service.AccessType == AccessType.Free || service.AccessType == AccessType.Partial)
-                            {
-                                canUseService = true;
-                            }
-                        }
-                    }
-                }
-                ViewBag.CanUseService = canUseService;
-
-                return View(service);
+                return View(serviceViewModel);
             }
-            catch (ArgumentException)
+            catch (ArgumentException ex)
             {
+                _logger.LogWarning(ex, "Service not found or invalid ID provided: {ServiceId}", id);
+                
                 return NotFound();
             }
-            catch (UnauthorizedAccessException)
+            catch (UnauthorizedAccessException ex)
             {
-                TempData["ErrorMessage"] = "Нямате право да преглеждате този неодобрен шаблон.";
-                return RedirectToAction("All");
+                _logger.LogWarning(ex, "Unauthorized access attempt to service {ServiceId} by user {UserId}", id, currentUserId);
+                
+                return Forbid();
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogWarning(ex, "Invalid operation for service {ServiceId}: {Message}", id, ex.Message);
+               
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An unexpected error occurred while getting service details for ID: {ServiceId}", id);
+               
+                return StatusCode(500, "Възникна неочаквана грешка при зареждане на услугата.");
             }
         }
+
 
         [HttpGet]
         [Authorize(Roles = "Admin")]

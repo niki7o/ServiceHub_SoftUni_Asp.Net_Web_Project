@@ -7,16 +7,13 @@ using Microsoft.Extensions.Logging;
 using OfficeOpenXml;
 using ServiceHub.Common;
 using ServiceHub.Data;
-
+using ServiceHub.Hubs;
 using ServiceHub.Data.Models;
 using ServiceHub.Services.Interfaces;
 using ServiceHub.Services.Services;
 using ServiceHub.Services.Services.Repository;
 using System.ComponentModel;
 using System.Text.Json;
-
-
-
 using System.Text.Json.Serialization;
 
 namespace ServiceHub
@@ -27,20 +24,16 @@ namespace ServiceHub
         {
             WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
-           
             builder.Services.AddSingleton(typeof(IConverter), new SynchronizedConverter(new PdfTools()));
 
-          
             ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
 
-           
             string connectionString = builder.Configuration.GetConnectionString("ServiceHubDbContextConnection") ??
-                                   throw new InvalidOperationException("Connection string 'ServiceHubDbContextConnection' not found.");
+                                     throw new InvalidOperationException("Connection string 'ServiceHubDbContextConnection' not found.");
             builder.Services.AddDbContext<ServiceHubDbContext>(options =>
                                options.UseSqlServer(connectionString));
             builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-           
             builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
             {
                 options.SignIn.RequireConfirmedAccount = false;
@@ -50,10 +43,9 @@ namespace ServiceHub
                 options.Password.RequireNonAlphanumeric = false;
                 options.Password.RequiredLength = 6;
             })
-            .AddRoles<IdentityRole>() 
+            .AddRoles<IdentityRole>()
             .AddEntityFrameworkStores<ServiceHubDbContext>();
-
-          
+            builder.Services.AddSignalR();
             builder.Services.AddControllersWithViews()
                 .AddJsonOptions(options =>
                 {
@@ -63,7 +55,6 @@ namespace ServiceHub
                 });
             builder.Services.AddRazorPages();
 
-            
             builder.Services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
             builder.Services.AddScoped<IServiceService, ServicesService>();
             builder.Services.AddScoped<IReviewService, ReviewsService>();
@@ -77,7 +68,6 @@ namespace ServiceHub
             builder.Services.AddScoped<IFinancialCalculatorService, FinancialCalculatorService>();
             builder.Services.AddScoped<ICodeSnippetConverterService, CodeSnippetConverterService>();
 
-           
             builder.Services.AddScoped<IServiceDispatcher, ServiceDispatcher>(sp =>
             {
                 var logger = sp.GetRequiredService<ILogger<ServiceDispatcher>>();
@@ -98,7 +88,6 @@ namespace ServiceHub
 
             WebApplication app = builder.Build();
 
-
             using (var scope = app.Services.CreateScope())
             {
                 var services = scope.ServiceProvider;
@@ -118,16 +107,14 @@ namespace ServiceHub
                 }
             }
 
-
-
-
             if (app.Environment.IsDevelopment())
             {
                 app.UseMigrationsEndPoint();
             }
             else
             {
-                app.UseExceptionHandler("/Home/Error");
+                app.UseStatusCodePagesWithReExecute("/Error/{0}"); 
+                app.UseExceptionHandler("/Error"); 
                 app.UseHsts();
             }
 
@@ -137,20 +124,22 @@ namespace ServiceHub
             app.UseAuthentication();
             app.UseAuthorization();
 
+          
            
+            app.MapHub<SearchHub>("/searchHub");
+
             app.MapControllerRoute(
                 name: "Admin",
                 pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
-
+            app.MapRazorPages();
             app.MapControllerRoute(
                 name: "default",
                 pattern: "{controller=Home}/{action=Index}/{id?}");
-            app.MapRazorPages();
 
+          
             app.MapControllers();
 
-            app.Run(); 
+            app.Run();
         }
-
     }
 }

@@ -8,7 +8,12 @@ using ServiceHub.Core.Models.Reviews;
 using ServiceHub.Core.Models.Service;
 using ServiceHub.Data.Models;
 using ServiceHub.Services.Interfaces;
-
+using ServiceHub.Services.Services.Repository;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace ServiceHub.Services.Services
 {
@@ -47,7 +52,6 @@ namespace ServiceHub.Services.Services
                 .Include(s => s.Favorites)
                 .Include(s => s.CreatedByUser);
 
-          
             if (currentUserId != null)
             {
                 var user = await userManager.FindByIdAsync(currentUserId);
@@ -61,24 +65,20 @@ namespace ServiceHub.Services.Services
                 servicesQuery = servicesQuery.Where(s => !s.IsTemplate && s.IsApproved);
             }
 
-           
             var allCategories = await categoryRepo.AllAsNoTracking().OrderBy(c => c.Name).ToListAsync();
             var categoriesList = allCategories.Select(c => new SelectListItem { Value = c.Name, Text = c.Name }).ToList();
             categoriesList.Insert(0, new SelectListItem { Value = "", Text = "Всички Категории" });
 
             var allAccessTypes = Enum.GetNames(typeof(AccessType))
-                                     .Select(name => new SelectListItem { Value = name, Text = name })
-                                     .ToList();
+                                    .Select(name => new SelectListItem { Value = name, Text = name })
+                                    .ToList();
             allAccessTypes.Insert(0, new SelectListItem { Value = "", Text = "Всички Типове Достъп" });
-          
 
-           
             if (!string.IsNullOrEmpty(categoryFilter) && categoryFilter != "Всички Категории" && categoryFilter != "All Categories")
             {
                 servicesQuery = servicesQuery.Where(s => s.Category != null && s.Category.Name == categoryFilter);
             }
 
-            
             if (!string.IsNullOrEmpty(accessTypeFilter) && accessTypeFilter != "Всички Типове Достъп" && accessTypeFilter != "All Access Types")
             {
                 if (Enum.TryParse<AccessType>(accessTypeFilter, true, out AccessType parsedAccessType))
@@ -87,7 +87,6 @@ namespace ServiceHub.Services.Services
                 }
             }
 
-         
             if (!string.IsNullOrEmpty(filter) && filter.ToLowerInvariant() == "favorite")
             {
                 if (!string.IsNullOrEmpty(currentUserId))
@@ -96,20 +95,17 @@ namespace ServiceHub.Services.Services
                 }
             }
 
-           
             servicesQuery = sort?.ToLowerInvariant() switch
             {
                 "az" => servicesQuery.OrderBy(s => s.Title),
                 "za" => servicesQuery.OrderByDescending(s => s.Title),
                 "recent" => servicesQuery.OrderByDescending(s => s.CreatedOn),
                 "mostviewed" => servicesQuery.OrderByDescending(s => s.ViewsCount),
-                _ => servicesQuery.OrderByDescending(s => s.CreatedOn) 
+                _ => servicesQuery.OrderByDescending(s => s.CreatedOn)
             };
 
-            
             int totalServicesCount = await servicesQuery.CountAsync();
 
-           
             var services = await servicesQuery
                 .Skip((currentPage - 1) * servicesPerPage)
                 .Take(servicesPerPage)
@@ -147,8 +143,8 @@ namespace ServiceHub.Services.Services
                 PageSize = servicesPerPage,
                 TotalServicesCount = totalServicesCount,
                 TotalPages = (int)Math.Ceiling(totalServicesCount / (double)servicesPerPage),
-                Categories = categoriesList, 
-                AccessTypes = allAccessTypes, 
+                Categories = categoriesList,
+                AccessTypes = allAccessTypes,
                 CurrentCategoryFilter = categoryFilter,
                 CurrentAccessTypeFilter = accessTypeFilter,
                 CurrentSort = sort,
@@ -429,7 +425,9 @@ namespace ServiceHub.Services.Services
                 throw new InvalidOperationException("Templates cannot be edited via this method.");
             }
 
+          
             
+
             return new ServiceFormModel
             {
                 Title = service.Title,
@@ -550,6 +548,7 @@ namespace ServiceHub.Services.Services
                 .Where(s => s.CreatedByUserId == userId && s.IsApproved && !s.IsTemplate)
                 .Include(s => s.Category)
                 .Include(s => s.Reviews)
+                .Include(s => s.CreatedByUser) 
                 .Select(s => new ServiceViewModel
                 {
                     Id = s.Id,
@@ -574,7 +573,7 @@ namespace ServiceHub.Services.Services
                 .Include(f => f.Service)
                     .ThenInclude(s => s.Reviews)
                 .Include(f => f.Service)
-                    .ThenInclude(s => s.CreatedByUser)
+                    .ThenInclude(s => s.CreatedByUser) 
                 .Select(f => new ServiceViewModel
                 {
                     Id = f.Service.Id,
@@ -596,6 +595,8 @@ namespace ServiceHub.Services.Services
             return await reviewRepo.AllAsNoTracking()
                 .Where(r => r.UserId == userId)
                 .Include(r => r.Service)
+                    .ThenInclude(s => s.Category) 
+                .Include(r => r.User) 
                 .Select(r => new ReviewViewModel
                 {
                     Id = r.Id,
@@ -613,6 +614,48 @@ namespace ServiceHub.Services.Services
         {
             return await serviceRepo.AllAsNoTracking()
                 .CountAsync(s => s.CreatedByUserId == userId && s.IsApproved && !s.IsTemplate);
+        }
+
+        public async Task<IEnumerable<ServiceViewModel>> SearchServicesByTitleAsync(string searchTerm)
+        {
+            try
+            {
+                IQueryable<Service> query = this.serviceRepo.AllAsNoTracking();
+
+                query = query.Include(s => s.Category)
+                             .Include(s => s.CreatedByUser);
+
+                query = query.Where(s => s.IsApproved);
+
+                if (!string.IsNullOrWhiteSpace(searchTerm))
+                {
+                    string lowerSearchTerm = searchTerm.ToLower();
+                 
+                    query = query.Where(s => s.Title.ToLower().Contains(lowerSearchTerm)|| s.CreatedByUser.UserName.ToLower().Contains(lowerSearchTerm));
+                }
+
+                return await query
+                    .Select(s => new ServiceViewModel
+                    {
+                        Id = s.Id,
+                        Title = s.Title,
+                        Description = s.Description,
+                        CategoryName = s.Category.Name,
+                        ViewsCount = s.ViewsCount,
+                        AverageRating = s.Reviews.Any() ? s.Reviews.Average(r => r.Rating) : 0,
+                        ReviewCount = s.Reviews.Count(),
+                        IsTemplate = s.IsTemplate,
+                        IsApproved = s.IsApproved,
+                        CreatedByUserName = s.CreatedByUser.UserName
+                    })
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in ServicesService.SearchServicesByTitleAsync: {ex.Message}");
+                Console.WriteLine($"StackTrace: {ex.StackTrace}");
+                throw;
+            }
         }
     }
 }

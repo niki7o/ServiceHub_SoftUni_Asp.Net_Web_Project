@@ -1,42 +1,161 @@
 ﻿@page
 @model RegisterModel
 @{
-    ViewData["Title"] = "Register";
+    ViewData["Title"] = "Регистрация";
 }
 
-<h1>@ViewData["Title"]</h1>
+<style>
+    body {
+        font-family: 'Inter', sans-serif;
+        background: linear-gradient(135deg, #a8dadc 0%, #457b9d 100%);
+        color: #333;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow-x: hidden;
+    }
 
-<div class="row">
-    <div class="col-md-4">
+    .register-page-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: calc(100vh - 150px); 
+        padding: 30px;
+        box-sizing: border-box;
+    }
+
+    .register-card {
+        max-width: 500px;
+        width: 100%;
+        background-color: #ffffff;
+        padding: 45px;
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        border: 1px solid rgba(220, 220, 220, 0.6);
+        position: relative;
+        z-index: 10;
+        overflow: hidden;
+        transform: translateY(0);
+        transition: transform 0.5s ease-out, box-shadow 0.5s ease-out;
+    }
+
+        .register-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+        }
+
+    .form-title {
+        font-size: 2.5rem;
+        font-weight: 900;
+        color: #1d3557; /* Dark blue */
+        margin-bottom: 30px;
+        text-align: center;
+        text-shadow: 1px 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .form-floating label {
+        color: #6c757d;
+    }
+
+    .form-control {
+        border-radius: 12px;
+        padding: 15px 20px;
+        border: 1px solid #dcdcdc;
+        box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.05);
+        transition: border-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+        font-size: 1.1rem;
+        color: #555;
+    }
+
+        .form-control:focus {
+            border-color: #457b9d;
+            box-shadow: 0 0 0 4px rgba(69, 123, 157, 0.2);
+            outline: none;
+            background-color: #f9f9f9;
+        }
+
+    .btn-primary {
+        background: linear-gradient(90deg, #457b9d, #1d3557); 
+        border: none;
+        color: white;
+        font-size: 1.3rem;
+        font-weight: 700;
+        padding: 15px 25px;
+        border-radius: 15px;
+        box-shadow: 0 8px 20px rgba(29, 53, 87, 0.4);
+        transition: all 0.3s ease-in-out;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+    }
+
+        .btn-primary:hover {
+            background: linear-gradient(90deg, #1d3557, #457b9d); 
+            transform: translateY(-3px) scale(1.01);
+            box-shadow: 0 12px 25px rgba(29, 53, 87, 0.5);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 10px rgba(29, 53, 87, 0.3);
+        }
+
+    .text-danger {
+        font-size: 0.9rem;
+    }
+
+    @@media (max-width: 768px) {
+        .register-card {
+            padding: 30px;
+            border-radius: 15px;
+        }
+
+        .form-title {
+            font-size: 2rem;
+            margin-bottom: 25px;
+        }
+
+        .form-control {
+            padding: 12px 18px;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            font-size: 1.1rem;
+            padding: 12px 20px;
+        }
+    }
+</style>
+
+<div class="register-page-container">
+    <div class="register-card">
+        <h2 class="form-title">Създайте нов профил</h2>
         <form id="registerForm" asp-route-returnUrl="@Model.ReturnUrl" method="post">
-            <h2>Create a new account.</h2>
             <hr />
-
-            <div class="form-floating">
-                <input asp-for="Input.Username" class="form-control" autocomplete="username" aria-required="true" />
-                <label asp-for="Input.Username"></label>
-                <span asp-validation-for="Input.Username" class="text-danger"></span>
-            </div>
             <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
             <div class="form-floating mb-3">
-                <input asp-for="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
-                <label asp-for="Input.Email">Email</label>
+                <input asp-for="Input.Username" class="form-control" autocomplete="username" aria-required="true" placeholder="Потребителско име" />
+                <label asp-for="Input.Username">Потребителско име</label>
+                <span asp-validation-for="Input.Username" class="text-danger"></span>
+            </div>
+            <div class="form-floating mb-3">
+                <input asp-for="Input.Email" class="form-control" autocomplete="email" aria-required="true" placeholder="name@example.com" />
+                <label asp-for="Input.Email">Имейл</label>
                 <span asp-validation-for="Input.Email" class="text-danger"></span>
             </div>
             <div class="form-floating mb-3">
-                <input asp-for="Input.Password" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
-                <label asp-for="Input.Password">Password</label>
+                <input asp-for="Input.Password" class="form-control" autocomplete="new-password" aria-required="true" placeholder="Парола" />
+                <label asp-for="Input.Password">Парола</label>
                 <span asp-validation-for="Input.Password" class="text-danger"></span>
             </div>
             <div class="form-floating mb-3">
-                <input asp-for="Input.ConfirmPassword" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
-                <label asp-for="Input.ConfirmPassword">Confirm Password</label>
+                <input asp-for="Input.ConfirmPassword" class="form-control" autocomplete="new-password" aria-required="true" placeholder="Потвърди парола" />
+                <label asp-for="Input.ConfirmPassword">Потвърди парола</label>
                 <span asp-validation-for="Input.ConfirmPassword" class="text-danger"></span>
             </div>
-            <button id="registerSubmit" type="submit" class="w-100 btn btn-lg btn-primary">Register</button>
+            <button id="registerSubmit" type="submit" class="w-100 btn btn-lg btn-primary">Регистрация</button>
+         
         </form>
     </div>
-    
 </div>
 
 @section Scripts {

@@ -1,0 +1,166 @@
+﻿@model ErrorViewModel
+@{
+    ViewData["Title"] = "Вътрешна сървърна грешка";
+    Layout = "_Layout"; // Връщаме Layout
+}
+
+<style>
+    /* Стилизираме контейнера, а не целия body, тъй като използваме _Layout */
+    .error-container-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: calc(100vh - var(--header-height, 80px) - var(--footer-height, 60px)); /* Адаптираме височината спрямо хедър/футър */
+        text-align: center;
+        padding: 40px 20px; /* Адаптивен padding */
+        max-width: 900px;
+        margin: 50px auto; /* Центрираме контейнера в страницата */
+        background-color: #264653; /* Тъмно син фон за контейнера */
+        color: #f8edeb; /* Светъл, но наситен текст */
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        animation: fadeIn 1s ease-out forwards;
+    }
+
+    .error-code {
+        font-size: 12rem; /* По-голям код */
+        font-weight: 900;
+        color: #e76f51; /* Наситен червено-оранжев акцент */
+        text-shadow: 5px 5px 15px rgba(0,0,0,0.5);
+        margin-bottom: 0px;
+        line-height: 1;
+        animation: fadeIn 1.2s ease-out forwards;
+        opacity: 0; /* За анимация */
+    }
+
+    .error-header {
+        font-size: 3.2rem; /* По-голям хедър */
+        font-weight: 700;
+        color: #f4a261; /* Наситен оранжев */
+        margin-top: 10px;
+        margin-bottom: 20px;
+        text-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+    }
+
+    .error-subheader {
+        font-size: 1.6rem; /* По-голям подхедър */
+        color: #e9c46a; /* Наситен жълто-оранжев */
+        margin-bottom: 40px;
+        line-height: 1.6;
+        opacity: 0.9;
+    }
+
+    .request-id {
+        font-size: 1rem;
+        color: rgba(241, 250, 238, 0.8);
+        margin-top: 20px;
+        word-break: break-all;
+        background-color: rgba(0,0,0,0.2);
+        padding: 10px 15px;
+        border-radius: 5px;
+    }
+
+    .button-container {
+        margin-top: 40px;
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .action-button {
+        background-color: #2a9d8f; /* Зеленикав акцент */
+        color: white;
+        padding: 18px 35px;
+        border-radius: 10px;
+        text-decoration: none;
+        font-size: 1.2rem;
+        font-weight: 600;
+        transition: all 0.3s ease-in-out;
+        box-shadow: 0 6px 15px rgba(0,0,0,0.3);
+        border: none;
+        cursor: pointer;
+    }
+
+        .action-button:hover {
+            background-color: #21887a;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+        }
+
+    /* Анимации */
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Адаптивен дизайн */
+    @@media (max-width: 768px) {
+        .error-code {
+            font-size: 8rem;
+        }
+
+        .error-header {
+            font-size: 2.5rem;
+        }
+
+        .error-subheader {
+            font-size: 1.3rem;
+        }
+
+        .action-button {
+            padding: 15px 30px;
+            font-size: 1.1rem;
+        }
+
+        .button-container {
+            flex-direction: column;
+            gap: 15px;
+        }
+    }
+
+    @@media (max-width: 480px) {
+        .error-code {
+            font-size: 6rem;
+        }
+
+        .error-header {
+            font-size: 2rem;
+        }
+
+        .error-subheader {
+            font-size: 1rem;
+        }
+
+        .action-button {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="error-container-wrapper">
+    <h1 class="error-code">500</h1>
+    <h2 class="error-header">Вътрешна сървърна грешка</h2>
+    <p class="error-subheader">
+        Извиняваме се, но нещо се обърка от наша страна.
+        Моля, опитайте отново по-късно или се свържете с поддръжката, ако проблемът продължава.
+    </p>
+    @if (Model != null && Model.ShowRequestId)
+    {
+        <p class="request-id">
+            <strong>Request ID:</strong> <code>@Model.RequestId</code>
+        </p>
+    }
+    <div class="button-container">
+        <button onclick="history.back()" class="action-button">Върнете се назад</button>
+        <a asp-area="" asp-controller="Home" asp-action="Index" class="action-button">Към Начална страница</a>
+    </div>
+</div>

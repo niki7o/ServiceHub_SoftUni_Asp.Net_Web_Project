@@ -13,15 +13,15 @@ namespace ServiceHub.Services.Services
     public class CodeSnippetConverterService : ICodeSnippetConverterService
     {
         private readonly ILogger<CodeSnippetConverterService> _logger;
-
+        private static readonly HashSet<string> LockedLanguages = new HashSet<string> { "javascript", "php" };
         public CodeSnippetConverterService(ILogger<CodeSnippetConverterService> logger)
         {
             _logger = logger;
         }
 
-        public Task<CodeSnippetConvertResponseModel> ConvertCodeAsync(CodeSnippetConvertRequestModel request)
+        public Task<CodeSnippetConvertResponseModel> ConvertCodeAsync(CodeSnippetConvertRequestModel request, bool isBusinessUser)
         {
-            _logger.LogInformation($"Attempting to convert code from {request.SourceLanguage} to {request.TargetLanguage}.");
+            _logger.LogInformation($"Attempting to convert code from {request.SourceLanguage} to {request.TargetLanguage}. IsBusinessUser: {isBusinessUser}");
 
             var response = new CodeSnippetConvertResponseModel();
             string convertedCode = "";
@@ -32,7 +32,7 @@ namespace ServiceHub.Services.Services
                 if (string.IsNullOrWhiteSpace(request.SourceCode))
                 {
                     response.ConvertedCode = "";
-                    response.Message = "Моля, въведете изходен код."; 
+                    response.Message = "Моля, въведете изходен код.";
                     _logger.LogWarning("Source code is empty.");
                     return Task.FromResult(response);
                 }
@@ -40,10 +40,20 @@ namespace ServiceHub.Services.Services
                 string sourceLang = request.SourceLanguage.ToLower();
                 string targetLang = request.TargetLanguage.ToLower();
 
+               
+                if (!isBusinessUser && (LockedLanguages.Contains(sourceLang) || LockedLanguages.Contains(targetLang)))
+                {
+                    response.ConvertedCode = "// Достъпът до JavaScript и PHP конвертиране е само за Бизнес Потребители.";
+                    response.Message = "Достъпът до JavaScript и PHP конвертиране е само за Бизнес Потребители. Моля, надстройте акаунта си.";
+                    _logger.LogWarning("Unauthorized access attempt for locked language by non-business user. Source: {Source}, Target: {Target}", request.SourceLanguage, request.TargetLanguage);
+                    return Task.FromResult(response);
+                }
+
+
                 if (sourceLang == targetLang)
                 {
                     convertedCode = request.SourceCode;
-                    message = "Изходният и целевият език не могат да бъдат еднакви. Върнат е оригиналният код."; 
+                    message = "Изходният и целевият език не могат да бъдат еднакви. Върнат е оригиналният код.";
                     _logger.LogWarning("Source and target languages are the same. Returning original code.");
                 }
                 else if (sourceLang == "c#")
@@ -51,25 +61,25 @@ namespace ServiceHub.Services.Services
                     if (targetLang == "python")
                     {
                         convertedCode = ConvertCSharpToPython(request.SourceCode);
-                        message = "Кодът е 'конвертиран' от C# към Python (опростено)."; 
+                        message = "Кодът е 'конвертиран' от C# към Python (опростено).";
                     }
                     else if (targetLang == "javascript")
                     {
                         convertedCode = ConvertCSharpToJavaScript(request.SourceCode);
-                        message = "Кодът е 'конвертиран' от C# към JavaScript (опростено)."; 
+                        message = "Кодът е 'конвертиран' от C# към JavaScript (опростено).";
                     }
                     else if (targetLang == "php")
                     {
                         convertedCode = ConvertCSharpToPhp(request.SourceCode);
-                        message = "Кодът е 'конвертиран' от C# към PHP (опростено)."; 
+                        message = "Кодът е 'конвертиран' от C# към PHP (опростено).";
                     }
                     else
                     {
-                        convertedCode = $"// Неподдържана комбинация за конвертиране или опростена логика.\n" + 
-                                        $"// Изходен език: {request.SourceLanguage}\n" + 
-                                        $"// Целеви език: {request.TargetLanguage}\n\n" + 
-                                        $"// Оригинален код:\n{request.SourceCode}"; 
-                        message = "Избраната комбинация от езици не се поддържа от текущата опростена логика за конвертиране."; 
+                        convertedCode = $"// Неподдържана комбинация за конвертиране или опростена логика.\n" +
+                                        $"// Изходен език: {request.SourceLanguage}\n" +
+                                        $"// Целеви език: {request.TargetLanguage}\n\n" +
+                                        $"// Оригинален код:\n{request.SourceCode}";
+                        message = "Избраната комбинация от езици не се поддържа от текущата опростена логика за конвертиране.";
                     }
                 }
                 else if (sourceLang == "python")
@@ -77,7 +87,7 @@ namespace ServiceHub.Services.Services
                     if (targetLang == "c#")
                     {
                         convertedCode = ConvertPythonToCSharp(request.SourceCode);
-                        message = "Кодът е 'конвертиран' от Python към C# (опростено)."; 
+                        message = "Кодът е 'конвертиран' от Python към C# (опростено).";
                     }
                     else if (targetLang == "javascript")
                     {
@@ -91,11 +101,11 @@ namespace ServiceHub.Services.Services
                     }
                     else
                     {
-                        convertedCode = $"// Неподдържана комбинация за конвертиране или опростена логика.\n" + 
-                                        $"// Изходен език: {request.SourceLanguage}\n" + 
-                                        $"// Целеви език: {request.TargetLanguage}\n\n" + 
-                                        $"// Оригинален код:\n{request.SourceCode}"; 
-                        message = "Избраната комбинация от езици не се поддържа от текущата опростена логика за конвертиране."; 
+                        convertedCode = $"// Неподдържана комбинация за конвертиране или опростена логика.\n" +
+                                        $"// Изходен език: {request.SourceLanguage}\n" +
+                                        $"// Целеви език: {request.TargetLanguage}\n\n" +
+                                        $"// Оригинален код:\n{request.SourceCode}";
+                        message = "Избраната комбинация от езици не се поддържа от текущата опростена логика за конвертиране.";
                     }
                 }
                 else if (sourceLang == "javascript")
@@ -103,25 +113,25 @@ namespace ServiceHub.Services.Services
                     if (targetLang == "c#")
                     {
                         convertedCode = ConvertJavaScriptToCSharp(request.SourceCode);
-                        message = "Кодът е 'конвертиран' от JavaScript към C# (опростено)."; 
+                        message = "Кодът е 'конвертиран' от JavaScript към C# (опростено).";
                     }
                     else if (targetLang == "python")
                     {
                         convertedCode = ConvertJavaScriptToPython(request.SourceCode);
-                        message = "Кодът е 'конвертиран' от JavaScript към Python (опростено)."; 
+                        message = "Кодът е 'конвертиран' от JavaScript към Python (опростено).";
                     }
                     else if (targetLang == "php")
                     {
                         convertedCode = ConvertJavaScriptToPhp(request.SourceCode);
-                        message = "Кодът е 'конвертиран' от JavaScript към PHP (опростено)."; 
+                        message = "Кодът е 'конвертиран' от JavaScript към PHP (опростено).";
                     }
                     else
                     {
-                        convertedCode = $"// Неподдържана комбинация за конвертиране или опростена логика.\n" + 
-                                        $"// Изходен език: {request.SourceLanguage}\n" + 
-                                        $"// Целеви език: {request.TargetLanguage}\n\n" + 
-                                        $"// Оригинален код:\n{request.SourceCode}"; 
-                        message = "Избраната комбинация от езици не се поддържа от текущата опростена логика за конвертиране."; 
+                        convertedCode = $"// Неподдържана комбинация за конвертиране или опростена логика.\n" +
+                                        $"// Изходен език: {request.SourceLanguage}\n" +
+                                        $"// Целеви език: {request.TargetLanguage}\n\n" +
+                                        $"// Оригинален код:\n{request.SourceCode}";
+                        message = "Избраната комбинация от езици не се поддържа от текущата опростена логика за конвертиране.";
                     }
                 }
                 else if (sourceLang == "php")
@@ -129,34 +139,34 @@ namespace ServiceHub.Services.Services
                     if (targetLang == "c#")
                     {
                         convertedCode = ConvertPhpToCSharp(request.SourceCode);
-                        message = "Кодът е 'конвертиран' от PHP към C# (опростено)."; 
+                        message = "Кодът е 'конвертиран' от PHP към C# (опростено).";
                     }
                     else if (targetLang == "python")
                     {
                         convertedCode = ConvertPhpToPython(request.SourceCode);
-                        message = "Кодът е 'конвертиран' от PHP към Python (опростено)."; 
+                        message = "Кодът е 'конвертиран' от PHP към Python (опростено).";
                     }
                     else if (targetLang == "javascript")
                     {
                         convertedCode = ConvertPhpToJavaScript(request.SourceCode);
-                        message = "Кодът е 'конвертиран' от PHP към JavaScript (опростено)."; 
+                        message = "Кодът е 'конвертиран' от PHP към JavaScript (опростено).";
                     }
                     else
                     {
-                        convertedCode = $"// Неподдържана комбинация за конвертиране или опростена логика.\n" + 
-                                        $"// Изходен език: {request.SourceLanguage}\n" + 
-                                        $"// Целеви език: {request.TargetLanguage}\n\n" + 
+                        convertedCode = $"// Неподдържана комбинация за конвертиране или опростена логика.\n" +
+                                        $"// Изходен език: {request.SourceLanguage}\n" +
+                                        $"// Целеви език: {request.TargetLanguage}\n\n" +
                                         $"// Оригинален код:\n{request.SourceCode}";
-                        message = "Избраната комбинация от езици не се поддържа от текущата опростена логика за конвертиране."; 
+                        message = "Избраната комбинация от езици не се поддържа от текущата опростена логика за конвертиране.";
                     }
                 }
                 else
                 {
-                    convertedCode = $"// Неподдържана комбинация за конвертиране или опростена логика.\n" + 
-                                    $"// Изходен език: {request.SourceLanguage}\n" + 
-                                    $"// Целеви език: {request.TargetLanguage}\n\n" + 
+                    convertedCode = $"// Неподдържана комбинация за конвертиране или опростена логика.\n" +
+                                    $"// Изходен език: {request.SourceLanguage}\n" +
+                                    $"// Целеви език: {request.TargetLanguage}\n\n" +
                                     $"// Оригинален код:\n{request.SourceCode}";
-                    message = "Избраната комбинация от езици не се поддържа от текущата опростена логика за конвертиране."; 
+                    message = "Избраната комбинация от езици не се поддържа от текущата опростена логика за конвертиране.";
                 }
 
                 response.ConvertedCode = convertedCode;
@@ -165,8 +175,8 @@ namespace ServiceHub.Services.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "An error occurred during code conversion in service.");
-                response.ConvertedCode = $"// Грешка при конвертиране:\n// {ex.Message}\n\n// Оригинален код:\n{request.SourceCode}"; 
-                response.Message = $"Възникна грешка при конвертиране на кода: {ex.Message}"; 
+                response.ConvertedCode = $"// Грешка при конвертиране:\n// {ex.Message}\n\n// Оригинален код:\n{request.SourceCode}";
+                response.Message = $"Възникна грешка при конвертиране на кода: {ex.Message}";
             }
 
             _logger.LogInformation($"Code conversion completed for {request.SourceLanguage} to {request.TargetLanguage}. Message: {response.Message}");

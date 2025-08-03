@@ -9,6 +9,6 @@ namespace ServiceHub.Services.Interfaces
 {
     public interface ICodeSnippetConverterService
     {
-        Task<CodeSnippetConvertResponseModel> ConvertCodeAsync(CodeSnippetConvertRequestModel request);
+        Task<CodeSnippetConvertResponseModel> ConvertCodeAsync(CodeSnippetConvertRequestModel request, bool isBusinessUser);
     }
 }
