@@ -16,16 +16,16 @@ namespace ServiceHub.Controllers
     {
         private readonly ICodeSnippetConverterService _codeSnippetConverterService;
         private readonly ILogger<CodeSnippetConverterController> _logger;
-        private readonly UserManager<ApplicationUser> _userManager; 
+        private readonly UserManager<ApplicationUser> _userManager;
 
         public CodeSnippetConverterController(
             ICodeSnippetConverterService codeSnippetConverterService,
             ILogger<CodeSnippetConverterController> logger,
-            UserManager<ApplicationUser> userManager) 
+            UserManager<ApplicationUser> userManager)
         {
             _codeSnippetConverterService = codeSnippetConverterService;
             _logger = logger;
-            _userManager = userManager; 
+            _userManager = userManager;
         }
 
         [HttpPost("convert")]
@@ -45,15 +45,15 @@ namespace ServiceHub.Controllers
 
             try
             {
-              
                 var user = await _userManager.GetUserAsync(User);
-                bool isBusinessUser = user != null && await _userManager.IsInRoleAsync(user, "BusinessUser");
+               
+                bool hasPremiumAccess = user != null && (await _userManager.IsInRoleAsync(user, "BusinessUser") || await _userManager.IsInRoleAsync(user, "Admin"));
 
                
-                var response = await _codeSnippetConverterService.ConvertCodeAsync(request, isBusinessUser);
+                var response = await _codeSnippetConverterService.ConvertCodeAsync(request, hasPremiumAccess);
 
-                
-                if (response.Message != null && response.Message.Contains("Достъпът до JavaScript и PHP конвертиране е само за Бизнес Потребители") && !isBusinessUser)
+               
+                if (response.Message != null && response.Message.Contains("Достъпът до JavaScript и PHP конвертиране е само за Бизнес Потребители") && !hasPremiumAccess)
                 {
                     return Forbid(response.Message);
                 }
@@ -66,8 +66,7 @@ namespace ServiceHub.Controllers
                 _logger.LogError(ex, "Error during code conversion in API controller.");
                 return StatusCode(500, new { message = "Възникна грешка при конвертиране на кода: " + ex.Message });
             }
-        
-    }
+        }
 
     }
 }

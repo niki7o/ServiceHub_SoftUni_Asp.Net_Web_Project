@@ -218,8 +218,8 @@
             box-shadow: 0 6px 15px rgba(29, 53, 87, 0.4);
         }
 
-    .clear-filters-btn { 
-        background-color: #6c757d; 
+    .clear-filters-btn {
+        background-color: #6c757d;
         border: none;
         color: white;
         padding: 12px 25px;
@@ -335,6 +335,7 @@
     .badge-free {
         background-color: #2ecc71;
         color: white;
+        margin-bottom:10px;
     }
 
     .badge-premium {
@@ -511,6 +512,32 @@
         .no-services-message.hide {
             opacity: 0;
         }
+
+    
+    .service-card-wrapper.single-visible-card {
+        flex: 0 0 auto !important; 
+        width: 100% !important;
+        max-width: 400px !important; 
+        margin-left: auto !important; 
+        margin-right: auto !important;
+    }
+
+  
+    #servicesListContainer:has(.service-card-wrapper:only-child) {
+        display: flex;
+        justify-content: center;
+    }
+
+        #servicesListContainer:has(.service-card-wrapper:only-child) .col-md-4 {
+            flex: 0 0 auto;
+            width: 100%;
+            max-width: 400px;
+            padding-left: 15px;
+            padding-right: 15px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
 </style>
 
 <div class="services-page-container">
@@ -591,7 +618,7 @@
             </div>
             <div class="d-flex justify-content-end mt-3">
                 <button type="submit" class="btn apply-filters-btn">Приложи филтри</button>
-                <a asp-action="All" class="btn clear-filters-btn">Изчисти филтри</a> 
+                <a asp-action="All" class="btn clear-filters-btn">Изчисти филтри</a>
             </div>
         </form>
     </div>
@@ -736,6 +763,17 @@
             let searchTimeout;
             const transitionDuration = 300;
 
+            function applySingleCardStyles() {
+                const visibleCards = Array.from(allServiceCards).filter(card => card.style.display !== 'none' && !card.classList.contains('hide'));
+
+                
+                allServiceCards.forEach(card => card.classList.remove('single-visible-card'));
+
+                if (visibleCards.length === 1) {
+                    visibleCards[0].classList.add('single-visible-card');
+                }
+            }
+
             connection.on("ReceiveSearchResults", (services) => {
                 const foundServiceIds = new Set(services.map(s => s.id));
                 let foundCount = 0;
@@ -743,14 +781,12 @@
                 allServiceCards.forEach(card => {
                     const serviceId = card.dataset.serviceId;
                     if (foundServiceIds.has(serviceId)) {
-
                         card.style.display = '';
                         setTimeout(() => {
                             card.classList.remove('hide');
                         }, 10);
                         foundCount++;
                     } else {
-
                         card.classList.add('hide');
                         setTimeout(() => {
                             card.style.display = 'none';
@@ -758,6 +794,8 @@
                     }
                 });
 
+               
+                setTimeout(applySingleCardStyles, transitionDuration + 50); 
 
                 if (foundCount === 0 && searchInput.value.trim().length > 0) {
                     noResultsMessageElement.textContent = 'Няма намерени услуги.';
@@ -773,7 +811,6 @@
                     searchResultsDiv.classList.remove('show');
                     setTimeout(() => { searchResultsDiv.style.display = 'none'; }, transitionDuration);
 
-
                     if (initialNoServicesMessage && allServiceCards.length === 0 && searchInput.value.trim().length === 0) {
                         initialNoServicesMessage.classList.remove('hide');
                         initialNoServicesMessage.style.display = 'block';
@@ -782,7 +819,6 @@
                         setTimeout(() => { initialNoServicesMessage.style.display = 'none'; }, transitionDuration);
                     }
 
-                    // Show pagination if no active search or results
                     if (paginationContainer) {
                         paginationContainer.style.display = '';
                         setTimeout(() => { paginationContainer.classList.remove('hide'); }, 10);
@@ -801,7 +837,6 @@
                         connection.invoke("SearchServices", searchTerm).catch(err => console.error(err.toString()));
                     }, 300);
                 } else if (searchTerm.length === 0) {
-                    // If search input is cleared, show all original cards smoothly
                     allServiceCards.forEach(card => {
                         card.style.display = '';
                         setTimeout(() => { card.classList.remove('hide'); }, 10);
@@ -822,8 +857,8 @@
                         paginationContainer.style.display = '';
                         setTimeout(() => { paginationContainer.classList.remove('hide'); }, 10);
                     }
+                    applySingleCardStyles();
                 } else {
-
                     allServiceCards.forEach(card => {
                         card.style.display = '';
                         setTimeout(() => { card.classList.remove('hide'); }, 10);
@@ -841,6 +876,7 @@
                         paginationContainer.style.display = '';
                         setTimeout(() => { paginationContainer.classList.remove('hide'); }, 10);
                     }
+                    applySingleCardStyles(); 
                 }
             });
 
@@ -874,7 +910,6 @@
 
             document.addEventListener('click', (event) => {
                 if (!searchInput.contains(event.target) && !searchResultsDiv.contains(event.target)) {
-
                     if (noResultsMessageElement.textContent !== '' || searchInput.value.trim().length === 0) {
                         noResultsMessageElement.textContent = '';
                         searchResultsDiv.classList.remove('show');
@@ -889,17 +924,13 @@
                                 paginationContainer.style.display = '';
                                 setTimeout(() => { paginationContainer.classList.remove('hide'); }, 10);
                             }
-                            if (initialNoServicesMessage && allServiceCards.length === 0) {
-                                initialNoServicesMessage.classList.remove('hide');
-                                initialNoServicesMessage.style.display = 'block';
-                            } else if (initialNoServicesMessage) {
-                                initialNoServicesMessage.classList.add('hide');
-                                setTimeout(() => { initialNoServicesMessage.style.display = 'none'; }, transitionDuration);
-                            }
                         }
                     }
+                    applySingleCardStyles(); 
                 }
             });
+            
+            applySingleCardStyles();
         });
     </script>
 }

@@ -14,13 +14,13 @@ namespace ServiceHub.Controllers
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
-        private readonly SignInManager<ApplicationUser> _signInManager; 
+        private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly ILogger<SubscriptionController> _logger;
 
         public SubscriptionController(
             UserManager<ApplicationUser> userManager,
             RoleManager<IdentityRole> roleManager,
-            SignInManager<ApplicationUser> signInManager, 
+            SignInManager<ApplicationUser> signInManager,
             ILogger<SubscriptionController> logger)
         {
             _userManager = userManager;
@@ -64,7 +64,6 @@ namespace ServiceHub.Controllers
                 return StatusCode(500, new { message = "Възникна вътрешна грешка: Ролята 'BusinessUser' не е намерена." });
             }
 
-           
             if (await _userManager.IsInRoleAsync(user, "BusinessUser"))
             {
                 _logger.LogInformation("User {UserName} ({UserId}) is already a BusinessUser. Attempting to renew subscription.", user.UserName, userId);
@@ -81,19 +80,17 @@ namespace ServiceHub.Controllers
                 await _signInManager.RefreshSignInAsync(user);
 
                 _logger.LogInformation("User {UserName} ({UserId}) Business subscription renewed until {ExpiryDate}.", user.UserName, userId, user.BusinessExpiresOn);
-                return Ok(new { message = "Абонаментът Ви за Бизнес Потребител е успешно подновен за 30 дни!", expiresOn = user.BusinessExpiresOn?.ToString("yyyy-MM-dd") });
+                return Ok(new { success = true, message = "Абонаментът Ви за Бизнес Потребител е успешно подновен за 30 дни!", expiresOn = user.BusinessExpiresOn?.ToString("yyyy-MM-dd") });
             }
 
             _logger.LogInformation("Simulating successful payment for user {UserName} ({UserId}).", user.UserName, userId);
 
-         
             if (await _userManager.IsInRoleAsync(user, "User"))
             {
                 var removeUserRoleResult = await _userManager.RemoveFromRoleAsync(user, "User");
                 if (!removeUserRoleResult.Succeeded)
                 {
                     _logger.LogError("Failed to remove 'User' role from {UserName}: {Errors}", user.UserName, string.Join(", ", removeUserRoleResult.Errors.Select(e => e.Description)));
-                    
                 }
             }
 
@@ -111,9 +108,7 @@ namespace ServiceHub.Controllers
             if (!result.Succeeded)
             {
                 _logger.LogError("Failed to update user {UserName} properties after subscription: {Errors}", user.UserName, string.Join(", ", result.Errors.Select(e => e.Description)));
-                
                 await _userManager.RemoveFromRoleAsync(user, "BusinessUser");
-             
                 if (!await _userManager.IsInRoleAsync(user, "User"))
                 {
                     await _userManager.AddToRoleAsync(user, "User");
@@ -121,11 +116,10 @@ namespace ServiceHub.Controllers
                 return StatusCode(500, new { message = "Неуспешно активиране на абонамента. Моля, опитайте отново." });
             }
 
-         
             await _signInManager.RefreshSignInAsync(user);
 
             _logger.LogInformation("User {UserName} ({UserId}) successfully subscribed as BusinessUser until {ExpiryDate}.", user.UserName, userId, user.BusinessExpiresOn);
-            return Ok(new { message = "Поздравления! Вече сте Бизнес Потребител за 30 дни!", expiresOn = user.BusinessExpiresOn?.ToString("yyyy-MM-dd") });
+            return Ok(new { success = true, message = "Поздравления! Вече сте Бизнес Потребител за 30 дни!", expiresOn = user.BusinessExpiresOn?.ToString("yyyy-MM-dd") });
         }
     }
 }

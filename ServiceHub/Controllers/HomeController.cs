@@ -1,5 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using ServiceHub.Core.Models;
+using ServiceHub.Data.Models;
 using System.Diagnostics;
 
 namespace ServiceHub.Controllers
@@ -7,10 +9,12 @@ namespace ServiceHub.Controllers
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public HomeController(ILogger<HomeController> logger)
+        public HomeController(ILogger<HomeController> logger,UserManager<ApplicationUser> userManager)
         {
             _logger = logger;
+            _userManager = userManager;
         }
 
         public IActionResult Index()
@@ -20,9 +24,10 @@ namespace ServiceHub.Controllers
 
         }
 
-        public IActionResult Plans()
+        public async Task<IActionResult> Plans()
         {
-            return View();
+            var currentUser = await _userManager.GetUserAsync(User);
+            return View(currentUser);
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

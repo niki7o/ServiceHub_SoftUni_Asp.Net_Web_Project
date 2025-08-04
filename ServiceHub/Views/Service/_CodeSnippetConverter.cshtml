@@ -2,13 +2,18 @@
 @{
     ViewData["Title"] = "Конвертор на Кодови Снипети";
     var supportedLanguages = ViewBag.SupportedLanguages as List<string> ?? new List<string> { "C#", "Python", "JavaScript", "PHP" };
-    var isBusinessUser = ViewBag.IsBusinessUser ?? false;
-    var lockedLanguages = new HashSet<string> { "JavaScript", "PHP" }; 
+
+    // Проверяваме дали потребителят е BusinessUser ИЛИ Admin
+    var isAuthenticated = User.Identity.IsAuthenticated;
+    var isAdmin = User.IsInRole("Admin");
+    var isBusinessUserOrAdmin = isAuthenticated && (User.IsInRole("BusinessUser") || isAdmin);
+
+    var lockedLanguages = new HashSet<string> { "JavaScript", "PHP" };
     var subscriptionPageUrl = "/Home/Plans";
 }
 
 <style>
-   
+    /* Запазваме всички ваши CSS стилове */
     .form-control-lg.rounded-pill {
         border-radius: 50px;
         padding-left: 20px;
@@ -31,11 +36,11 @@
     }
 
     .text-primary {
-        color: #1d3557 !important; 
+        color: #1d3557 !important;
     }
 
     .text-secondary {
-        color: #457b9d !important; 
+        color: #457b9d !important;
     }
 
     .btn-primary {
@@ -48,7 +53,6 @@
             border-color: #142840;
         }
 
-   
     .alert-info {
         background-color: #d1ecf1;
         color: #0c5460;
@@ -69,7 +73,6 @@
         color: #856404;
     }
 
-    
     select option:disabled {
         background-color: #f0f0f0;
         color: #a0a0a0;
@@ -78,7 +81,7 @@
 
     .premium-feature-message {
         background-color: #fff3cd;
-        border: 1px solid #ffeeba; 
+        border: 1px solid #ffeeba;
         color: #856404;
         padding: 10px 15px;
         border-radius: 8px;
@@ -87,15 +90,15 @@
         align-items: center;
         gap: 8px;
         box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        margin-top: 10px; 
+        margin-top: 10px;
     }
 
         .premium-feature-message .badge {
             font-size: 0.8em;
             padding: 0.4em 0.7em;
             border-radius: 5px;
-            background-color: #e9c46a; 
-            color: #1d3557; 
+            background-color: #e9c46a;
+            color: #1d3557;
             font-weight: 700;
         }
 
@@ -110,7 +113,6 @@
                 color: #0056b3;
             }
 
-  
     .option-text-with-icon {
         display: flex;
         align-items: center;
@@ -136,7 +138,7 @@
                         <label for="sourceLanguage" class="form-label font-weight-bold">Изходен език:</label>
                         <select id="sourceLanguage" class="form-control form-control-lg rounded-pill">
                             <option value="">-- Изберете изходен език --</option>
-                            
+                            @* Опциите ще се попълват от JavaScript *@
                         </select>
                         <div id="sourceLanguagePremiumMessage" class="premium-feature-message" style="display:none;">
                             <i class="fas fa-crown me-2 text-warning"></i> Тази функция е част от <span class="badge bg-warning text-dark">ПРЕМИУМ</span> абонамента. <a href="@subscriptionPageUrl" class="text-info font-weight-bold">Абонирайте се сега!</a>
@@ -147,7 +149,7 @@
                         <label for="targetLanguage" class="form-label font-weight-bold">Целеви език:</label>
                         <select id="targetLanguage" class="form-control form-control-lg rounded-pill">
                             <option value="">-- Изберете целеви език --</option>
-                          
+                            @* Опциите ще се попълват от JavaScript *@
                         </select>
                         <div id="targetLanguagePremiumMessage" class="premium-feature-message" style="display:none;">
                             <i class="fas fa-crown me-2 text-warning"></i> Тази функция е част от <span class="badge bg-warning text-dark">ПРЕМИУМ</span> абонамента. <a href="@subscriptionPageUrl" class="text-info font-weight-bold">Абонирайте се сега!</a>
@@ -180,12 +182,12 @@
 
 @section Scripts {
     <script>
-        const isBusinessUser = @(isBusinessUser.ToString().ToLower());
-        const supportedLanguages = @Html.Raw(Json.Serialize(supportedLanguages)); 
+        // Използваме новата променлива isBusinessUserOrAdmin
+        const isBusinessUser = @(isBusinessUserOrAdmin.ToString().ToLower()); // <-- ПРОМЯНА ТУК
+        const supportedLanguages = @Html.Raw(Json.Serialize(supportedLanguages));
         const lockedLanguages = new Set(['JavaScript', 'PHP']);
         const subscriptionPageUrl = "@subscriptionPageUrl";
 
-       
         function showConversionMessage(message, type) {
             const conversionMessage = document.getElementById('conversionMessage');
             conversionMessage.textContent = message;
@@ -195,21 +197,23 @@
 
         function handlePremiumMessage(selectElement, premiumMessageElement) {
             const selectedLanguage = selectElement.value;
-            if (lockedLanguages.has(selectedLanguage) && !isBusinessUser) {
+            // Проверяваме дали е заключен език И потребителят НЯМА бизнес/админ достъп
+            if (lockedLanguages.has(selectedLanguage) && !isBusinessUser) { // <-- isBusinessUser тук вече е isBusinessUserOrAdmin
                 premiumMessageElement.style.display = 'flex';
                 showConversionMessage('Моля, надстройте акаунта си, за да използвате този език.', 'warning');
             } else {
-                premiumMessageElement.style.display = 'none'; 
-             
-                if (document.getElementById('conversionMessage').style.display !== 'block') {
+                premiumMessageElement.style.display = 'none';
+                // Изчистваме съобщението, само ако не е показано друго съобщение (напр. грешка от валидация)
+                if (document.getElementById('conversionMessage').classList.contains('alert-warning')) {
                     showConversionMessage('', 'none');
                 }
             }
         }
 
-       
         function populateLanguageSelect(selectElement) {
-          
+            // Изчистваме съществуващите опции, ако има такива
+            selectElement.innerHTML = '';
+
             const defaultOption = document.createElement('option');
             defaultOption.value = "";
             defaultOption.textContent = "-- Изберете език --";
@@ -221,16 +225,16 @@
                 option.textContent = lang;
 
                 const isLocked = lockedLanguages.has(lang);
-                option.dataset.isLocked = isLocked.toString(); 
+                option.dataset.isLocked = isLocked.toString();
 
-                if (isLocked && !isBusinessUser) {
-                    option.disabled = true; 
-                    option.textContent += ' (ПРЕМИУМ) \u{1F512}';
+                // Ако е заключен език И потребителят НЯМА бизнес/админ достъп
+                if (isLocked && !isBusinessUser) { // <-- isBusinessUser тук вече е isBusinessUserOrAdmin
+                    option.disabled = true;
+                    option.textContent += ' (ПРЕМИУМ) \u{1F512}'; // Добавяме иконка на катинар
                 }
                 selectElement.appendChild(option);
             });
         }
-
 
         document.addEventListener('DOMContentLoaded', () => {
             const sourceLanguageSelect = document.getElementById('sourceLanguage');
@@ -238,11 +242,9 @@
             const sourceLanguagePremiumMessage = document.getElementById('sourceLanguagePremiumMessage');
             const targetLanguagePremiumMessage = document.getElementById('targetLanguagePremiumMessage');
 
-          
             populateLanguageSelect(sourceLanguageSelect);
             populateLanguageSelect(targetLanguageSelect);
 
-          
             sourceLanguageSelect.addEventListener('change', () => {
                 handlePremiumMessage(sourceLanguageSelect, sourceLanguagePremiumMessage);
             });
@@ -250,11 +252,10 @@
                 handlePremiumMessage(targetLanguageSelect, targetLanguagePremiumMessage);
             });
 
-          
+            // Извикваме при зареждане, за да покажем съобщенията, ако е избран заключен език по подразбиране
             handlePremiumMessage(sourceLanguageSelect, sourceLanguagePremiumMessage);
             handlePremiumMessage(targetLanguageSelect, targetLanguagePremiumMessage);
         });
-
 
         document.getElementById('convertCodeButton').addEventListener('click', async () => {
             const sourceCode = document.getElementById('sourceCode').value;
@@ -263,9 +264,9 @@
             const convertedCodeOutput = document.getElementById('convertedCode');
 
             convertedCodeOutput.value = '';
-            showConversionMessage('', 'none');
+            showConversionMessage('', 'none'); // Изчистваме предишни съобщения
 
-          
+            // Клиентска валидация
             if (!sourceCode.trim()) {
                 showConversionMessage('Моля, въведете изходен код.', 'danger');
                 return;
@@ -285,7 +286,8 @@
             }
 
             // Клиентска валидация за заключени езици преди изпращане на заявката
-            if (!isBusinessUser && (lockedLanguages.has(sourceLanguage) || lockedLanguages.has(targetLanguage))) {
+            // Проверяваме дали потребителят НЯМА бизнес/админ достъп
+            if (!isBusinessUser && (lockedLanguages.has(sourceLanguage) || lockedLanguages.has(targetLanguage))) { // <-- isBusinessUser тук вече е isBusinessUserOrAdmin
                 showConversionMessage('Достъпът до JavaScript и PHP конвертиране е само за Бизнес Потребители. Моля, надстройте акаунта си.', 'warning');
                 return;
             }
