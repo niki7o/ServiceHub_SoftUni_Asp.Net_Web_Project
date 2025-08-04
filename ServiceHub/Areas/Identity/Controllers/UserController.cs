@@ -1,16 +1,17 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using ServiceHub.Core.Models.Reviews;
-using ServiceHub.Core.Models.Service;
+
+using ServiceHub.Core.Models.Reviews; 
+using ServiceHub.Core.Models.Service; 
 using ServiceHub.Core.Models.User;
 using ServiceHub.Data.Models;
 using ServiceHub.Services.Interfaces;
 using System.Security.Claims;
+using System.Threading.Tasks;
 
-namespace ServiceHub.Areas.Identity.Controllers
+namespace ServiceHub.Areas.Identity.Controllers 
 {
-
     [Authorize]
     [Area("Identity")]
     public class UserController : Controller
@@ -25,8 +26,7 @@ namespace ServiceHub.Areas.Identity.Controllers
         }
 
         [HttpGet]
-        
-        public async Task<IActionResult> UserProfile(string? id)
+        public async Task<IActionResult> UserProfile(string? id, int createdServicesPage = 1, int reviewsPage = 1)
         {
             string currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             ApplicationUser user;
@@ -55,9 +55,21 @@ namespace ServiceHub.Areas.Identity.Controllers
 
             IList<string> roles = await userManager.GetRolesAsync(user);
 
-            IEnumerable<ServiceViewModel> createdServices = await serviceService.GetCreatedServicesByUserIdAsync(user.Id);
+            
+            int createdServicesPageSize = 5;
+            int reviewsPageSize = 5;
+  var paginatedCreatedServicesResult = await serviceService.GetCreatedServicesByUserIdAsync(user.Id, createdServicesPage, createdServicesPageSize);
+            IEnumerable<ServiceViewModel> createdServices = paginatedCreatedServicesResult.Services;
+            int totalCreatedServicesCount = paginatedCreatedServicesResult.TotalCount;
+            int createdServicesTotalPages = (int)Math.Ceiling((double)totalCreatedServicesCount / createdServicesPageSize);
+
+           
+            var paginatedReviewsResult = await serviceService.GetReviewsByUserIdAsync(user.Id, reviewsPage, reviewsPageSize);
+            IEnumerable<ReviewViewModel> reviews = paginatedReviewsResult.Reviews;
+            int totalReviewsCount = paginatedReviewsResult.TotalCount;
+            int reviewsTotalPages = (int)Math.Ceiling((double)totalReviewsCount / reviewsPageSize);
+
             IEnumerable<ServiceViewModel> favoriteServices = await serviceService.GetFavoriteServicesByUserIdAsync(user.Id);
-            IEnumerable<ReviewViewModel> reviews = await serviceService.GetReviewsByUserIdAsync(user.Id);
             int approvedServicesCount = await serviceService.GetApprovedServicesCountByUserIdAsync(user.Id);
 
 
@@ -71,13 +83,24 @@ namespace ServiceHub.Areas.Identity.Controllers
                 BusinessExpiresOn = user.BusinessExpiresOn,
                 LastServiceCreationDate = user.LastServiceCreationDate,
                 ApprovedServicesCount = approvedServicesCount,
+                FavoriteServices = favoriteServices, 
+
+                
                 CreatedServices = createdServices,
-                FavoriteServices = favoriteServices,
-                Reviews = reviews
+                CreatedServicesCurrentPage = createdServicesPage,
+                CreatedServicesPageSize = createdServicesPageSize,
+                TotalCreatedServicesCount = totalCreatedServicesCount,
+                CreatedServicesTotalPages = createdServicesTotalPages,
+
+              
+                Reviews = reviews,
+                ReviewsCurrentPage = reviewsPage,
+                ReviewsPageSize = reviewsPageSize,
+                TotalReviewsCount = totalReviewsCount,
+                ReviewsTotalPages = reviewsTotalPages
             };
 
-            return View("~/Areas/Identity/Views/UserProfile.cshtml",viewModel);
+            return View("~/Areas/Identity/Views/UserProfile.cshtml", viewModel);
         }
     }
-    
 }

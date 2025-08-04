@@ -1,6 +1,7 @@
 ﻿@model ServiceHub.Core.Models.User.UserProfileViewModel
 @using Microsoft.AspNetCore.Identity
 @using ServiceHub.Data.Models
+@using ServiceHub.Common.Enum 
 @inject UserManager<ApplicationUser> UserManager
 
 @{
@@ -11,67 +12,67 @@
 }
 
 <style>
-    /* General container and card styling */
+    
     body {
-        background-color: #f0f2f5; /* Light gray background for the whole page */
+        background-color: #f0f2f5; 
     }
 
     .profile-container {
         max-width: 960px;
-        margin: 40px auto; /* Add some top/bottom margin */
+        margin: 40px auto; 
         padding: 20px;
         font-family: 'Inter', sans-serif;
     }
 
     .profile-card {
         background-color: #ffffff;
-        border-radius: 15px; /* More rounded corners */
-        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15); /* Stronger, more appealing shadow */
+        border-radius: 15px; 
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15); 
         overflow: hidden;
-        border: none; /* Remove default border if shadow is strong enough */
+        border: none; 
         transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
     }
 
         .profile-card:hover {
-            transform: translateY(-5px); /* Slight lift on hover */
+            transform: translateY(-5px); 
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
         }
 
     .profile-card-body {
-        padding: 40px; /* More padding */
+        padding: 40px; 
     }
 
-    /* Headings and text */
+   
     .profile-title {
-        font-size: 2.8rem; /* Larger title */
-        font-weight: 900; /* Extra bold */
-        color: #2c3e50; /* Darker blue-gray */
+        font-size: 2.8rem; 
+        font-weight: 900; 
+        color: #2c3e50; 
         margin-bottom: 30px;
         text-align: center;
         text-shadow: 1px 1px 4px rgba(0,0,0,0.1);
     }
 
     .profile-title-current-user {
-        color: #3498db; /* Brighter blue for "Your Profile" */
+        color: #3498db; 
         font-size: 1.8rem;
-        display: block; /* New line for better readability */
+        display: block; 
         margin-top: 5px;
     }
 
     .section-heading {
-        font-size: 1.5rem; /* Larger section headings */
-        font-weight: 700; /* Bold */
-        color: #34495e; /* Dark blue-gray */
+        font-size: 1.5rem; 
+        font-weight: 700; 
+        color: #34495e; 
         margin-bottom: 15px;
-        border-bottom: 2px solid #ecf0f1; /* Subtle underline */
+        border-bottom: 2px solid #ecf0f1; 
         padding-bottom: 8px;
     }
 
-    /* Grid layout */
+   
     .grid-layout {
         display: grid;
         grid-template-columns: 1fr;
-        gap: 30px; /* More space between columns */
+        gap: 30px; 
         margin-bottom: 40px;
     }
 
@@ -81,61 +82,61 @@
         }
     }
 
-    /* Information boxes */
+   
     .info-box {
-        background-color: #fdfefe; /* Lighter background */
-        padding: 25px; /* More padding */
-        border-radius: 12px; /* Nicer rounding */
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08); /* Softer shadow */
+        background-color: #fdfefe; 
+        padding: 25px; 
+        border-radius: 12px; 
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08); 
         transition: transform 0.2s ease-in-out;
     }
 
         .info-box:hover {
-            transform: translateY(-3px); /* Slight lift on hover */
+            transform: translateY(-3px); 
         }
 
     .info-text {
-        color: #555; /* Slightly darker text */
+        color: #555; 
         margin-bottom: 8px;
         font-size: 1.05rem;
-        display: flex; /* For icon alignment */
+        display: flex; 
         align-items: center;
     }
 
         .info-text i {
-            margin-right: 10px; /* Space for icons */
-            color: #3498db; /* Icon color */
+            margin-right: 10px; 
+            color: #3498db;
         }
 
     .info-label {
-        font-weight: 600; /* Semi-bold label */
+        font-weight: 600; 
         color: #333;
     }
 
-    /* Lists */
+   
     .list-style-disc {
-        list-style-type: none; /* Remove default disc */
+        list-style-type: none;
         padding-left: 0;
     }
 
     .list-item-spacing > li {
         margin-bottom: 10px;
         position: relative;
-        padding-left: 25px; /* Space for custom bullet */
+        padding-left: 25px; 
     }
 
         .list-item-spacing > li::before {
-            content: "\f00c"; /* Font Awesome check icon */
+            content: "\f00c"; 
             font-family: "Font Awesome 5 Free";
             font-weight: 900;
-            color: #27ae60; /* Green checkmark */
+            color: #27ae60; 
             position: absolute;
             left: 0;
             top: 0;
         }
 
     .link-style {
-        color: #2980b9; /* Stronger blue for links */
+        color: #2980b9;
         text-decoration: none;
         font-weight: 600;
         transition: color 0.2s ease-in-out;
@@ -146,9 +147,9 @@
             text-decoration: underline;
         }
 
-    /* Reviews section */
+    
     .review-item {
-        border-bottom: 1px dashed #e0e0e0; /* Dashed separator */
+        border-bottom: 1px dashed #e0e0e0;
         padding-bottom: 15px;
         margin-bottom: 15px;
     }
@@ -170,7 +171,47 @@
         margin-top: 5px;
     }
 
-    /* Responsive adjustments */
+   
+    .pagination-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 20px;
+        gap: 10px;
+    }
+
+    .pagination-button {
+        background-color: #1d3557;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background-color 0.3s ease, transform 0.2s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 500;
+    }
+     
+        .pagination-button:hover:not(:disabled) {
+            background-color: #6a5acd;
+            transform: translateY(-2px);
+        }
+
+        .pagination-button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+    .pagination-info {
+        font-size: 1rem;
+        color: #555;
+        font-weight: 500;
+    }
+
+    
     @@media (max-width: 600px) {
         .profile-card-body {
             padding: 20px;
@@ -222,10 +263,11 @@
                     <p class="info-text"><span class="info-label"><i class="fas fa-check-circle"></i> Одобрени услуги:</span> @Model.ApprovedServicesCount</p>
                 </div>
 
-                @if (Model.CreatedServices.Any())
-                {
-                    <div class="info-box">
-                        <h2 class="section-heading"><i class="fas fa-tools"></i> Създадени услуги (@Model.CreatedServices.Count())</h2>
+              
+                <div class="info-box">
+                    <h2 class="section-heading"><i class="fas fa-tools"></i> Създадени услуги (@Model.TotalCreatedServicesCount)</h2>
+                    @if (Model.CreatedServices != null && Model.CreatedServices.Any())
+                    {
                         <ul class="list-style-disc list-inside list-item-spacing">
                             @foreach (var service in Model.CreatedServices)
                             {
@@ -237,14 +279,31 @@
                                 </li>
                             }
                         </ul>
-                    </div>
-                }
+
+                       
+                        <div class="pagination-container">
+                            <a href="@Url.Action("UserProfile", "User", new { area = "Identity", id = Model.Id, createdServicesPage = Model.CreatedServicesCurrentPage - 1, reviewsPage = Model.ReviewsCurrentPage })"
+                               class="pagination-button @(Model.CreatedServicesCurrentPage <= 1 ? "disabled" : "")">
+                                Предишна
+                            </a>
+                            <span class="pagination-info">Страница @Model.CreatedServicesCurrentPage от @Model.CreatedServicesTotalPages</span>
+                            <a href="@Url.Action("UserProfile", "User", new { area = "Identity", id = Model.Id, createdServicesPage = Model.CreatedServicesCurrentPage + 1, reviewsPage = Model.ReviewsCurrentPage })"
+                               class="pagination-button @(Model.CreatedServicesCurrentPage >= Model.CreatedServicesTotalPages ? "disabled" : "")">
+                                Следваща
+                            </a>
+                        </div>
+                    }
+                    else
+                    {
+                        <p>Няма създадени услуги.</p>
+                    }
+                </div>
             </div>
 
-            @if (Model.FavoriteServices.Any())
+            
+            @if (Model.FavoriteServices != null && Model.FavoriteServices.Any())
             {
                 <div class="info-box" style="margin-bottom: 40px;">
-                    @* Добавяме mb-8 еквивалент тук, тъй като е извън grid-layout *@
                     <h2 class="section-heading"><i class="fas fa-star"></i> Любими услуги (@Model.FavoriteServices.Count())</h2>
                     <ul class="list-style-disc list-inside list-item-spacing">
                         @foreach (var service in Model.FavoriteServices)
@@ -259,13 +318,19 @@
                     </ul>
                 </div>
             }
-
-            @if (Model.Reviews.Any())
+            else
             {
-                <div class="info-box">
-                    <h2 class="section-heading"><i class="fas fa-comments"></i> Моите ревюта (@Model.Reviews.Count())</h2>
+                <div class="info-box" style="margin-bottom: 40px;">
+                    <h2 class="section-heading"><i class="fas fa-star"></i> Любими услуги</h2>
+                    <p>Нямате любими услуги.</p>
+                </div>
+            }
+
+            <div class="info-box">
+                <h2 class="section-heading"><i class="fas fa-comments"></i> Моите ревюта (@Model.TotalReviewsCount)</h2>
+                @if (Model.Reviews != null && Model.Reviews.Any())
+                {
                     <div class="space-y-4">
-                        @* Запазваме space-y-4 за по-лесно управление на разстоянията между ревютата *@
                         @foreach (var review in Model.Reviews)
                         {
                             <div class="review-item">
@@ -280,8 +345,26 @@
                             </div>
                         }
                     </div>
-                </div>
-            }
+
+                    <div class="pagination-container">
+                        <a href="@Url.Action("UserProfile", "User", new { area = "Identity", id = Model.Id, createdServicesPage = Model.CreatedServicesCurrentPage, reviewsPage = Model.ReviewsCurrentPage - 1 })"
+                           class="pagination-button @(Model.ReviewsCurrentPage <= 1 ? "disabled" : "")">
+                            Предишна
+                        </a>
+                        <span class="pagination-info">Страница @Model.ReviewsCurrentPage от @Model.ReviewsTotalPages</span>
+                        <a href="@Url.Action("UserProfile", "User", new { area = "Identity", id = Model.Id, createdServicesPage = Model.CreatedServicesCurrentPage, reviewsPage = Model.ReviewsCurrentPage + 1 })"
+                           class="pagination-button @(Model.ReviewsCurrentPage >= Model.ReviewsTotalPages ? "disabled" : "")">
+                            Следваща
+                        </a>
+                    </div>
+                }
+                else
+                {
+                    <p>Няма оставени ревюта.</p>
+                }
+            </div>
         </div>
     </div>
 </div>
+
+

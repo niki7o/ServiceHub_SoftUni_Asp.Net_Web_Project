@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static ServiceHub.Services.Interfaces.IServiceService;
 
 namespace ServiceHub.Services.Services
 {
@@ -656,6 +657,78 @@ namespace ServiceHub.Services.Services
                 .ToListAsync();
         }
 
+       
+
+       
+        public async Task<PaginatedServicesResult> GetCreatedServicesByUserIdAsync(string userId, int pageNumber, int pageSize)
+        {
+            var query = serviceRepo.AllAsNoTracking()
+                .Where(s => s.CreatedByUserId == userId && s.IsApproved && !s.IsTemplate)
+                .Include(s => s.Category)
+                .Include(s => s.Reviews)
+                .Include(s => s.CreatedByUser);
+
+            int totalCount = await query.CountAsync();
+
+            var services = await query
+                .OrderByDescending(s => s.CreatedOn) 
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(s => new ServiceViewModel
+                {
+                    Id = s.Id,
+                    Title = s.Title,
+                    Description = s.Description,
+                    AccessType = s.AccessType,
+                    CategoryName = s.Category.Name,
+                    CreatedByUserName = s.CreatedByUser.UserName,
+                    ReviewCount = s.Reviews.Count,
+                    AverageRating = s.Reviews.Any() ? s.Reviews.Average(r => r.Rating) : 0,
+                    ViewsCount = s.ViewsCount
+                })
+                .ToListAsync();
+
+            return new PaginatedServicesResult
+            {
+                Services = services,
+                TotalCount = totalCount
+            };
+        }
+
+      
+        public async Task<PaginatedReviewsResult> GetReviewsByUserIdAsync(string userId, int pageNumber, int pageSize)
+        {
+            var query = reviewRepo.AllAsNoTracking()
+                .Where(r => r.UserId == userId)
+                .Include(r => r.Service)
+                    .ThenInclude(s => s.Category)
+                .Include(r => r.User);
+
+            int totalCount = await query.CountAsync();
+
+            var reviews = await query
+                .OrderByDescending(r => r.CreatedOn) 
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(r => new ReviewViewModel
+                {
+                    Id = r.Id,
+                    ServiceId = r.ServiceId,
+                    ServiceName = r.Service.Title,
+                    UserName = r.User.UserName,
+                    Rating = r.Rating,
+                    Comment = r.Comment,
+                    CreatedOn = r.CreatedOn
+                })
+                .ToListAsync();
+
+            return new PaginatedReviewsResult
+            {
+                Reviews = reviews,
+                TotalCount = totalCount
+            };
+        }
+
         public async Task<int> GetApprovedServicesCountByUserIdAsync(string userId)
         {
             return await serviceRepo.AllAsNoTracking()
@@ -664,44 +737,23 @@ namespace ServiceHub.Services.Services
 
         public async Task<IEnumerable<ServiceViewModel>> SearchServicesByTitleAsync(string searchTerm)
         {
-            try
-            {
-                IQueryable<Service> query = this.serviceRepo.AllAsNoTracking();
-
-                query = query.Include(s => s.Category)
-                             .Include(s => s.CreatedByUser);
-
-                query = query.Where(s => s.IsApproved);
-
-                if (!string.IsNullOrWhiteSpace(searchTerm))
+            
+            return await serviceRepo.AllAsNoTracking()
+                .Where(s => s.Title.Contains(searchTerm) && !s.IsTemplate && s.IsApproved)
+                .Include(s => s.Category)
+                .Select(s => new ServiceViewModel
                 {
-                    string lowerSearchTerm = searchTerm.ToLower();
-
-                    query = query.Where(s => s.Title.ToLower().Contains(lowerSearchTerm) || s.CreatedByUser.UserName.ToLower().Contains(lowerSearchTerm));
-                }
-
-                return await query
-                    .Select(s => new ServiceViewModel
-                    {
-                        Id = s.Id,
-                        Title = s.Title,
-                        Description = s.Description,
-                        CategoryName = s.Category.Name,
-                        ViewsCount = s.ViewsCount,
-                        AverageRating = s.Reviews.Any() ? s.Reviews.Average(r => r.Rating) : 0,
-                        ReviewCount = s.Reviews.Count(),
-                        IsTemplate = s.IsTemplate,
-                        IsApproved = s.IsApproved,
-                        CreatedByUserName = s.CreatedByUser.UserName
-                    })
-                    .ToListAsync();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error in ServicesService.SearchServicesByTitleAsync: {ex.Message}");
-                Console.WriteLine($"StackTrace: {ex.StackTrace}");
-                throw;
-            }
+                    Id = s.Id,
+                    Title = s.Title,
+                    Description = s.Description,
+                    CategoryName = s.Category.Name,
+                    AccessType = s.AccessType,
+                    CreatedByUserName = s.CreatedByUser.UserName,
+                    ReviewCount = s.Reviews.Count,
+                    AverageRating = s.Reviews.Any() ? s.Reviews.Average(r => r.Rating) : 0,
+                    ViewsCount = s.ViewsCount
+                })
+                .ToListAsync();
         }
     }
 }

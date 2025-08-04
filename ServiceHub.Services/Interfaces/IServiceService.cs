@@ -31,11 +31,24 @@ namespace ServiceHub.Services.Interfaces
         Task ApproveServiceTemplateAsync(Guid serviceId, string adminId);
         Task RejectServiceTemplateAsync(Guid serviceId, string adminId);
 
-        Task<IEnumerable<ServiceViewModel>> GetCreatedServicesByUserIdAsync(string userId);
+        Task<PaginatedServicesResult> GetCreatedServicesByUserIdAsync(string userId, int pageNumber, int pageSize);
+        Task<PaginatedReviewsResult> GetReviewsByUserIdAsync(string userId, int pageNumber, int pageSize);
         Task<IEnumerable<ServiceViewModel>> GetFavoriteServicesByUserIdAsync(string userId);
-        Task<IEnumerable<ReviewViewModel>> GetReviewsByUserIdAsync(string userId);
+     
         Task<int> GetApprovedServicesCountByUserIdAsync(string userId);
         Task<IEnumerable<ServiceViewModel>> SearchServicesByTitleAsync(string searchTerm);
+        public class PaginatedServicesResult
+        {
+            public IEnumerable<ServiceViewModel> Services { get; set; } = new List<ServiceViewModel>();
+            public int TotalCount { get; set; }
+        }
+
+        
+        public class PaginatedReviewsResult
+        {
+            public IEnumerable<ReviewViewModel> Reviews { get; set; } = new List<ReviewViewModel>();
+            public int TotalCount { get; set; }
+        }
     }
 
    

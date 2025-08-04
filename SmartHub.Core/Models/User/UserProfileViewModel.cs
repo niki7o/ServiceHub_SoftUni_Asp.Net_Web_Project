@@ -36,8 +36,21 @@ namespace ServiceHub.Core.Models.User
         [Display(Name = "Одобрени създадени услуги")]
         public int ApprovedServicesCount { get; set; }
 
+      
         public IEnumerable<ServiceViewModel> CreatedServices { get; set; } = new List<ServiceViewModel>();
         public IEnumerable<ServiceViewModel> FavoriteServices { get; set; } = new List<ServiceViewModel>();
         public IEnumerable<ReviewViewModel> Reviews { get; set; } = new List<ReviewViewModel>();
+
+       
+        public int CreatedServicesCurrentPage { get; set; }
+        public int CreatedServicesTotalPages { get; set; }
+        public int CreatedServicesPageSize { get; set; } = 5; 
+        public int TotalCreatedServicesCount { get; set; }
+
+       
+        public int ReviewsCurrentPage { get; set; }
+        public int ReviewsTotalPages { get; set; }
+        public int ReviewsPageSize { get; set; } = 5; // Default to 5 items per page
+        public int TotalReviewsCount { get; set; }
     }
 }
