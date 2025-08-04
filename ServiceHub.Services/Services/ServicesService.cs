@@ -44,115 +44,130 @@ namespace ServiceHub.Services.Services
 
         public async Task<ServiceAllViewModel> GetAllAsync(string? categoryFilter = null, string? accessTypeFilter = null, string? filter = null, string? sort = null, string? currentUserId = null, int currentPage = 1, int servicesPerPage = 9)
         {
-            IQueryable<Service> servicesQuery = serviceRepo
-                .AllAsNoTracking()
-                .Include(s => s.Category)
-                .Include(s => s.Reviews)
-                    .ThenInclude(r => r.User)
-                .Include(s => s.Favorites)
-                .Include(s => s.CreatedByUser);
-
-            if (currentUserId != null)
+            try
             {
-                var user = await userManager.FindByIdAsync(currentUserId);
-                if (user != null && !(await userManager.IsInRoleAsync(user, "Admin")))
+                IQueryable<Service> servicesQuery = serviceRepo
+                    .AllAsNoTracking()
+                    .Include(s => s.Category)
+                    .Include(s => s.Reviews)
+                        .ThenInclude(r => r.User)
+                    .Include(s => s.Favorites)
+                    .Include(s => s.CreatedByUser);
+
+                if (currentUserId != null)
+                {
+                    var user = await userManager.FindByIdAsync(currentUserId);
+                    if (user != null && !(await userManager.IsInRoleAsync(user, "Admin")))
+                    {
+                        servicesQuery = servicesQuery.Where(s => !s.IsTemplate && s.IsApproved);
+                    }
+                }
+                else
                 {
                     servicesQuery = servicesQuery.Where(s => !s.IsTemplate && s.IsApproved);
                 }
-            }
-            else
-            {
-                servicesQuery = servicesQuery.Where(s => !s.IsTemplate && s.IsApproved);
-            }
 
-            var allCategories = await categoryRepo.AllAsNoTracking().OrderBy(c => c.Name).ToListAsync();
-            var categoriesList = allCategories.Select(c => new SelectListItem { Value = c.Name, Text = c.Name }).ToList();
-            categoriesList.Insert(0, new SelectListItem { Value = "", Text = "Всички Категории" });
+                var allCategories = await categoryRepo.AllAsNoTracking().OrderBy(c => c.Name).ToListAsync();
+                var categoriesList = allCategories.Select(c => new SelectListItem { Value = c.Name, Text = c.Name }).ToList();
+                categoriesList.Insert(0, new SelectListItem { Value = "", Text = "Всички Категории" });
 
-            var allAccessTypes = Enum.GetNames(typeof(AccessType))
-                                    .Select(name => new SelectListItem { Value = name, Text = name })
-                                    .ToList();
-            allAccessTypes.Insert(0, new SelectListItem { Value = "", Text = "Всички Типове Достъп" });
+                var allAccessTypes = Enum.GetNames(typeof(AccessType))
+                                            .Select(name => new SelectListItem { Value = name, Text = name })
+                                            .ToList();
+                allAccessTypes.Insert(0, new SelectListItem { Value = "", Text = "Всички Типове Достъп" });
 
-            if (!string.IsNullOrEmpty(categoryFilter) && categoryFilter != "Всички Категории" && categoryFilter != "All Categories")
-            {
-                servicesQuery = servicesQuery.Where(s => s.Category != null && s.Category.Name == categoryFilter);
-            }
-
-            if (!string.IsNullOrEmpty(accessTypeFilter) && accessTypeFilter != "Всички Типове Достъп" && accessTypeFilter != "All Access Types")
-            {
-                if (Enum.TryParse<AccessType>(accessTypeFilter, true, out AccessType parsedAccessType))
+                if (!string.IsNullOrEmpty(categoryFilter) && categoryFilter != "Всички Категории" && categoryFilter != "All Categories")
                 {
-                    servicesQuery = servicesQuery.Where(s => s.AccessType == parsedAccessType);
+                    servicesQuery = servicesQuery.Where(s => s.Category != null && s.Category.Name == categoryFilter);
                 }
-            }
 
-            if (!string.IsNullOrEmpty(filter) && filter.ToLowerInvariant() == "favorite")
-            {
-                if (!string.IsNullOrEmpty(currentUserId))
+                if (!string.IsNullOrEmpty(accessTypeFilter) && accessTypeFilter != "Всички Типове Достъп" && accessTypeFilter != "All Access Types")
                 {
-                    servicesQuery = servicesQuery.Where(s => s.Favorites.Any(f => f.UserId == currentUserId));
+                    if (Enum.TryParse<AccessType>(accessTypeFilter, true, out AccessType parsedAccessType))
+                    {
+                        servicesQuery = servicesQuery.Where(s => s.AccessType == parsedAccessType);
+                    }
+                    else
+                    {
+                        _logger.LogWarning($"GetAllAsync: Невалиден accessTypeFilter '{accessTypeFilter}'. Филтърът ще бъде игнориран.");
+                    }
                 }
-            }
 
-            servicesQuery = sort?.ToLowerInvariant() switch
-            {
-                "az" => servicesQuery.OrderBy(s => s.Title),
-                "za" => servicesQuery.OrderByDescending(s => s.Title),
-                "recent" => servicesQuery.OrderByDescending(s => s.CreatedOn),
-                "mostviewed" => servicesQuery.OrderByDescending(s => s.ViewsCount),
-                _ => servicesQuery.OrderByDescending(s => s.CreatedOn)
-            };
-
-            int totalServicesCount = await servicesQuery.CountAsync();
-
-            var services = await servicesQuery
-                .Skip((currentPage - 1) * servicesPerPage)
-                .Take(servicesPerPage)
-                .ToListAsync();
-
-            var serviceViewModels = services.Select(s => new ServiceViewModel
-            {
-                Id = s.Id,
-                Title = s.Title,
-                Description = s.Description,
-                AccessType = s.AccessType,
-                CategoryName = s.Category?.Name,
-                CreatedByUserName = s.CreatedByUser?.UserName ?? "Unknown",
-                ReviewCount = s.Reviews.Count,
-                AverageRating = s.Reviews.Any() ? s.Reviews.Average(r => r.Rating) : 0,
-                IsFavorite = currentUserId != null && s.Favorites.Any(f => f.UserId == currentUserId),
-                ViewsCount = s.ViewsCount,
-                Reviews = s.Reviews.Select(r => new ReviewViewModel
+                if (!string.IsNullOrEmpty(filter) && filter.ToLowerInvariant() == "favorite")
                 {
-                    Id = r.Id,
-                    ServiceId = r.ServiceId,
-                    UserName = r.User?.UserName ?? "Anonymous",
-                    Rating = r.Rating,
-                    Comment = r.Comment,
-                    CreatedOn = r.CreatedOn
-                }).OrderByDescending(r => r.CreatedOn).ToList(),
-                IsTemplate = s.IsTemplate,
-                IsApproved = s.IsApproved
-            }).ToList();
+                    if (!string.IsNullOrEmpty(currentUserId))
+                    {
+                        servicesQuery = servicesQuery.Where(s => s.Favorites.Any(f => f.UserId == currentUserId));
+                    }
+                }
 
-            return new ServiceAllViewModel
+                servicesQuery = sort?.ToLowerInvariant() switch
+                {
+                    "az" => servicesQuery.OrderBy(s => s.Title),
+                    "za" => servicesQuery.OrderByDescending(s => s.Title),
+                    "recent" => servicesQuery.OrderByDescending(s => s.CreatedOn),
+                    "mostviewed" => servicesQuery.OrderByDescending(s => s.ViewsCount),
+                    _ => servicesQuery.OrderByDescending(s => s.CreatedOn)
+                };
+
+                int totalServicesCount = await servicesQuery.CountAsync();
+                var services = await servicesQuery
+                    .Skip((currentPage - 1) * servicesPerPage)
+                    .Take(servicesPerPage)
+                    .ToListAsync();
+
+                var serviceViewModels = services.Select(s => new ServiceViewModel
+                {
+                    Id = s.Id,
+                    Title = s.Title,
+                    Description = s.Description,
+                    AccessType = s.AccessType,
+                    CategoryName = s.Category?.Name,
+                    CreatedByUserName = s.CreatedByUser?.UserName ?? "Unknown",
+                    ReviewCount = s.Reviews.Count,
+                    AverageRating = s.Reviews.Any() ? s.Reviews.Average(r => r.Rating) : 0,
+                    IsFavorite = currentUserId != null && s.Favorites.Any(f => f.UserId == currentUserId),
+                    ViewsCount = s.ViewsCount,
+                    Reviews = s.Reviews.Select(r => new ReviewViewModel
+                    {
+                        Id = r.Id,
+                        ServiceId = r.ServiceId,
+                        UserName = r.User?.UserName ?? "Anonymous",
+                        Rating = r.Rating,
+                        Comment = r.Comment,
+                        CreatedOn = r.CreatedOn,
+                        IsAuthor = currentUserId != null && r.UserId == currentUserId
+                    }).OrderByDescending(r => r.CreatedOn).ToList(),
+                    IsTemplate = s.IsTemplate,
+                    IsApproved = s.IsApproved
+                }).ToList();
+
+                return new ServiceAllViewModel
+                {
+                    Services = serviceViewModels,
+                    CurrentPage = currentPage,
+                    PageSize = servicesPerPage,
+                    TotalServicesCount = totalServicesCount,
+                    TotalPages = (int)Math.Ceiling(totalServicesCount / (double)servicesPerPage),
+                    Categories = categoriesList,
+                    AccessTypes = allAccessTypes,
+                    CurrentCategoryFilter = categoryFilter,
+                    CurrentAccessTypeFilter = accessTypeFilter,
+                    CurrentSort = sort,
+                    CurrentFilter = filter
+                };
+            }
+            catch (Exception ex)
             {
-                Services = serviceViewModels,
-                CurrentPage = currentPage,
-                PageSize = servicesPerPage,
-                TotalServicesCount = totalServicesCount,
-                TotalPages = (int)Math.Ceiling(totalServicesCount / (double)servicesPerPage),
-                Categories = categoriesList,
-                AccessTypes = allAccessTypes,
-                CurrentCategoryFilter = categoryFilter,
-                CurrentAccessTypeFilter = accessTypeFilter,
-                CurrentSort = sort,
-                CurrentFilter = filter
-            };
+                _logger.LogError(ex, "GetAllAsync: Възникна грешка при извличане на всички услуги. Филтри: Категория='{Category}', Достъп='{Access}', Филтър='{Filter}', Сортиране='{Sort}', Потребител='{UserId}', Страница={Page}",
+                    categoryFilter, accessTypeFilter, filter, sort, currentUserId, currentPage);
+
+                throw;
+            }
         }
 
-        public async Task<ServiceViewModel> GetByIdAsync(Guid id, string? currentUserId = null)
+
+        public async Task<ServiceViewModel> GetByIdAsync(Guid id, string? currentUserId = null, int reviewPage = 1, int reviewsPerPage = 2)
         {
             _logger.LogInformation($"GetByIdAsync: Извличане на услуга с ID: {id} за потребител: {currentUserId}");
 
@@ -200,6 +215,45 @@ namespace ServiceHub.Services.Services
 
             _logger.LogInformation($"GetByIdAsync: ServiceId: {service.Id}. ViewsCount извлечен от DB: {service.ViewsCount}");
 
+            var allReviews = service.Reviews
+                                    .Select(r => new ReviewViewModel
+                                    {
+                                        Id = r.Id,
+                                        ServiceId = r.ServiceId,
+                                        UserName = r.User?.UserName ?? "Anonymous",
+                                        Rating = r.Rating,
+                                        Comment = r.Comment,
+                                        CreatedOn = r.CreatedOn,
+                                        IsAuthor = currentUserId != null && r.UserId == currentUserId
+                                    })
+                                    .OrderByDescending(r => r.CreatedOn)
+                                    .ToList();
+
+            int totalReviewCount = allReviews.Count;
+            int totalReviewPages = (int)Math.Ceiling((double)totalReviewCount / reviewsPerPage);
+
+           
+            _logger.LogInformation($"Review Pagination Debug: ServiceId={id}, totalReviewCount={totalReviewCount}, reviewsPerPage={reviewsPerPage}, currentReviewPage (before adjustment)={reviewPage}");
+
+           
+            if (reviewPage < 1)
+                reviewPage = 1;
+            if (reviewPage > totalReviewPages && totalReviewPages > 0)
+                reviewPage = totalReviewPages;
+            if (totalReviewPages == 0)
+                reviewPage = 1;
+
+            _logger.LogInformation($"Review Pagination Debug: ServiceId={id}, currentReviewPage (after adjustment)={reviewPage}, totalReviewPages={totalReviewPages}");
+
+
+            var paginatedReviews = allReviews
+                                    .Skip((reviewPage - 1) * reviewsPerPage)
+                                    .Take(reviewsPerPage)
+                                    .ToList();
+
+            _logger.LogInformation($"Review Pagination Debug: ServiceId={id}, paginatedReviews.Count={paginatedReviews.Count}");
+
+
             return new ServiceViewModel
             {
                 Id = service.Id,
@@ -208,21 +262,16 @@ namespace ServiceHub.Services.Services
                 AccessType = service.AccessType,
                 CategoryName = service.Category?.Name,
                 CreatedByUserName = service.CreatedByUser?.UserName ?? "Unknown",
-                ReviewCount = service.Reviews.Count,
+                ReviewCount = totalReviewCount,
                 AverageRating = service.Reviews.Any() ? service.Reviews.Average(r => r.Rating) : 0,
-                Reviews = service.Reviews.Select(r => new ReviewViewModel
-                {
-                    Id = r.Id,
-                    ServiceId = r.ServiceId,
-                    UserName = r.User?.UserName ?? "Anonymous",
-                    Rating = r.Rating,
-                    Comment = r.Comment,
-                    CreatedOn = r.CreatedOn
-                }).OrderByDescending(r => r.CreatedOn).ToList(),
+                Reviews = paginatedReviews,
                 IsFavorite = isFavorite,
                 ViewsCount = service.ViewsCount,
                 IsTemplate = service.IsTemplate,
-                IsApproved = service.IsApproved
+                IsApproved = service.IsApproved,
+                CurrentReviewPage = reviewPage,
+                TotalReviewPages = totalReviewPages,
+                ReviewsPerPage = reviewsPerPage
             };
         }
 
@@ -425,9 +474,6 @@ namespace ServiceHub.Services.Services
                 throw new InvalidOperationException("Templates cannot be edited via this method.");
             }
 
-          
-            
-
             return new ServiceFormModel
             {
                 Title = service.Title,
@@ -548,7 +594,7 @@ namespace ServiceHub.Services.Services
                 .Where(s => s.CreatedByUserId == userId && s.IsApproved && !s.IsTemplate)
                 .Include(s => s.Category)
                 .Include(s => s.Reviews)
-                .Include(s => s.CreatedByUser) 
+                .Include(s => s.CreatedByUser)
                 .Select(s => new ServiceViewModel
                 {
                     Id = s.Id,
@@ -573,7 +619,7 @@ namespace ServiceHub.Services.Services
                 .Include(f => f.Service)
                     .ThenInclude(s => s.Reviews)
                 .Include(f => f.Service)
-                    .ThenInclude(s => s.CreatedByUser) 
+                    .ThenInclude(s => s.CreatedByUser)
                 .Select(f => new ServiceViewModel
                 {
                     Id = f.Service.Id,
@@ -595,8 +641,8 @@ namespace ServiceHub.Services.Services
             return await reviewRepo.AllAsNoTracking()
                 .Where(r => r.UserId == userId)
                 .Include(r => r.Service)
-                    .ThenInclude(s => s.Category) 
-                .Include(r => r.User) 
+                    .ThenInclude(s => s.Category)
+                .Include(r => r.User)
                 .Select(r => new ReviewViewModel
                 {
                     Id = r.Id,
@@ -630,8 +676,8 @@ namespace ServiceHub.Services.Services
                 if (!string.IsNullOrWhiteSpace(searchTerm))
                 {
                     string lowerSearchTerm = searchTerm.ToLower();
-                 
-                    query = query.Where(s => s.Title.ToLower().Contains(lowerSearchTerm)|| s.CreatedByUser.UserName.ToLower().Contains(lowerSearchTerm));
+
+                    query = query.Where(s => s.Title.ToLower().Contains(lowerSearchTerm) || s.CreatedByUser.UserName.ToLower().Contains(lowerSearchTerm));
                 }
 
                 return await query

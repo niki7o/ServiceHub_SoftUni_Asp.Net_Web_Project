@@ -14,7 +14,7 @@ namespace ServiceHub.Controllers
         }
 
         public IActionResult Index()
-        {
+        { // for testing purposes
             //  throw new InvalidOperationException("Това е тестова вътрешна сървърна грешка. Моля, игнорирайте я.");
             return View();
 

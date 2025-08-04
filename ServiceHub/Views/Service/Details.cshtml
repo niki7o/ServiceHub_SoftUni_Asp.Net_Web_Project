@@ -1,345 +1,550 @@
-﻿@model ServiceHub.Core.Models.Tools.CodeSnippetConvertRequestModel
+﻿@model ServiceHub.Core.Models.Service.ServiceViewModel
+@using System.Security.Claims
+
 @{
-    ViewData["Title"] = "Конвертор на Кодови Снипети";
-    var supportedLanguages = ViewBag.SupportedLanguages as List<string> ?? new List<string> { "C#", "Python", "JavaScript", "PHP" };
-    var isBusinessUser = ViewBag.IsBusinessUser ?? false;
-    var lockedLanguages = new HashSet<string> { "JavaScript", "PHP" }; // Езиците, които са заключени
-    var subscriptionPageUrl = "/Subscription/Index"; // Моля, коригирайте този URL, ако е различен!
+    ViewData["Title"] = Model.Title;
+    var isAdmin = User.Identity.IsAuthenticated && User.IsInRole("Admin");
+    var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+    // Променливи за пагинация на ревюта
+    var currentReviewPage = Model.CurrentReviewPage;
+    var totalReviewPages = Model.TotalReviewPages;
+    var serviceId = Model.Id; // За по-лесен достъп
 }
 
 <style>
-    /* Общи стилове за елементите */
-    .form-control-lg.rounded-pill {
-        border-radius: 50px;
-        padding-left: 20px;
-        padding-right: 20px;
+    body {
+        font-family: 'Inter', sans-serif;
+        background: linear-gradient(135deg, #a8dadc 0%, #457b9d 100%);
+        color: #333;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow-x: hidden;
     }
 
-    .btn-lg.rounded-pill {
-        border-radius: 50px;
-        padding: 15px 30px;
-        font-size: 1.25rem;
-    }
-
-    .card.shadow-lg.rounded-lg {
+    .details-container {
+        padding: 40px 20px;
+        max-width: 900px;
+        margin: 40px auto;
+        background-color: #ffffff;
         border-radius: 15px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        color: #333;
     }
 
-    .card-body.p-4.p-md-5 {
-        padding: 2.5rem !important;
+    .service-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #1d3557;
+        margin-bottom: 15px;
+        text-align: center;
     }
 
-    .text-primary {
-        color: #1d3557 !important; /* Тъмно син */
+    .service-category {
+        font-size: 1.1rem;
+        color: #457b9d;
+        text-align: center;
+        margin-bottom: 25px;
     }
 
-    .text-secondary {
-        color: #457b9d !important; /* Средно син */
+    .description-section {
+        background-color: #f8f9fa;
+        border-left: 5px solid #457b9d;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 30px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
     }
 
-    .btn-primary {
-        background-color: #1d3557;
-        border-color: #1d3557;
-    }
-
-        .btn-primary:hover {
-            background-color: #142840;
-            border-color: #142840;
+        .description-section h4 {
+            color: #1d3557;
+            font-weight: 600;
+            margin-bottom: 15px;
         }
 
-    /* Стилове за съобщенията за валидация/грешка */
-    .alert-info {
-        background-color: #d1ecf1;
-        color: #0c5460;
+        .description-section p {
+            font-size: 1rem;
+            line-height: 1.7;
+            color: #555;
+        }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
     }
 
-    .alert-danger {
-        background-color: #f8d7da;
-        color: #721c24;
+    .stat-item {
+        background-color: #e0f2f7;
+        padding: 15px;
+        border-radius: 10px;
+        text-align: center;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        border: 1px solid #a8dadc;
     }
 
-    .alert-success {
-        background-color: #d4edda;
-        color: #155724;
+        .stat-item i {
+            font-size: 1.5rem;
+            color: #1d3557;
+            margin-bottom: 8px;
+        }
+
+        .stat-item p {
+            margin: 0;
+            font-size: 0.9rem;
+            color: #457b9d;
+            font-weight: 500;
+        }
+
+        .stat-item .value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #2a9d8f;
+        }
+
+    .reviews-section {
+        margin-top: 40px;
+        border-top: 1px solid #eee;
+        padding-top: 30px;
     }
 
-    .alert-warning {
-        background-color: #fff3cd;
-        color: #856404;
+        .reviews-section h3 {
+            color: #1d3557;
+            font-weight: 600;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+    .review-item {
+        background-color: #f1faee;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        border: 1px solid #a8dadc;
+        position: relative;
+        padding-bottom: 50px;
     }
 
-    /* Стилове за заключените опции в падащото меню */
-    select option:disabled {
-        background-color: #f0f0f0;
-        color: #a0a0a0;
-        cursor: not-allowed;
-    }
-
-    /* Стилове за Premium съобщението под падащото меню */
-    .premium-feature-message {
-        background-color: #fff3cd; /* Светло жълт фон */
-        border: 1px solid #ffeeba; /* Жълта рамка */
-        color: #856404; /* Тъмно жълт текст */
-        padding: 10px 15px;
-        border-radius: 8px;
-        font-size: 0.9rem;
+    .review-header {
         display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .review-user {
+        font-weight: 600;
+        color: #1d3557;
+    }
+
+    .review-rating {
+        color: gold;
+    }
+
+    .review-comment {
+        font-size: 0.95rem;
+        color: #555;
+        line-height: 1.6;
+        margin-bottom: 15px;
+    }
+
+    .action-buttons-container {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        margin-top: 30px;
+        margin-bottom: 30px;
+    }
+
+    .btn-action {
+        padding: 12px 25px;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        display: inline-flex;
         align-items: center;
         gap: 8px;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        margin-top: 10px; /* Разстояние от select-а */
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
 
-        .premium-feature-message .badge {
-            font-size: 0.8em;
-            padding: 0.4em 0.7em;
-            border-radius: 5px;
-            background-color: #e9c46a; /* По-наситен жълт за баджа */
-            color: #1d3557; /* Тъмно син текст върху баджа */
-            font-weight: 700;
+    .btn-details {
+        background-color: #1d3557;
+        color: white;
+    }
+
+        .btn-details:hover {
+            background-color: #142840;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(29, 53, 87, 0.4);
         }
 
-        .premium-feature-message a {
-            color: #007bff; /* Стандартен син цвят за линк */
-            text-decoration: underline;
-            font-weight: bold;
-            transition: color 0.2s ease;
+    .btn-favorite {
+        background-color: #f1faee;
+        border: 1px solid #a8dadc;
+        color: #1d3557;
+    }
+
+        .btn-favorite:hover {
+            background-color: #e0e0e0;
+            color: #1d3557;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
         }
 
-            .premium-feature-message a:hover {
-                color: #0056b3;
+        .btn-favorite.active {
+            background-color: #e67e22;
+            border-color: #e67e22;
+            color: white;
+        }
+
+            .btn-favorite.active:hover {
+                background-color: #d66a1a;
+                color: white;
             }
 
-    /* Стилове за иконата на катинарчето */
-    .option-text-with-icon {
+    .btn-edit {
+        background-color: #28a745;
+        color: white;
+    }
+
+        .btn-edit:hover {
+            background-color: #218838;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(40, 167, 69, 0.4);
+        }
+
+    .btn-delete {
+        background-color: #dc3545;
+        color: white;
+    }
+
+        .btn-delete:hover {
+            background-color: #c82333;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(220, 53, 69, 0.4);
+        }
+
+    .btn-use-service {
+        background-color: #007bff;
+        color: white;
+    }
+
+        .btn-use-service:hover {
+            background-color: #0056b3;
+            color: white;
+        }
+
+    .delete-review-btn, .edit-review-btn {
+        border: none;
+        border-radius: 5px;
+        padding: 5px 10px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+        position: absolute;
+        bottom: 10px;
+        z-index: 1;
+    }
+
+    .delete-review-btn {
+        background-color: #dc3545;
+        color: white;
+        right: 10px;
+    }
+
+        .delete-review-btn:hover {
+            background-color: #c82333;
+        }
+
+    .edit-review-btn {
+        background-color: #ffc107;
+        color: #333;
+        right: 70px;
+    }
+
+        .edit-review-btn:hover {
+            background-color: #e0a800;
+        }
+
+    .review-actions {
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
         display: flex;
-        align-items: center;
         gap: 5px;
     }
 
-        .option-text-with-icon .lock-icon {
-            color: #e76f51;
-            font-size: 0.8em;
+    .write-review-btn-container {
+        text-align: center;
+        margin-top: 30px;
+        margin-bottom: 30px;
+    }
+
+    .btn-write-review {
+        background-color: #2a9d8f;
+        color: white;
+        padding: 12px 25px;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        border: none;
+        transition: background-color 0.3s ease, transform 0.2s ease;
+        box-shadow: 0 4px 12px rgba(42, 157, 143, 0.3);
+        cursor: pointer;
+    }
+
+        .btn-write-review:hover {
+            background-color: #218276;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(42, 157, 143, 0.4);
+        }
+
+    /* Стилове за пагинация на ревюта */
+    .review-pagination-container {
+        margin-top: 20px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .review-pagination-btn {
+        background-color: #1d3557;
+        border: none;
+        color: white;
+        padding: 8px 15px;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 8px rgba(29, 53, 87, 0.2);
+        text-decoration: none; /* За да изглежда като бутон, но да е линк */
+    }
+
+        .review-pagination-btn:hover:not(:disabled) {
+            background-color: #142840;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(29, 53, 87, 0.3);
+            color: white; /* Запазва цвета на текста при ховър */
+        }
+
+        .review-pagination-btn:disabled {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.7);
+            cursor: not-allowed;
+            opacity: 0.6;
+            box-shadow: none;
+            pointer-events: none; /* Добавено: Предотвратява кликване на деактивирани линкове */
+        }
+
+    .review-pagination-page-number {
+        background-color: rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        color: #1d3557; /* Цвят на текста за активна страница */
+        padding: 8px 14px;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        text-decoration: none;
+    }
+
+        .review-pagination-page-number:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+            color: #1d3557; /* Запазва цвета на текста при ховър */
+        }
+
+        .review-pagination-page-number.active {
+            background-color: #1d3557;
+            border-color: #1d3557;
+            color: white;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
         }
 </style>
 
-<h2 class="text-center my-4 text-primary font-weight-bold">Конвертор на Кодови Снипети</h2>
-<p class="text-center text-muted mb-4">Конвертирайте програмни кодове между различни езици бързо и лесно.</p>
+<div class="details-container">
+    <h2 class="service-title">@Model.Title</h2>
+    <p class="service-category">Категория: @(Model.CategoryName ?? "Неизвестна")</p>
 
-<div class="container mt-4">
-    <div class="card shadow-lg rounded-lg">
-        <div class="card-body p-4 p-md-5">
-            <div class="row">
-                <div class="col-md-6 border-right pr-md-4">
-                    <h3 class="h5 text-secondary mb-3">Въведете код за конвертиране</h3>
-                    <div class="form-group mb-3">
-                        <label for="sourceLanguage" class="form-label font-weight-bold">Изходен език:</label>
-                        <select id="sourceLanguage" class="form-control form-control-lg rounded-pill">
-                            <option value="">-- Изберете изходен език --</option>
-                            @foreach (var lang in supportedLanguages)
-                            {
-                                var isLocked = lockedLanguages.Contains(lang);
-                                var optionText = lang;
-                                var optionAttributes = $"value=\"{lang}\" data-is-locked=\"{isLocked.ToString().ToLower()}\"";
+    <div class="description-section">
+        <h4>Описание на услугата:</h4>
+        <p>@Model.Description</p>
+    </div>
 
-                                if (isLocked && !isBusinessUser)
-                                {
-                                    optionText += " (ПРЕМИУМ)";
-                                    optionAttributes += " disabled"; // Добавяме disabled като прост стринг
-                                }
-                                @Html.Raw($"<option {optionAttributes}>{optionText}</option>") @* Генерираме целия таг като стринг *@
-                            }
-                        </select>
-                        <div id="sourceLanguagePremiumMessage" class="premium-feature-message" style="display:none;">
-                            <i class="fas fa-crown me-2 text-warning"></i> Тази функция е част от <span class="badge bg-warning text-dark">ПРЕМИУМ</span> абонамента. <a href="@subscriptionPageUrl" class="text-info font-weight-bold">Абонирайте се сега!</a>
-                        </div>
-                    </div>
-
-                    <div class="form-group mb-3">
-                        <label for="targetLanguage" class="form-label font-weight-bold">Целеви език:</label>
-                        <select id="targetLanguage" class="form-control form-control-lg rounded-pill">
-                            <option value="">-- Изберете целеви език --</option>
-                            @foreach (var lang in supportedLanguages)
-                            {
-                                var isLocked = lockedLanguages.Contains(lang);
-                                var optionText = lang;
-                                var optionAttributes = $"value=\"{lang}\" data-is-locked=\"{isLocked.ToString().ToLower()}\"";
-
-                                if (isLocked && !isBusinessUser)
-                                {
-                                    optionText += " (ПРЕМИУМ)";
-                                    optionAttributes += " disabled"; // Добавяме disabled като прост стринг
-                                }
-                                @Html.Raw($"<option {optionAttributes}>{optionText}</option>") @* Генерираме целия таг като стринг *@
-                            }
-                        </select>
-                        <div id="targetLanguagePremiumMessage" class="premium-feature-message" style="display:none;">
-                            <i class="fas fa-crown me-2 text-warning"></i> Тази функция е част от <span class="badge bg-warning text-dark">ПРЕМИУМ</span> абонамента. <a href="@subscriptionPageUrl" class="text-info font-weight-bold">Абонирайте се сега!</a>
-                        </div>
-                    </div>
-
-                    <div class="form-group mb-4">
-                        <label for="sourceCode" class="form-label font-weight-bold">Изходен код:</label>
-                        <textarea id="sourceCode" rows="12" class="form-control rounded-lg" placeholder="Въведете вашия код тук..."></textarea>
-                    </div>
-
-                    <div class="d-grid gap-2">
-                        <button id="convertCodeButton" class="btn btn-primary btn-lg rounded-pill shadow-sm">
-                            <i class="fas fa-sync-alt me-2"></i> Конвертирай Код
-                        </button>
-                    </div>
-                </div>
-
-                <div class="col-md-6 pl-md-4 mt-4 mt-md-0">
-                    <h3 class="h5 text-secondary mb-3">Конвертиран код</h3>
-                    <div class="form-group mb-4">
-                        <textarea id="convertedCode" rows="18" class="form-control rounded-lg bg-light text-dark" readonly></textarea>
-                    </div>
-                    <div id="conversionMessage" class="mt-2 p-3 rounded" style="display:none;"></div>
-                </div>
-            </div>
+    <div class="stats-grid">
+        <div class="stat-item">
+            <i class="fas fa-eye"></i>
+            <p>Преглеждания:</p>
+            <p class="value">@Model.ViewsCount</p>
+        </div>
+        <div class="stat-item">
+            <i class="fas fa-star"></i>
+            <p>Среден рейтинг:</p>
+            <p class="value">@Model.AverageRating.ToString("F1")</p>
+        </div>
+        <div class="stat-item">
+            <i class="fas fa-comments"></i>
+            <p>Ревюта:</p>
+            <p class="value">@Model.ReviewCount</p>
+        </div>
+        <div class="stat-item">
+            <i class="fas fa-lock-open"></i>
+            <p>Тип достъп:</p>
+            <p class="value">@Model.AccessType.ToString()</p>
         </div>
     </div>
+
+    @if (Model.IsTemplate && !Model.IsApproved)
+    {
+        <div class="alert alert-warning text-center" role="alert">
+            <i class="fas fa-exclamation-triangle"></i> Тази услуга е шаблон и все още не е одобрена.
+            @if (!string.IsNullOrEmpty(Model.CreatedByUserName))
+            {
+                <span>Създадена от: @Model.CreatedByUserName</span>
+            }
+        </div>
+    }
+
+    <div class="action-buttons-container">
+        @if (User.Identity.IsAuthenticated && !Model.IsTemplate && Model.IsApproved)
+        {
+            <a asp-action="UseService" asp-route-id="@Model.Id" class="btn btn-action btn-use-service">
+                <i class="fas fa-play-circle"></i> Използвай услугата
+            </a>
+        }
+
+        @if (User.Identity.IsAuthenticated)
+        {
+            <form asp-action="ToggleFavorite" asp-route-serviceId="@Model.Id" method="post" class="d-inline">
+                <button type="submit" class="btn btn-action btn-favorite @(Model.IsFavorite ? "active" : "")">
+                    <i class="fas fa-star"></i> Любими
+                </button>
+            </form>
+        }
+
+        @if (isAdmin)
+        {
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-action btn-edit">
+                <i class="fas fa-edit"></i> Редактирай
+            </a>
+            <form asp-action="Delete" asp-route-id="@Model.Id" method="post" class="d-inline" onsubmit="return confirm('Сигурни ли сте, че искате да изтриете тази услуга?');">
+                <button type="submit" class="btn btn-action btn-delete">
+                    <i class="fas fa-trash-alt"></i> Изтрий
+                </button>
+            </form>
+        }
+    </div>
+
+    <div class="reviews-section">
+        <h3>Ревюта (@Model.ReviewCount)</h3>
+        @if (Model.Reviews != null && Model.Reviews.Any())
+        {
+            @foreach (var review in Model.Reviews)
+            {
+                <div class="review-item">
+                    <div class="review-header">
+                        <span class="review-user">@review.UserName</span>
+                        <span class="review-rating">
+                            @for (int i = 0; i < review.Rating; i++)
+                            {
+                                <i class="fas fa-star"></i>
+                            }
+                        </span>
+                    </div>
+                    <p class="review-comment">@review.Comment</p>
+                    <small class="text-muted">@review.CreatedOn.ToShortDateString()</small>
+
+                    <div class="review-actions">
+                        @* Бутон за редактиране на ревю - видим за автора на ревюто *@
+                        @if (User.Identity.IsAuthenticated && review.IsAuthor)
+                        {
+                            <a asp-controller="Review" asp-action="EditReview" asp-route-reviewId="@review.Id" asp-route-serviceId="@Model.Id" asp-route-reviewPage="@currentReviewPage" class="edit-review-btn">
+                                <i class="fas fa-pencil-alt"></i>
+                            </a>
+                        }
+                        @* Бутон за изтриване на ревю - видим за администратори ИЛИ за автора на ревюто *@
+                        @if (User.Identity.IsAuthenticated && (isAdmin || review.IsAuthor))
+                        {
+                            <form asp-controller="Review" asp-action="DeleteReview" asp-route-reviewId="@review.Id" asp-route-reviewPage="@currentReviewPage" method="post" class="d-inline">
+                                <button type="submit" class="delete-review-btn" onclick="return confirm('Сигурни ли сте, че искате да изтриете това ревю?');">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </form>
+                        }
+                    </div>
+                </div>
+            }
+
+            @* Пагинация за ревюта *@
+            @if (totalReviewPages > 1)
+            {
+                <div class="review-pagination-container">
+                    <a asp-action="Details" asp-route-id="@serviceId" asp-route-reviewPage="@(currentReviewPage - 1)"
+                       class="btn review-pagination-btn @(currentReviewPage == 1 ? "disabled" : "")">
+                        Предишна
+                    </a>
+
+                    @for (int i = 1; i <= totalReviewPages; i++)
+                    {
+                        <a asp-action="Details" asp-route-id="@serviceId" asp-route-reviewPage="@i"
+                           class="btn review-pagination-page-number @(i == currentReviewPage ? "active" : "")">
+                            @i
+                        </a>
+                    }
+
+                    <a asp-action="Details" asp-route-id="@serviceId" asp-route-reviewPage="@(currentReviewPage + 1)"
+                       class="btn review-pagination-btn @(currentReviewPage == totalReviewPages ? "disabled" : "")">
+                        Следваща
+                    </a>
+                </div>
+            }
+        }
+        else
+        {
+            <p class="text-center text-muted">Все още няма ревюта за тази услуга.</p>
+        }
+    </div>
+
+    @* Бутон за писане на ревю - води към отделна страница *@
+    @if (User.Identity.IsAuthenticated && !Model.IsTemplate && Model.IsApproved)
+    {
+        <div class="write-review-btn-container">
+            <a asp-controller="Review" asp-action="CreateReview" asp-route-serviceId="@Model.Id" asp-route-reviewPage="@currentReviewPage" class="btn btn-write-review">
+                <i class="fas fa-plus-circle"></i> Напиши ревю
+            </a>
+        </div>
+    }
+    else if (User.Identity.IsAuthenticated && (Model.IsTemplate || !Model.IsApproved))
+    {
+        <div class="alert alert-info text-center mt-4" role="alert">
+            Не можете да пишете ревюта за шаблони или неодобрени услуги.
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info text-center mt-4" role="alert">
+            Моля, <a asp-area="Identity" asp-page="/Account/Login">влезте в профила си</a>, за да напишете ревю.
+        </div>
+    }
 </div>
 
 @section Scripts {
     <script>
-        const isBusinessUser = @(isBusinessUser.ToString().ToLower());
-        const lockedLanguages = new Set(['JavaScript', 'PHP']);
-        const subscriptionPageUrl = "@subscriptionPageUrl";
-
-        // Функция за показване на съобщение за валидация/грешка
-        function showConversionMessage(message, type) {
-            const conversionMessage = document.getElementById('conversionMessage');
-            conversionMessage.textContent = message;
-            conversionMessage.className = `mt-2 p-3 rounded alert alert-${type}`;
-            conversionMessage.style.display = 'block';
-        }
-
-        // Функция за управление на Premium съобщенията под select-ите
-        function handlePremiumMessage(selectElement, premiumMessageElement) {
-            const selectedLanguage = selectElement.value;
-            if (lockedLanguages.has(selectedLanguage) && !isBusinessUser) {
-                premiumMessageElement.style.display = 'flex'; // Показваме съобщението
-                showConversionMessage('Моля, надстройте акаунта си, за да използвате този език.', 'warning');
-            } else {
-                premiumMessageElement.style.display = 'none'; // Скриваме съобщението
-                // Ако няма други активни съобщения, може да изчистим и основното
-                if (document.getElementById('conversionMessage').style.display !== 'block') {
-                    showConversionMessage('', 'none');
-                }
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const sourceLanguageSelect = document.getElementById('sourceLanguage');
-            const targetLanguageSelect = document.getElementById('targetLanguage');
-            const sourceLanguagePremiumMessage = document.getElementById('sourceLanguagePremiumMessage');
-            const targetLanguagePremiumMessage = document.getElementById('targetLanguagePremiumMessage');
-
-            // Добавяме Unicode символ за катинар към заключените езици чрез JavaScript
-            const selects = document.querySelectorAll('#sourceLanguage, #targetLanguage');
-            selects.forEach(select => {
-                Array.from(select.options).forEach(option => {
-                    const isOptionLocked = option.dataset.isLocked === 'true';
-
-                    if (isOptionLocked && !isBusinessUser) {
-                        // Добавяме Unicode символ за катинар след текста
-                        option.textContent = option.textContent + ' \u{1F512}';
-                    }
+        document.addEventListener('DOMContentLoaded', function () {
+            // Предотвратява кликване на деактивирани бутони за пагинация
+            document.querySelectorAll('.review-pagination-btn.disabled').forEach(button => {
+                button.addEventListener('click', function (e) {
+                    e.preventDefault();
                 });
             });
-
-
-            // Добавяме слушатели за промяна на езика
-            sourceLanguageSelect.addEventListener('change', () => {
-                handlePremiumMessage(sourceLanguageSelect, sourceLanguagePremiumMessage);
-            });
-            targetLanguageSelect.addEventListener('change', () => {
-                handlePremiumMessage(targetLanguageSelect, targetLanguagePremiumMessage);
-            });
-
-            // Инициализираме съобщенията при зареждане на страницата, ако има избрани заключени езици
-            handlePremiumMessage(sourceLanguageSelect, sourceLanguagePremiumMessage);
-            handlePremiumMessage(targetLanguageSelect, targetLanguagePremiumMessage);
-        });
-
-
-        document.getElementById('convertCodeButton').addEventListener('click', async () => {
-            const sourceCode = document.getElementById('sourceCode').value;
-            const sourceLanguage = document.getElementById('sourceLanguage').value;
-            const targetLanguage = document.getElementById('targetLanguage').value;
-            const convertedCodeOutput = document.getElementById('convertedCode');
-
-            convertedCodeOutput.value = '';
-            showConversionMessage('', 'none'); // Изчистваме предишни съобщения
-
-            // Клиентска валидация за празни полета
-            if (!sourceCode.trim()) {
-                showConversionMessage('Моля, въведете изходен код.', 'danger');
-                return;
-            }
-            if (!sourceLanguage) {
-                showConversionMessage('Моля, изберете изходен език.', 'danger');
-                return;
-            }
-            if (!targetLanguage) {
-                showConversionMessage('Моля, изберете целеви език.', 'danger');
-                return;
-            }
-            if (sourceLanguage === targetLanguage) {
-                showConversionMessage('Изходният и целевият език не могат да бъдат еднакви. Върнат е оригиналният код.', 'warning');
-                convertedCodeOutput.value = sourceCode;
-                return;
-            }
-
-            // Клиентска валидация за заключени езици преди изпращане на заявката
-            if (!isBusinessUser && (lockedLanguages.has(sourceLanguage) || lockedLanguages.has(targetLanguage))) {
-                showConversionMessage('Достъпът до JavaScript и PHP конвертиране е само за Бизнес Потребители. Моля, надстройте акаунта си.', 'warning');
-                return;
-            }
-
-            try {
-                showConversionMessage('Конвертиране на кода... Моля, изчакайте.', 'info');
-                document.getElementById('convertCodeButton').disabled = true;
-
-                const response = await fetch('/api/CodeSnippetConverter/convert', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        sourceCode: sourceCode,
-                        sourceLanguage: sourceLanguage,
-                        targetLanguage: targetLanguage
-                    })
-                });
-
-                if (response.ok) {
-                    const result = await response.json();
-                    convertedCodeOutput.value = result.convertedCode;
-                    showConversionMessage(result.message || 'Конвертирането е успешно.', 'success');
-                } else {
-                    let errorMessage = `Грешка: ${response.status} ${response.statusText}`;
-                    try {
-                        const errorData = await response.json();
-                        errorMessage = errorData.errors ? Object.values(errorData.errors).flat().join('; ') : (errorData.message || errorData.title || errorMessage);
-                    } catch (jsonError) {
-                        errorMessage = `Грешка: ${response.status} ${response.statusText}. Невалиден отговор от сървъра.`;
-                        console.error('Failed to parse error response as JSON:', jsonError);
-                    }
-                    convertedCodeOutput.value = '';
-                    showConversionMessage(errorMessage, 'danger');
-                }
-            } catch (error) {
-                console.error('Fetch error:', error);
-                convertedCodeOutput.value = '';
-                showConversionMessage(`Възникна мрежова грешка: ${error.message}.`, 'danger');
-            } finally {
-                document.getElementById('convertCodeButton').disabled = false;
-            }
         });
     </script>
 }

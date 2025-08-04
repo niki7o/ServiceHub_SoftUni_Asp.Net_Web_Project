@@ -24,7 +24,10 @@ namespace ServiceHub.Core.Models.Service
         public int ViewsCount { get; set; } = 0;
         public IEnumerable<ReviewViewModel> Reviews { get; set; } = new List<ReviewViewModel>();
 
-        
+      
+        public int CurrentReviewPage { get; set; }
+        public int TotalReviewPages { get; set; }
+        public int ReviewsPerPage { get; set; }
         public bool IsTemplate { get; set; }
         public bool IsApproved { get; set; }
         public string CreatedByUserName { get; set; } = null!;

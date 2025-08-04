@@ -13,12 +13,12 @@ namespace ServiceHub.Services.Interfaces
     {
 
         Task<ServiceAllViewModel> GetAllAsync(string? categoryFilter = null, string? accessTypeFilter = null, string? filter = null, string? sort = null, string? currentUserId = null, int currentPage = 1, int servicesPerPage = 9);
-        Task<ServiceViewModel> GetByIdAsync(Guid id, string? currentUserId);
+        Task<ServiceViewModel> GetByIdAsync(Guid id, string? currentUserId = null, int reviewPage = 1, int reviewsPerPage = 2);
         Task CreateAsync(ServiceFormModel model, string userId);
         Task UpdateAsync(Guid id, ServiceFormModel model, string editorId, bool isAdmin);
         Task DeleteAsync(Guid id, string deleterId, bool isAdmin);
 
-        Task AddReviewAsync(Guid serviceId, string userId, ReviewFormModel model);
+      
 
         Task IncrementViewsCount(Guid serviceId);
 

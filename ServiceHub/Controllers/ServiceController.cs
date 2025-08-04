@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 using ServiceHub.Common;
 using ServiceHub.Common.Enum;
@@ -31,6 +33,7 @@ namespace ServiceHub.Controllers
         private readonly IRepository<Category> _categoryRepository;
         private readonly ILogger<ServiceController> _logger;
         private readonly IServiceDispatcher _serviceDispatcher;
+        private readonly IServiceScopeFactory _serviceScopeFactory;
 
         public ServiceController(
             IServiceDispatcher serviceDispatcher,
@@ -39,7 +42,8 @@ namespace ServiceHub.Controllers
             IRepository<Favorite> favoriteRepo,
             IRepository<Service> serviceRepository,
             IRepository<Category> categoryRepository,
-            ILogger<ServiceController> logger)
+            ILogger<ServiceController> logger,
+            IServiceScopeFactory serviceScopeFactory)
         {
             _logger = logger;
             _serviceDispatcher = serviceDispatcher;
@@ -48,6 +52,7 @@ namespace ServiceHub.Controllers
             this.favoriteRepo = favoriteRepo;
             this.serviceRepository = serviceRepository;
             _categoryRepository = categoryRepository;
+            _serviceScopeFactory = serviceScopeFactory;
         }
 
         [AllowAnonymous]
@@ -77,14 +82,23 @@ namespace ServiceHub.Controllers
         [HttpGet("Service/UseService/{id}")]
         public async Task<IActionResult> UseService(Guid id)
         {
-            var service = await serviceRepository.All().FirstOrDefaultAsync(s => s.Id == id);
-
-            if (service == null)
+            ServiceViewModel service = null;
+            try
+            {
+                service = await serviceService.GetByIdAsync(id, User.FindFirstValue(ClaimTypes.NameIdentifier));
+            }
+            catch (ArgumentException)
             {
                 _logger.LogWarning($"Attempted to use non-existent service with ID: {id}");
                 TempData["ErrorMessage"] = "Услугата не е намерена.";
                 return View("~/Views/Shared/Error.cshtml", new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
             }
+            catch (UnauthorizedAccessException)
+            {
+                TempData["ErrorMessage"] = "Нямате право да преглеждате този шаблон.";
+                return RedirectToAction("All", "Service");
+            }
+
 
             if (service.IsTemplate && !service.IsApproved)
             {
@@ -285,46 +299,48 @@ namespace ServiceHub.Controllers
 
             return RedirectToAction("All", new { categoryFilter, accessTypeFilter, filter, sort, page });
         }
-        [HttpGet("Service/Details/{id}")]
-        public async Task<IActionResult> Details(Guid id)
-        {
-            string? currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
+        [HttpGet]
+        [AllowAnonymous]
+        public async Task<IActionResult> Details(Guid id, int reviewPage = 1)
+        {
+            _logger.LogInformation($"Details Action: Entered with Service ID: {id}, Review Page: {reviewPage}");
             try
             {
-                var serviceViewModel = await serviceService.GetByIdAsync(id, currentUserId);
+                string? currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var serviceModel = await serviceService.GetByIdAsync(id, currentUserId, reviewPage);
 
-              
-                _ = serviceService.IncrementViewsCount(id); 
+                _ = Task.Run(async () =>
+                {
+                    using (var scope = _serviceScopeFactory.CreateScope())
+                    {
+                        var scopedServiceService = scope.ServiceProvider.GetRequiredService<IServiceService>();
+                        await scopedServiceService.IncrementViewsCount(id);
+                    }
+                });
 
-                return View(serviceViewModel);
+                _logger.LogInformation($"Details Action: Successfully retrieved service {id} for review page {reviewPage}.");
+                return View(serviceModel);
             }
             catch (ArgumentException ex)
             {
-                _logger.LogWarning(ex, "Service not found or invalid ID provided: {ServiceId}", id);
-                
-                return NotFound();
+                _logger.LogError(ex, $"Details Action: ArgumentException for Service ID: {id}, Review Page: {reviewPage}. Message: {ex.Message}");
+                TempData["ErrorMessage"] = ex.Message;
+                return RedirectToAction(nameof(All));
             }
             catch (UnauthorizedAccessException ex)
             {
-                _logger.LogWarning(ex, "Unauthorized access attempt to service {ServiceId} by user {UserId}", id, currentUserId);
-                
-                return Forbid();
-            }
-            catch (InvalidOperationException ex)
-            {
-                _logger.LogWarning(ex, "Invalid operation for service {ServiceId}: {Message}", id, ex.Message);
-               
-                return BadRequest(ex.Message);
+                _logger.LogError(ex, $"Details Action: UnauthorizedAccessException for Service ID: {id}, Review Page: {reviewPage}. Message: {ex.Message}");
+                TempData["ErrorMessage"] = ex.Message;
+                return RedirectToAction(nameof(All));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "An unexpected error occurred while getting service details for ID: {ServiceId}", id);
-               
-                return StatusCode(500, "Възникна неочаквана грешка при зареждане на услугата.");
+                _logger.LogError(ex, $"Details Action: Unexpected Exception for Service ID: {id}, Review Page: {reviewPage}. Message: {ex.Message}");
+                TempData["ErrorMessage"] = "Възникна грешка при зареждане на услугата: " + ex.Message;
+                return RedirectToAction(nameof(All));
             }
         }
-
 
         [HttpGet]
         [Authorize(Roles = "Admin")]

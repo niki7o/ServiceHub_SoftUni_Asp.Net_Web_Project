@@ -17,6 +17,10 @@
 
     <style>
 
+        html {
+            height: 100%;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
             background: linear-gradient(135deg, #a8dadc 0%, #457b9d 100%);
@@ -30,22 +34,48 @@
         .navbar {
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
             border-bottom: 1px solid #e5e7eb;
+            background-color: #f8f9fa !important;
+            padding: 0.75rem 1rem;
         }
 
-        .navbar-brand img {
-            height: 40px;
-            width: auto;
-            margin-right: 10px;
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            font-weight: 700;
+            color: #1d3557 !important;
+            font-size: 1.5rem;
         }
+
+            .navbar-brand img {
+                height: 40px;
+                width: auto;
+                margin-right: 10px;
+            }
 
         .navbar-nav .nav-link {
             font-weight: 500;
-            transition: color 0.2s ease-in-out;
+            transition: color 0.2s ease-in-out, background-color 0.2s ease-in-out;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
             .navbar-nav .nav-link:hover {
-                color: #007bff !important;
+                color: #1d3557 !important;
+                background-color: rgba(69, 123, 157, 0.1);
             }
+
+            .navbar-nav .nav-link .fas {
+                color: #457b9d;
+                transition: color 0.2s ease-in-out;
+            }
+
+            .navbar-nav .nav-link:hover .fas {
+                color: #1d3557;
+            }
+
 
         .navbar-toggler {
             border: none;
@@ -124,6 +154,7 @@
             <div class="container-fluid px-4">
                 <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">
                     <img src="~/Images/LogoServiceHub.png" alt="ServiceHub Logo" />
+
                 </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
                         aria-expanded="false" aria-label="Toggle navigation">
@@ -132,22 +163,30 @@
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <ul class="navbar-nav flex-grow-1">
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Начало</a>
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">
+                                <i class="fas fa-home"></i> Начало
+                            </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Service" asp-action="All">Услуги</a>
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Service" asp-action="All">
+                                <i class="fas fa-list"></i> Услуги
+                            </a>
                         </li>
 
                         @if (User.IsInRole("Admin"))
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="Admin" asp-controller="Admin" asp-action="AllUsers">Админ Панел</a>
+                                <a class="nav-link text-dark" asp-area="Admin" asp-controller="Admin" asp-action="AllUsers">
+                                    <i class="fas fa-user-shield"></i> Админ Панел
+                                </a>
                             </li>
                         }
                         else if (User.IsInRole("User"))
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="Home" asp-action="Plans">Upgrade</a>
+                                <a class="nav-link text-dark" asp-controller="Home" asp-action="Plans">
+                                    <i class="fas fa-arrow-alt-circle-up"></i> Upgrade
+                                </a>
                             </li>
                         }
                     </ul>
@@ -183,7 +222,7 @@
         <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center">
             <span class="mb-2 mb-md-0">&copy; @DateTime.Now.Year - ServiceHub</span>
             <div class="d-flex flex-column flex-md-row align-items-center">
-                <span id="footer-quote" class="me-md-3 mb-2 mb-md-0 text-center text-md-start fade-in">Loading a wise quote...</span>
+                <span id="footer-quote" class="me-md-3 mb-2 mb-md-0 text-center text-md-start fade-in">"Успехът не е ключ към щастието. Щастието е ключ към успеха. Ако обичаш това, което правиш, ще бъдеш успешен." – Алберт Швайцер</span> @* Актуализиран цитат *@
                 <button id="new-quote-btn" class="btn btn-outline-light btn-sm">
                     <i class="fas fa-sync-alt"></i> Нов Цитат
                 </button>
@@ -204,7 +243,8 @@
                 "„Трудолюбието е майка на късмета.“ – Бенджамин Франклин",
                 "„Пътят към успеха и пътят към провала са почти едни и същи.“ – Колин Пауъл",
                 "„Не се страхувайте да се откажете от доброто, за да отидете за великото.“ – Джон Д. Рокфелер",
-                "„Успехът не е окончателен, провалът не е фатален: смелостта да продължиш е това, което има значение.“ – Уинстън Чърчил"
+                "„Успехът не е окончателен, провалът не е фатален: смелостта да продължиш е това, което има значение.“ – Уинстън Чърчил",
+                "„Успехът не е ключ към щастието. Щастието е ключ към успеха. Ако обичаш това, което правиш, ще бъдеш успешен.“ – Алберт Швайцер"
             ];
             let currentQuoteIndex = 0;
             const footerQuoteElement = document.getElementById('footer-quote');
@@ -221,6 +261,7 @@
                     footerQuoteElement.classList.add('fade-in');
                 }, 500);
             }
+
 
             footerQuoteElement.textContent = quotes[currentQuoteIndex];
 

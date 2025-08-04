@@ -120,7 +120,7 @@
         z-index: 100;
         text-align: center;
         display: none;
-        opacity: 0; /* Initial state for animation */
+        opacity: 0;
         transition: opacity 0.3s ease-in-out;
     }
 
@@ -218,6 +218,25 @@
             box-shadow: 0 6px 15px rgba(29, 53, 87, 0.4);
         }
 
+    .clear-filters-btn { 
+        background-color: #6c757d; 
+        border: none;
+        color: white;
+        padding: 12px 25px;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        transition: all 0.2s ease-in-out;
+        box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+        margin-left: 10px;
+    }
+
+        .clear-filters-btn:hover {
+            background-color: #5a6268;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(108, 117, 125, 0.4);
+        }
+
     .row {
         display: flex;
         flex-wrap: wrap;
@@ -235,14 +254,13 @@
     }
 
     .service-card-wrapper {
-        transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out; /* Smooth transition for showing/hiding */
-        transform: scale(1); /* Initial scale */
+        transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+        transform: scale(1);
     }
 
         .service-card-wrapper.hide {
             opacity: 0;
-            transform: scale(0.95); /* Slightly shrink when hiding */
-            /* Will set display: none after transition in JS */
+            transform: scale(0.95);
         }
 
     .service-card {
@@ -351,6 +369,8 @@
     .action-btn {
         background-color: #1d3557;
         border: none;
+        text-align: center;
+        vertical-align: middle;
         color: white;
         padding: 9px 18px;
         border-radius: 6px;
@@ -363,6 +383,8 @@
 
         .action-btn:hover {
             background-color: #142840;
+            vertical-align: middle;
+            text-align: center;
             transform: translateY(-1px);
             box-shadow: 0 4px 10px rgba(29, 53, 87, 0.3);
         }
@@ -415,13 +437,13 @@
         justify-content: center;
         align-items: center;
         gap: 10px;
-        opacity: 1; /* Initial state */
+        opacity: 1;
         transition: opacity 0.3s ease-in-out;
     }
 
         .pagination-container.hide {
             opacity: 0;
-            pointer-events: none; /* Disable clicks during transition */
+            pointer-events: none;
         }
 
     .pagination-btn {
@@ -510,7 +532,7 @@
 
     <div class="search-and-create-container">
         <input type="text" id="searchInput" class="form-control search-input" placeholder="Търсене на услуги по име или потребител" />
-        @if (User.Identity.IsAuthenticated && User.IsInRole("BusinessUser"))
+        @if (User.Identity.IsAuthenticated && User.IsInRole("BusinessUser") || User.IsInRole("Admin"))
         {
             <a asp-action="CreateTemplate" class="btn btn-success create-template-btn">
                 <i class="fas fa-plus-circle"></i> Създай шаблон
@@ -525,14 +547,13 @@
     <div class="filter-sort-section mb-4">
         <form asp-action="All" method="get" id="filterForm">
             <input type="hidden" name="page" value="1" />
-            <input type="hidden" name="filter" value="@(Model.CurrentFilter)" />
+
 
             <div class="row">
                 <div class="col-md-3 mb-3">
                     <div class="form-group">
                         <label for="categoryFilter">Категория:</label>
                         <select name="categoryFilter" id="categoryFilter" class="form-select" asp-items="Model.Categories">
-                            <option value="">Всички Категории</option>
                         </select>
                     </div>
                 </div>
@@ -540,7 +561,6 @@
                     <div class="form-group">
                         <label for="accessTypeFilter">Тип достъп:</label>
                         <select name="accessTypeFilter" id="accessTypeFilter" class="form-select" asp-items="Model.AccessTypes">
-                            <option value="">Всички Типове Достъп</option>
                         </select>
                     </div>
                 </div>
@@ -561,13 +581,17 @@
                         <label for="filter">Филтрирай:</label>
                         <select name="filter" id="filter" class="form-select">
                             <option value="">Всички Услуги</option>
-                            <option value="favorite" selected="@(Model.CurrentFilter == "favorite")">Моите Любими</option>
+                            @if (User.Identity.IsAuthenticated)
+                            {
+                                <option value="favorite" selected="@(Model.CurrentFilter == "favorite")">Моите Любими</option>
+                            }
                         </select>
                     </div>
                 </div>
             </div>
             <div class="d-flex justify-content-end mt-3">
                 <button type="submit" class="btn apply-filters-btn">Приложи филтри</button>
+                <a asp-action="All" class="btn clear-filters-btn">Изчисти филтри</a> 
             </div>
         </form>
     </div>
@@ -703,14 +727,14 @@
 
             const searchInput = document.getElementById('searchInput');
             const searchResultsDiv = document.getElementById('searchResults');
-            const noResultsMessageElement = searchResultsDiv.querySelector('.no-results'); // The <p> inside searchResultsDiv
+            const noResultsMessageElement = searchResultsDiv.querySelector('.no-results');
             const servicesListContainer = document.getElementById('servicesListContainer');
             const allServiceCards = servicesListContainer.querySelectorAll('.service-card-wrapper');
-            const initialNoServicesMessage = servicesListContainer.querySelector('.no-services-message'); // The initial "no services" message
+            const initialNoServicesMessage = servicesListContainer.querySelector('.no-services-message');
             const paginationContainer = document.querySelector('.pagination-container');
 
             let searchTimeout;
-            const transitionDuration = 300; // Match CSS transition duration in ms
+            const transitionDuration = 300;
 
             connection.on("ReceiveSearchResults", (services) => {
                 const foundServiceIds = new Set(services.map(s => s.id));
@@ -719,26 +743,26 @@
                 allServiceCards.forEach(card => {
                     const serviceId = card.dataset.serviceId;
                     if (foundServiceIds.has(serviceId)) {
-                        // Show card smoothly
-                        card.style.display = ''; // Make it visible for transition
+
+                        card.style.display = '';
                         setTimeout(() => {
                             card.classList.remove('hide');
-                        }, 10); // Small delay to ensure display property is applied before transition
+                        }, 10);
                         foundCount++;
                     } else {
-                        // Hide card smoothly
+
                         card.classList.add('hide');
                         setTimeout(() => {
-                            card.style.display = 'none'; // Hide after transition
+                            card.style.display = 'none';
                         }, transitionDuration);
                     }
                 });
 
-                // Handle "no results" message and pagination visibility
+
                 if (foundCount === 0 && searchInput.value.trim().length > 0) {
                     noResultsMessageElement.textContent = 'Няма намерени услуги.';
-                    searchResultsDiv.classList.add('show'); // Show with fade
-                    searchResultsDiv.style.display = 'block'; // Make sure it's block for transition
+                    searchResultsDiv.classList.add('show');
+                    searchResultsDiv.style.display = 'block';
                     if (initialNoServicesMessage) initialNoServicesMessage.classList.add('hide');
                     if (paginationContainer) {
                         paginationContainer.classList.add('hide');
@@ -746,10 +770,10 @@
                     }
                 } else {
                     noResultsMessageElement.textContent = '';
-                    searchResultsDiv.classList.remove('show'); // Hide with fade
+                    searchResultsDiv.classList.remove('show');
                     setTimeout(() => { searchResultsDiv.style.display = 'none'; }, transitionDuration);
 
-                    // Restore initial no services message if relevant
+
                     if (initialNoServicesMessage && allServiceCards.length === 0 && searchInput.value.trim().length === 0) {
                         initialNoServicesMessage.classList.remove('hide');
                         initialNoServicesMessage.style.display = 'block';
@@ -786,7 +810,7 @@
                     searchResultsDiv.classList.remove('show');
                     setTimeout(() => { searchResultsDiv.style.display = 'none'; }, transitionDuration);
 
-                    if (initialNoServicesMessage && Model.Services.length === 0) { // Only re-show if model was initially empty
+                    if (initialNoServicesMessage && Model.Services.length === 0) {
                         initialNoServicesMessage.classList.remove('hide');
                         initialNoServicesMessage.style.display = 'block';
                     } else if (initialNoServicesMessage) {
@@ -799,7 +823,7 @@
                         setTimeout(() => { paginationContainer.classList.remove('hide'); }, 10);
                     }
                 } else {
-                    // If less than 3 characters and not empty, show all cards and hide search results smoothly
+
                     allServiceCards.forEach(card => {
                         card.style.display = '';
                         setTimeout(() => { card.classList.remove('hide'); }, 10);
@@ -850,7 +874,7 @@
 
             document.addEventListener('click', (event) => {
                 if (!searchInput.contains(event.target) && !searchResultsDiv.contains(event.target)) {
-                    // Only hide if it's showing "no results" or if search input is empty
+
                     if (noResultsMessageElement.textContent !== '' || searchInput.value.trim().length === 0) {
                         noResultsMessageElement.textContent = '';
                         searchResultsDiv.classList.remove('show');
