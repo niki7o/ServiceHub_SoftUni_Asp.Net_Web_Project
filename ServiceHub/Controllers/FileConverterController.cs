@@ -1,8 +1,13 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using ServiceHub.Common;
+using ServiceHub.Core.Models;
 using ServiceHub.Core.Models.Service.FileConverter;
+using ServiceHub.Data.Models;
 using ServiceHub.Services.Interfaces;
 using System.Diagnostics;
+using System.IO;
+using System.Security.Claims;
 
 namespace ServiceHub.Controllers
 {
@@ -11,26 +16,41 @@ namespace ServiceHub.Controllers
     {
         private readonly ILogger<FileConverterController> _logger;
         private readonly IServiceDispatcher _serviceDispatcher;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public FileConverterController(ILogger<FileConverterController> logger, IServiceDispatcher serviceDispatcher)
+        public FileConverterController(
+            ILogger<FileConverterController> logger,
+            IServiceDispatcher serviceDispatcher,
+            UserManager<ApplicationUser> userManager)
         {
             _logger = logger;
             _serviceDispatcher = serviceDispatcher;
+            _userManager = userManager;
         }
 
         [HttpGet("")]
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
             try
             {
                 ViewBag.ServiceId = ServiceConstants.FileConverterServiceId;
                 _logger.LogInformation($"Loading File Converter Index view with ServiceId: {ServiceConstants.FileConverterServiceId}");
+
+                var user = await _userManager.GetUserAsync(User);
+                bool isAdmin = user != null && await _userManager.IsInRoleAsync(user, "Admin");
+                bool isBusinessUser = user != null && await _userManager.IsInRoleAsync(user, "BusinessUser");
+                bool isPremiumUserCalculated = isAdmin || isBusinessUser;
+                ViewBag.IsBusinessUserOrAdmin = isPremiumUserCalculated;
+
+                _logger.LogInformation($"FileConverterController.Index: User roles - IsAdmin: {isAdmin}, IsBusinessUser: {isBusinessUser}. Calculated IsBusinessUserOrAdmin for ViewBag: {isPremiumUserCalculated}");
+
+                ViewBag.SupportedFormats = new List<string> { "pdf", "docx", "txt", "jpg", "png", "xlsx", "csv" };
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error accessing ServiceConstants.FileConverterServiceId. Ensure it is a valid GUID.");
-             
-                return View("Error", new { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+               
+                return View("~/Views/Shared/Error.cshtml", new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
             }
 
             return View("~/Views/Service/_FileConverterForm.cshtml");
@@ -41,7 +61,7 @@ namespace ServiceHub.Controllers
         public async Task<IActionResult> Convert(
             [FromForm(Name = "ServiceId")] Guid serviceId,
             [FromForm(Name = "FileContent")] IFormFile fileContent,
-            [FromForm(Name = "OriginalFileName")] string? originalFileNameInput, // Променено име на параметъра
+            [FromForm(Name = "OriginalFileName")] string? originalFileNameInput,
             [FromForm(Name = "TargetFormat")] string targetFormat,
             [FromForm(Name = "PerformOCRIfApplicable")] bool performOCRIfApplicable)
         {
@@ -76,21 +96,29 @@ namespace ServiceHub.Controllers
                 fileBytes = memoryStream.ToArray();
             }
 
-            
             string finalOriginalFileName = string.IsNullOrWhiteSpace(originalFileNameInput)
-                                            ? fileContent.FileName 
-                                            : originalFileNameInput; 
+                                            ? fileContent.FileName
+                                            : originalFileNameInput;
+
+            var user = await _userManager.GetUserAsync(User);
+            bool isAdmin = user != null && await _userManager.IsInRoleAsync(user, "Admin");
+            bool isBusinessUser = user != null && await _userManager.IsInRoleAsync(user, "BusinessUser");
+            bool isPremiumUser = isAdmin || isBusinessUser;
+
+            _logger.LogInformation($"FileConverterController.Convert: User roles - IsAdmin: {isAdmin}, IsBusinessUser: {isBusinessUser}. IsPremiumUser sent to service: {isPremiumUser}");
+
 
             var serviceRequest = new FileConvertRequest
             {
                 ServiceId = serviceId,
                 FileContent = fileBytes,
-                OriginalFileName = finalOriginalFileName, 
+                OriginalFileName = finalOriginalFileName,
                 TargetFormat = targetFormat,
-                PerformOCRIfApplicable = performOCRIfApplicable
+                PerformOCRIfApplicable = performOCRIfApplicable,
+                IsPremiumUser = isPremiumUser
             };
 
-            _logger.LogInformation($"Dispatching request for file conversion: ServiceId={serviceRequest.ServiceId}, FileName={serviceRequest.OriginalFileName}, TargetFormat={serviceRequest.TargetFormat}, OCR={serviceRequest.PerformOCRIfApplicable}");
+            _logger.LogInformation($"Dispatching request for file conversion: ServiceId={serviceRequest.ServiceId}, FileName={serviceRequest.OriginalFileName}, TargetFormat={serviceRequest.TargetFormat}, OCR={serviceRequest.PerformOCRIfApplicable}, IsPremiumUser={serviceRequest.IsPremiumUser}");
 
             BaseServiceResponse response = await _serviceDispatcher.DispatchAsync(serviceRequest);
 

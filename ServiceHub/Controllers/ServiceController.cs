@@ -91,6 +91,7 @@ namespace ServiceHub.Controllers
             {
                 _logger.LogWarning($"Attempted to use non-existent service with ID: {id}");
                 TempData["ErrorMessage"] = "Услугата не е намерена.";
+                // Коригиран път към Error View
                 return View("~/Views/Shared/Error.cshtml", new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
             }
             catch (UnauthorizedAccessException)
@@ -155,6 +156,7 @@ namespace ServiceHub.Controllers
             if (id == ServiceConstants.FileConverterServiceId)
             {
                 ViewBag.SupportedFormats = new List<string> { "pdf", "docx", "txt", "jpg", "png", "xlsx", "csv" };
+                ViewBag.IsBusinessUserOrAdmin = isAdmin || isBusinessUser;
                 return View("~/Views/Service/_FileConverterForm.cshtml");
             }
             else if (id == ServiceConstants.WordCharacterCounterServiceId)
@@ -188,6 +190,7 @@ namespace ServiceHub.Controllers
             else if (id == ServiceConstants.CodeSnippetConverterServiceId)
             {
                 ViewBag.SupportedLanguages = new List<string> { "C#", "Python", "JavaScript", "PHP" };
+                ViewBag.IsBusinessUserOrAdmin = isAdmin || isBusinessUser;
                 return View("~/Views/Service/_CodeSnippetConverter.cshtml");
             }
             else
@@ -204,29 +207,50 @@ namespace ServiceHub.Controllers
             if (!Guid.TryParse(form["serviceId"], out Guid serviceId))
             {
                 _logger.LogWarning("Invalid or missing serviceId in request.");
-                return BadRequest("Невалиден или липсващ идентификатор на услугата.");
+                return BadRequest(new { message = "Невалиден или липсващ идентификатор на услугата." });
             }
 
             BaseServiceRequest? request = null;
+
+            var user = await userManager.GetUserAsync(User);
+            bool isAdmin = user != null && await userManager.IsInRoleAsync(user, "Admin");
+            bool isBusinessUser = user != null && await userManager.IsInRoleAsync(user, "BusinessUser");
+            bool isPremiumUser = isAdmin || isBusinessUser;
 
             if (serviceId == ServiceConstants.FileConverterServiceId)
             {
                 var file = form.Files.GetFile("fileContent");
                 if (file == null)
                 {
-                    return BadRequest("Файлът е задължителен за услугата за конвертиране на файлове.");
+                    return BadRequest(new { message = "Файлът е задължителен за услугата за конвертиране на файлове." });
                 }
 
                 using var ms = new MemoryStream();
                 await file.CopyToAsync(ms);
 
+                string originalFileNameInput = form["OriginalFileName"].ToString();
+                string targetFormat = form["targetFormat"].ToString();
+                string finalOriginalFileName = string.IsNullOrWhiteSpace(originalFileNameInput)
+                                                ? file.FileName
+                                                : originalFileNameInput;
+                string originalFileExtension = Path.GetExtension(finalOriginalFileName)?.ToLowerInvariant();
+                string targetFormatLower = targetFormat.ToLowerInvariant();
+
+                if (targetFormatLower == "pdf" && originalFileExtension != ".pdf")
+                {
+                    _logger.LogWarning($"Невалидна комбинация: Целеви формат PDF, но оригиналният файл не е PDF. Оригинален файл: '{finalOriginalFileName}'");
+                    return BadRequest(new { message = "Не можете да конвертирате към PDF, ако оригиналното име на файла не е PDF." });
+                }
+
+
                 request = new FileConvertRequest
                 {
                     ServiceId = serviceId,
                     FileContent = ms.ToArray(),
-                    OriginalFileName = file.FileName,
-                    TargetFormat = form["targetFormat"].ToString(),
-                    PerformOCRIfApplicable = bool.TryParse(form["performOCRIfApplicable"], out var ocr) && ocr
+                    OriginalFileName = finalOriginalFileName,
+                    TargetFormat = targetFormat,
+                    PerformOCRIfApplicable = bool.TryParse(form["performOCRIfApplicable"], out var ocr) && ocr,
+                    IsPremiumUser = isPremiumUser
                 };
             }
             else
@@ -238,7 +262,7 @@ namespace ServiceHub.Controllers
             if (request == null)
             {
                 _logger.LogError("Failed to construct service request object.");
-                return BadRequest("Неуспешно създаване на заявка за услуга.");
+                return BadRequest(new { message = "Неуспешно създаване на заявка за услуга." });
             }
 
             if (!ModelState.IsValid)
@@ -266,8 +290,8 @@ namespace ServiceHub.Controllers
             }
             else
             {
-                _logger.LogError("Service execution failed for ID: {ServiceId}. Error: {ErrorMessage}", request.ServiceId, response.ErrorMessage);
-                return BadRequest(response.ErrorMessage ?? "Неизвестна грешка при изпълнение на услугата.");
+                _logger.LogError($"Service execution failed for ID: {request.ServiceId}. Error: {response.ErrorMessage}");
+                return BadRequest(new { message = $"Грешка при изпълнение на услугата: {response.ErrorMessage ?? "Неизвестна грешка."}" });
             }
         }
 
@@ -517,12 +541,10 @@ namespace ServiceHub.Controllers
             catch (ArgumentException ex)
             {
                 TempData["ErrorMessage"] = ex.Message;
-                return RedirectToAction("All");
             }
             catch (InvalidOperationException ex)
             {
                 TempData["ErrorMessage"] = ex.Message;
-                return RedirectToAction("All");
             }
             catch (UnauthorizedAccessException)
             {
@@ -535,6 +557,7 @@ namespace ServiceHub.Controllers
                 TempData["ErrorMessage"] = "Възникна грешка при редактиране на услугата.";
                 return View(model);
             }
+            return RedirectToAction("All");
         }
 
         [HttpPost]
@@ -560,23 +583,21 @@ namespace ServiceHub.Controllers
             catch (ArgumentException ex)
             {
                 TempData["ErrorMessage"] = ex.Message;
-                return RedirectToAction("All");
             }
             catch (UnauthorizedAccessException ex)
             {
                 TempData["ErrorMessage"] = ex.Message;
-                return RedirectToAction("All");
             }
             catch (InvalidOperationException ex)
             {
                 TempData["ErrorMessage"] = ex.Message;
-                return RedirectToAction("All");
             }
             catch (Exception)
             {
                 TempData["ErrorMessage"] = "Възникна грешка при изтриване на услугата.";
-                return RedirectToAction("All");
             }
+            return RedirectToAction("All");
         }
     }
+
 }

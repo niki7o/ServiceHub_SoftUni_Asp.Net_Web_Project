@@ -21,5 +21,6 @@ namespace ServiceHub.Core.Models.Service.FileConverter
         public string TargetFormat { get; set; } = null!;
 
         public bool PerformOCRIfApplicable { get; set; } = false;
+        public bool IsPremiumUser { get; set; } = false;
     }
 }

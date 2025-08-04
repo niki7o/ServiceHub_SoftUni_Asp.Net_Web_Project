@@ -15,10 +15,13 @@ using Xceed.Words.NET;
 
 namespace ServiceHub.Services.Services
 {
-    public class FileConverterService : IFileConverterService
+  public class FileConverterService : IFileConverterService
     {
         private readonly ILogger<FileConverterService> _logger;
         private readonly IConverter _pdfConverter;
+
+        
+        private static readonly HashSet<string> PremiumFormats = new HashSet<string> { "jpg", "png", "csv" };
 
         public FileConverterService(ILogger<FileConverterService> logger, IConverter pdfConverter)
         {
@@ -40,12 +43,27 @@ namespace ServiceHub.Services.Services
 
             _logger.LogInformation($"Executing File Converter for '{fileConvertRequest.OriginalFileName}' to '{fileConvertRequest.TargetFormat}'...");
 
-            var result = await ConvertFileSpecificAsync(fileConvertRequest);
+            
+            var result = await ConvertFileSpecificAsync(fileConvertRequest, fileConvertRequest.IsPremiumUser);
             return result;
         }
 
-        public async Task<FileConvertResult> ConvertFileSpecificAsync(FileConvertRequest request)
+        
+        public async Task<FileConvertResult> ConvertFileSpecificAsync(FileConvertRequest request, bool isPremiumUser)
         {
+            _logger.LogInformation($"FileConverterService.ConvertFileSpecificAsync: TargetFormat: {request.TargetFormat}, IsPremiumUser: {isPremiumUser}");
+
+        
+            if (PremiumFormats.Contains(request.TargetFormat.ToLowerInvariant()) && !isPremiumUser)
+            {
+                _logger.LogWarning($"Access denied for target format '{request.TargetFormat}'. User is not premium (isPremiumUser was {isPremiumUser}).");
+                return new FileConvertResult
+                {
+                    IsSuccess = false,
+                    ErrorMessage = $"Достъпът до конвертиране към '{request.TargetFormat.ToUpperInvariant()}' е само за Бизнес Потребители или Администратори. Моля, надстройте абонамента си."
+                };
+            }
+
             byte[]? convertedContent = null;
             string newFileName = $"{Path.GetFileNameWithoutExtension(request.OriginalFileName)}.{request.TargetFormat.ToLowerInvariant()}";
             string contentType = GetContentType(request.TargetFormat);
@@ -87,7 +105,7 @@ namespace ServiceHub.Services.Services
                     else
                     {
                         _logger.LogWarning($"Cannot convert non-image content to {request.TargetFormat}.");
-                        return new FileConvertResult { IsSuccess = false, ErrorMessage = $"Не може да се конвертира не-изображение към '{request.TargetFormat}'." };
+                        return new FileConvertResult { IsSuccess = false, ErrorMessage = $"Не може да се конвертира не-изображение към '{request.TargetFormat.ToUpperInvariant()}'." };
                     }
                     break;
                 default:
@@ -128,14 +146,12 @@ namespace ServiceHub.Services.Services
 
             string originalFileExtension = Path.GetExtension(fileName)?.ToLowerInvariant() ?? string.Empty;
 
-            
             if (string.IsNullOrWhiteSpace(originalFileExtension) || originalFileExtension == ".")
             {
                 _logger.LogError($"ExtractContentFromOriginalFile: Невалидно или липсващо разширение на файла: '{fileName}'. Получено разширение: '{originalFileExtension}'");
                 return new FileContentData { IsSuccess = false, ErrorMessage = $"Не може да се извлече съдържание от файл без разширение или с невалидно разширение (получено: '{originalFileExtension}')." };
             }
 
-           
             originalFileExtension = originalFileExtension.TrimStart('.');
 
             string textContent = string.Empty;
@@ -174,7 +190,7 @@ namespace ServiceHub.Services.Services
                 case "docx":
                     try
                     {
-                        using (DocumentFormat.OpenXml.Packaging.WordprocessingDocument wordDocument = DocumentFormat.OpenXml.Packaging.WordprocessingDocument.Open(new MemoryStream(fileContent), false))
+                        using (WordprocessingDocument wordDocument = WordprocessingDocument.Open(new MemoryStream(fileContent), false))
                         {
                             textContent = wordDocument.MainDocumentPart?.Document?.Body?.InnerText ?? string.Empty;
                         }
@@ -219,7 +235,7 @@ namespace ServiceHub.Services.Services
                 case "xlsx":
                     try
                     {
-                        using (var package = new OfficeOpenXml.ExcelPackage(new MemoryStream(fileContent)))
+                        using (var package = new ExcelPackage(new MemoryStream(fileContent)))
                         {
                             var worksheet = package.Workbook.Worksheets.FirstOrDefault();
                             if (worksheet != null)

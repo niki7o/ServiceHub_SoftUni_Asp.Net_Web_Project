@@ -9,6 +9,6 @@ namespace ServiceHub.Services.Interfaces
 {
     public interface IFileConverterService : IExecutableService
     {
-        Task<FileConvertResult> ConvertFileSpecificAsync(FileConvertRequest request);
+        Task<FileConvertResult> ConvertFileSpecificAsync(FileConvertRequest request, bool isPremiumUser);
     }
 }
