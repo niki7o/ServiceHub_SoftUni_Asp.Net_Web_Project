@@ -24,8 +24,8 @@
   <ItemGroup>
     <ProjectReference Include="..\ServiceHub.Data.Models\ServiceHub.Data.Models.csproj" />
     <ProjectReference Include="..\ServiceHub.Data\ServiceHub.Data.csproj" />
-    <ProjectReference Include="..\SmartHub.Common\ServiceHub.Common.csproj" />
-    <ProjectReference Include="..\SmartHub.Core\ServiceHub.Core.csproj" />
+    <ProjectReference Include="..\ServiceHub.Common\ServiceHub.Common.csproj" />
+    <ProjectReference Include="..\ServiceHub.Core\ServiceHub.Core.csproj" />
   </ItemGroup>
 
 </Project>

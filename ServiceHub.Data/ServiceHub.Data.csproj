@@ -17,6 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\ServiceHub.Common\ServiceHub.Common.csproj" />
     <ProjectReference Include="..\ServiceHub.Data.Models\ServiceHub.Data.Models.csproj" />
   </ItemGroup>
 
