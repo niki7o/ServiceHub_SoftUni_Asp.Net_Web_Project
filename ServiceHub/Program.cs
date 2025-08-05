@@ -15,6 +15,8 @@ using ServiceHub.Services.Services.Repository;
 using System.ComponentModel;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using ServiceHub.Areas.Admin.Services.Interface;
+using ServiceHub.Areas.Admin.Services.Service;
 
 namespace ServiceHub
 {
@@ -67,6 +69,7 @@ namespace ServiceHub
             builder.Services.AddScoped<IInvoiceGeneratorService, InvoiceGeneratorService>();
             builder.Services.AddScoped<IFinancialCalculatorService, FinancialCalculatorService>();
             builder.Services.AddScoped<ICodeSnippetConverterService, CodeSnippetConverterService>();
+            builder.Services.AddScoped<IUserService, UserService>();
 
             builder.Services.AddScoped<IServiceDispatcher, ServiceDispatcher>(sp =>
             {

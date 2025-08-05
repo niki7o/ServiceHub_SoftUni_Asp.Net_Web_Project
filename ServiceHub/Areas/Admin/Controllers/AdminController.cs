@@ -3,9 +3,12 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ServiceHub.Areas.Admin.Models;
+using ServiceHub.Areas.Admin.Services.Interface;
 using ServiceHub.Data.Models;
 using ServiceHub.Services.Interfaces;
+
 using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace ServiceHub.Areas.Admin.Controllers
 {
@@ -16,51 +19,53 @@ namespace ServiceHub.Areas.Admin.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly ILogger<AdminController> _logger;
-        private readonly IServiceService _serviceService; // Re-injected IServiceService
+        private readonly IServiceService _serviceService;
+        private readonly IUserService _userService; 
 
         public AdminController(
             UserManager<ApplicationUser> userManager,
             RoleManager<IdentityRole> roleManager,
             ILogger<AdminController> logger,
-            IServiceService serviceService) // Added IServiceService to constructor
+            IServiceService serviceService,
+            IUserService userService) 
         {
             _userManager = userManager;
             _roleManager = roleManager;
             _logger = logger;
-            _serviceService = serviceService; // Assign the injected service
+            _serviceService = serviceService;
+            _userService = userService;
         }
 
-        public async Task<IActionResult> AllUsers()
+        public async Task<IActionResult> AllUsers(int usersPage = 1, int pendingTemplatesPage = 1)
         {
-            var users = await _userManager.Users.ToListAsync();
-            var userViewModels = new List<UserViewModel>();
+            // Define page sizes
+            int usersPageSize = 5;
+            int pendingTemplatesPageSize = 5;
 
-            foreach (var user in users)
-            {
-                var roles = await _userManager.GetRolesAsync(user);
+       
+            var paginatedUsersResult = await _userService.GetAllUsersAsync(usersPage, usersPageSize);
 
-                userViewModels.Add(new UserViewModel
-                {
-                    Id = user.Id,
-                    UserName = user.UserName,
-                    Email = user.Email,
-                    Roles = roles.ToList()
-                });
-            }
+           
+            var paginatedPendingTemplatesResult = await _serviceService.GetAllPendingTemplatesAsync(pendingTemplatesPage, pendingTemplatesPageSize);
 
-            // Fetch pending service templates using the injected service
-            // This is the part that was missing or commented out in your provided code
-            var pendingTemplates = await _serviceService.GetAllPendingTemplatesAsync();
-
-            // Create the AdminDashboardViewModel and pass it to the view
-            // This is the part that was missing or commented out in your provided code
             var viewModel = new AdminDashboardViewModel
             {
-                Users = userViewModels,
-                PendingServices = pendingTemplates
+               
+                Users = paginatedUsersResult.Users,
+                UsersCurrentPage = usersPage,
+                UsersPageSize = usersPageSize,
+                TotalUsersCount = paginatedUsersResult.TotalCount,
+                UsersTotalPages = (int)Math.Ceiling((double)paginatedUsersResult.TotalCount / usersPageSize),
+
+               
+                PendingServices = paginatedPendingTemplatesResult.Templates,
+                PendingServicesCurrentPage = pendingTemplatesPage,
+                PendingServicesPageSize = pendingTemplatesPageSize,
+                TotalPendingServicesCount = paginatedPendingTemplatesResult.TotalCount,
+                PendingServicesTotalPages = (int)Math.Ceiling((double)paginatedPendingTemplatesResult.TotalCount / pendingTemplatesPageSize)
             };
 
-            return View(viewModel); // Pass the combined viewModel
+            return View(viewModel);
         }
 
         [HttpPost]
@@ -282,5 +287,4 @@ namespace ServiceHub.Areas.Admin.Controllers
             return RedirectToAction(nameof(AllUsers));
         }
     }
-
 }

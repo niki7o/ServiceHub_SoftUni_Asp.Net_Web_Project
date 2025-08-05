@@ -5,9 +5,221 @@
 
 @{
     ViewData["Title"] = "Управление на потребители и услуги";
+    
+    var currentUsersPage = Model.UsersCurrentPage;
+    var totalUsersPages = Model.UsersTotalPages;
+    var currentPendingTemplatesPage = Model.PendingServicesCurrentPage;
+    var totalPendingTemplatesPages = Model.PendingServicesTotalPages;
 }
 
 <link rel="stylesheet" href="~/css/admin-users.css" asp-append-version="true" />
+
+<style>
+ 
+    .pagination-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 20px;
+        gap: 10px;
+    }
+
+    .pagination-button {
+        background-color: #3498db; 
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background-color 0.3s ease, transform 0.2s ease;
+        text-decoration: none; 
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 500;
+    }
+
+    .pagination-button:hover:not(:disabled) {
+        background-color: #2980b9; 
+        transform: translateY(-2px);
+    }
+
+    .pagination-button:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+    }
+
+    .pagination-info {
+        font-size: 1rem;
+        color: #555;
+        font-weight: 500;
+    }
+
+    
+    body {
+        background-color: #f0f2f5; 
+    }
+
+    .container {
+        max-width: 960px;
+        margin: 40px auto; 
+        padding: 20px;
+        font-family: 'Inter', sans-serif;
+    }
+
+    .card {
+        background-color: #ffffff;
+        border-radius: 15px; 
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15); 
+        overflow: hidden;
+        border: none; 
+        transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+    }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        }
+
+    .card-header {
+        padding: 20px 25px;
+        font-size: 1.25rem;
+        font-weight: 700;
+        border-top-left-radius: 15px;
+        border-top-right-radius: 15px;
+    }
+
+    .card-body {
+        padding: 30px;
+    }
+
+    h1 {
+        font-size: 2.8rem; 
+        font-weight: 900; 
+        color: #2c3e50; 
+        margin-bottom: 30px;
+        text-align: center;
+        text-shadow: 1px 1px 4px rgba(0,0,0,0.1);
+    }
+
+    .table {
+        margin-bottom: 0; 
+    }
+
+    .table-responsive {
+        border-radius: 10px;
+        overflow: hidden; 
+        border: 1px solid #e0e0e0;
+    }
+
+    .table thead th {
+        background-color: #ecf0f1; 
+        color: #34495e; 
+        font-weight: 600;
+        border-bottom: 2px solid #bdc3c7;
+    }
+
+    .table tbody tr {
+        transition: background-color 0.2s ease;
+    }
+
+        .table tbody tr:hover {
+            background-color: #f8f9fa; 
+        }
+
+    .action-btn {
+        font-size: 0.85rem;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-weight: 600;
+        transition: all 0.2s ease;
+    }
+
+    .btn-danger { background-color: #e74c3c; border-color: #e74c3c; }
+    .btn-warning { background-color: #f39c12; border-color: #f39c12; }
+    .btn-success { background-color: #2ecc71; border-color: #2ecc71; }
+    .btn-info { background-color: #3498db; border-color: #3498db; }
+
+    .btn-danger:hover { background-color: #c0392b; border-color: #c0392b; }
+    .btn-warning:hover { background-color: #e67e22; border-color: #e67e22; }
+    .btn-success:hover { background-color: #27ae60; border-color: #27ae60; }
+    .btn-info:hover { background-color: #2980b9; border-color: #2980b9; }
+
+   
+    .custom-modal {
+        display: none;
+        position: fixed; 
+        z-index: 1050; 
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%; 
+        overflow: auto; 
+        background-color: rgba(0,0,0,0.4); 
+        padding-top: 60px;
+    }
+
+    .custom-modal-content {
+        background-color: #fefefe;
+        margin: 5% auto; 
+        padding: 20px;
+        border: 1px solid #888;
+        width: 80%; 
+        max-width: 500px; 
+        border-radius: 10px;
+        box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2), 0 6px 20px 0 rgba(0,0,0,0.19);
+        animation-name: animatetop;
+        animation-duration: 0.4s
+    }
+
+    @@keyframes animatetop {
+        from {top: -300px; opacity: 0}
+        to {top: 0; opacity: 1}
+    }
+
+    .custom-modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #e9ecef;
+        margin-bottom: 15px;
+    }
+
+    .custom-modal-header .modal-title {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #34495e;
+    }
+
+    .custom-modal-body {
+        padding-bottom: 15px;
+    }
+
+    .custom-modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        border-top: 1px solid #e9ecef;
+        padding-top: 15px;
+        margin-top: 15px;
+    }
+
+    .close-modal-btn {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    .close-modal-btn:hover,
+    .close-modal-btn:focus {
+        color: black;
+        text-decoration: none;
+        cursor: pointer;
+    }
+</style>
 
 <div class="container mt-4">
     <h1 class="mb-4 text-center">@ViewData["Title"]</h1>
@@ -36,67 +248,90 @@
 
     <div class="card shadow-sm mb-4">
         <div class="card-header bg-primary text-white py-3">
-            <h5 class="mb-0">Списък с потребители</h5>
+            <h5 class="mb-0">Списък с потребители (@Model.TotalUsersCount)</h5>
         </div>
         <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-striped table-hover table-bordered align-middle">
-                    <thead class="bg-light">
-                        <tr>
-                            <th>@Html.DisplayNameFor(model => model.Users.First().UserName)</th>
-                            <th>@Html.DisplayNameFor(model => model.Users.First().Email)</th>
-                            <th>@Html.DisplayNameFor(model => model.Users.First().Roles)</th>
-                            <th class="text-center" style="width: 200px;">Действия</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var user in Model.Users)
-                        {
+            @if (!Model.Users.Any())
+            {
+                <p class="text-center">Няма регистрирани потребители.</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover table-bordered align-middle">
+                        <thead class="bg-light">
                             <tr>
-                                <td>@Html.DisplayFor(modelItem => user.UserName)</td>
-                                <td>@Html.DisplayFor(modelItem => user.Email)</td>
-                                <td>@string.Join(", ", user.Roles)</td>
-                                <td class="text-center">
-                                    <div class="d-flex flex-wrap justify-content-center">
-                                        <form asp-controller="Admin" asp-action="DeleteUser" asp-route-id="@user.Id" method="post" class="me-1 mb-1">
-                                            @Html.AntiForgeryToken()
-                                            <button type="button" class="btn btn-danger btn-sm action-btn" onclick="showCustomConfirm('Сигурни ли сте, че искате да изтриете потребител @user.UserName?', this.form);">
-                                                <i class="fas fa-trash-alt"></i> Изтрий
-                                            </button>
-                                        </form>
-
-                                        @if (user.Roles.Contains("BusinessUser") && user.Id != UserManager.GetUserId(User))
-                                        {
-                                            <form asp-controller="Admin" asp-action="DemoteBusinessUser" asp-route-id="@user.Id" method="post" class="me-1 mb-1">
-                                                @Html.AntiForgeryToken()
-                                                <button type="button" class="btn btn-warning btn-sm action-btn" onclick="showCustomConfirm('Сигурни ли сте, че искате да демоутнете потребител @user.UserName до User?', this.form);">
-                                                    <i class="fas fa-arrow-down"></i> Демоут
-                                                </button>
-                                            </form>
-                                        }
-
-                                        @if (!user.Roles.Contains("BusinessUser") && !user.Roles.Contains("Admin") && user.Id != UserManager.GetUserId(User))
-                                        {
-                                            <form asp-controller="Admin" asp-action="PromoteToBusinessUser" asp-route-id="@user.Id" method="post" class="mb-1">
-                                                @Html.AntiForgeryToken()
-                                                <button type="button" class="btn btn-success btn-sm action-btn" onclick="showCustomConfirm('Сигурни ли сте, че искате да промоутнете потребител @user.UserName до Business User?', this.form);">
-                                                    <i class="fas fa-arrow-up"></i> Промоут
-                                                </button>
-                                            </form>
-                                        }
-                                    </div>
-                                </td>
+                                <th>@Html.DisplayNameFor(model => model.Users.First().UserName)</th>
+                                <th>@Html.DisplayNameFor(model => model.Users.First().Email)</th>
+                                <th>@Html.DisplayNameFor(model => model.Users.First().Roles)</th>
+                                <th class="text-center" style="width: 200px;">Действия</th>
                             </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
+                        </thead>
+                        <tbody>
+                            @foreach (var user in Model.Users)
+                            {
+                                <tr>
+                                    <td>@Html.DisplayFor(modelItem => user.UserName)</td>
+                                    <td>@Html.DisplayFor(modelItem => user.Email)</td>
+                                    <td>@string.Join(", ", user.Roles)</td>
+                                    <td class="text-center">
+                                        <div class="d-flex flex-wrap justify-content-center">
+                                            <form asp-controller="Admin" asp-action="DeleteUser" asp-route-id="@user.Id" method="post" class="me-1 mb-1">
+                                                @Html.AntiForgeryToken()
+                                                <button type="button" class="btn btn-danger btn-sm action-btn" onclick="showCustomConfirm('Сигурни ли сте, че искате да изтриете потребител @user.UserName?', this.form);">
+                                                    <i class="fas fa-trash-alt"></i> Изтрий
+                                                </button>
+                                            </form>
+
+                                            @if (user.Roles.Contains("BusinessUser") && user.Id != UserManager.GetUserId(User))
+                                            {
+                                                <form asp-controller="Admin" asp-action="DemoteBusinessUser" asp-route-id="@user.Id" method="post" class="me-1 mb-1">
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="button" class="btn btn-warning btn-sm action-btn" onclick="showCustomConfirm('Сигурни ли сте, че искате да демоутнете потребител @user.UserName до User?', this.form);">
+                                                        <i class="fas fa-arrow-down"></i> Демоут
+                                                    </button>
+                                                </form>
+                                            }
+
+                                            @if (!user.Roles.Contains("BusinessUser") && !user.Roles.Contains("Admin") && user.Id != UserManager.GetUserId(User))
+                                            {
+                                                <form asp-controller="Admin" asp-action="PromoteToBusinessUser" asp-route-id="@user.Id" method="post" class="mb-1">
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="button" class="btn btn-success btn-sm action-btn" onclick="showCustomConfirm('Сигурни ли сте, че искате да промоутнете потребител @user.UserName до Business User?', this.form);">
+                                                        <i class="fas fa-arrow-up"></i> Промоут
+                                                    </button>
+                                                </form>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+             
+                @if (Model.TotalUsersCount > Model.UsersPageSize)
+                {
+                    <div class="pagination-container">
+                        <a href="@Url.Action("AllUsers", "Admin", new { area = "Admin", usersPage = currentUsersPage - 1, pendingTemplatesPage = currentPendingTemplatesPage })"
+                           class="pagination-button @(currentUsersPage <= 1 ? "disabled" : "")">
+                            Предишна
+                        </a>
+                        <span class="pagination-info">Страница @currentUsersPage от @totalUsersPages</span>
+                        <a href="@Url.Action("AllUsers", "Admin", new { area = "Admin", usersPage = currentUsersPage + 1, pendingTemplatesPage = currentPendingTemplatesPage })"
+                           class="pagination-button @(currentUsersPage >= totalUsersPages ? "disabled" : "")">
+                            Следваща
+                        </a>
+                    </div>
+                }
+            }
         </div>
     </div>
 
     <div class="card shadow-sm mt-5">
         <div class="card-header bg-info text-white py-3">
-            <h5 class="mb-0">Чакащи шаблони за услуги</h5>
+            <h5 class="mb-0">Чакащи шаблони за услуги (@Model.TotalPendingServicesCount)</h5>
         </div>
         <div class="card-body">
             @if (!Model.PendingServices.Any())
@@ -148,6 +383,22 @@
                         </tbody>
                     </table>
                 </div>
+
+              
+                @if (Model.TotalPendingServicesCount > Model.PendingServicesPageSize)
+                {
+                    <div class="pagination-container">
+                        <a href="@Url.Action("AllUsers", "Admin", new { area = "Admin", usersPage = currentUsersPage, pendingTemplatesPage = currentPendingTemplatesPage - 1 })"
+                           class="pagination-button @(currentPendingTemplatesPage <= 1 ? "disabled" : "")">
+                            Предишна
+                        </a>
+                        <span class="pagination-info">Страница @currentPendingTemplatesPage от @totalPendingTemplatesPages</span>
+                        <a href="@Url.Action("AllUsers", "Admin", new { area = "Admin", usersPage = currentUsersPage, pendingTemplatesPage = currentPendingTemplatesPage + 1 })"
+                           class="pagination-button @(currentPendingTemplatesPage >= totalPendingTemplatesPages ? "disabled" : "")">
+                            Следваща
+                        </a>
+                    </div>
+                }
             }
         </div>
     </div>
@@ -171,4 +422,43 @@
 
 @section Scripts {
     <script src="~/js/admin-users.js" asp-append-version="true"></script>
+    <script>
+        
+        function showCustomConfirm(message, form) {
+            const modal = document.getElementById('customConfirmModal');
+            const confirmMessage = document.getElementById('modalConfirmMessage');
+            const confirmBtn = document.getElementById('modalConfirmBtn');
+            const cancelBtn = document.getElementById('modalCancelBtn');
+            const closeBtn = modal.querySelector('.close-modal-btn');
+
+            confirmMessage.textContent = message;
+            modal.style.display = 'block';
+
+            const confirmAction = () => {
+                form.submit();
+                modal.style.display = 'none';
+                confirmBtn.removeEventListener('click', confirmAction);
+                cancelBtn.removeEventListener('click', cancelAction);
+                closeBtn.removeEventListener('click', cancelAction);
+            };
+
+            const cancelAction = () => {
+                modal.style.display = 'none';
+                confirmBtn.removeEventListener('click', confirmAction);
+                cancelBtn.removeEventListener('click', cancelAction);
+                closeBtn.removeEventListener('click', cancelAction);
+            };
+
+            confirmBtn.addEventListener('click', confirmAction);
+            cancelBtn.addEventListener('click', cancelAction);
+            closeBtn.addEventListener('click', cancelAction);
+
+           
+            window.onclick = function(event) {
+                if (event.target == modal) {
+                    cancelAction();
+                }
+            };
+        }
+    </script>
 }
