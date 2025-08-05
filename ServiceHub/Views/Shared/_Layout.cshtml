@@ -1,4 +1,5 @@
-﻿<!DOCTYPE html>
+﻿
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -8,7 +9,6 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 
-
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" xintegrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -16,7 +16,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
     <style>
-        
+    
         html {
             height: 100%;
         }
@@ -55,25 +55,25 @@
         .navbar-nav .nav-link {
             font-weight: 500;
             transition: color 0.2s ease-in-out, background-color 0.2s ease-in-out;
-            padding: 0.5rem 1rem; 
-            border-radius: 8px; 
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
             display: flex;
             align-items: center;
-            gap: 8px; 
+            gap: 8px;
         }
 
             .navbar-nav .nav-link:hover {
                 color: #1d3557 !important;
-                background-color: rgba(69, 123, 157, 0.1); 
+                background-color: rgba(69, 123, 157, 0.1);
             }
 
             .navbar-nav .nav-link .fas {
-                color: #457b9d; 
+                color: #457b9d;
                 transition: color 0.2s ease-in-out;
             }
 
             .navbar-nav .nav-link:hover .fas {
-                color: #1d3557; 
+                color: #1d3557;
             }
 
 
@@ -146,15 +146,81 @@
             .btn-back-custom:active {
                 transform: translateY(0);
             }
+
+       
+        .loader-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.9); 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999; 
+            transition: opacity 0.5s ease-out;
+        }
+
+            .loader-overlay.hidden {
+                opacity: 0;
+                pointer-events: none; 
+            }
+
+        .loader-container {
+            display: flex;
+            gap: 10px;
+        }
+
+        .loader-circle {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: #3498db; 
+            animation: bounce 1.2s infinite ease-in-out both; 
+        }
+
+            .loader-circle.circle-1 {
+                background-color: #e74c3c;
+            }
+
+            .loader-circle.circle-2 {
+                background-color: #f39c12; 
+                animation-delay: -0.3s;
+            }
+
+            .loader-circle.circle-3 {
+                background-color: #2ecc71; 
+                animation-delay: -0.6s;
+            }
+
+        @@keyframes bounce {
+            0%, 80%, 100% {
+                transform: scale(0);
+            }
+
+            40% {
+                transform: scale(1.0);
+            }
+        }
     </style>
 </head>
 <body>
+  
+    <div id="customLoader" class="loader-overlay">
+        <div class="loader-container">
+            <div class="loader-circle circle-1"></div>
+            <div class="loader-circle circle-2"></div>
+            <div class="loader-circle circle-3"></div>
+        </div>
+    </div>
+
     <header>
         <nav class="navbar navbar-expand-sm navbar-light bg-white border-bottom box-shadow mb-3">
             <div class="container-fluid px-4">
                 <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">
                     <img src="~/Images/LogoServiceHub.png" alt="ServiceHub Logo" />
-                    
+
                 </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
                         aria-expanded="false" aria-label="Toggle navigation">
@@ -233,42 +299,18 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const quotes = [
-                "„Единственият начин да вършиш страхотна работа е да обичаш това, което правиш.“ – Стив Джобс",
-                "„Бъдещето принадлежи на тези, които вярват в красотата на мечтите си.“ – Елинор Рузвелт",
-                "„Неуспехът е просто възможност да започнеш отново, този път по-интелигентно.“ – Хенри Форд",
-                "„Вярвай, че можеш и си наполовина там.“ – Теодор Рузвелт",
-                "„Трудолюбието е майка на късмета.“ – Бенджамин Франклин",
-                "„Пътят към успеха и пътят към провала са почти едни и същи.“ – Колин Пауъл",
-                "„Не се страхувайте да се откажете от доброто, за да отидете за великото.“ – Джон Д. Рокфелер",
-                "„Успехът не е окончателен, провалът не е фатален: смелостта да продължиш е това, което има значение.“ – Уинстън Чърчил",
-                "„Успехът не е ключ към щастието. Щастието е ключ към успеха. Ако обичаш това, което правиш, ще бъдеш успешен.“ – Алберт Швайцер" 
-            ];
-            let currentQuoteIndex = 0;
-            const footerQuoteElement = document.getElementById('footer-quote');
-            const newQuoteBtn = document.getElementById('new-quote-btn');
-
-            function updateQuote() {
-                footerQuoteElement.classList.remove('fade-in');
-                footerQuoteElement.classList.add('fade-out');
-
-                setTimeout(() => {
-                    currentQuoteIndex = (currentQuoteIndex + 1) % quotes.length;
-                    footerQuoteElement.textContent = quotes[currentQuoteIndex];
-                    footerQuoteElement.classList.remove('fade-out');
-                    footerQuoteElement.classList.add('fade-in');
-                }, 500);
-            }
-
-           
-            footerQuoteElement.textContent = quotes[currentQuoteIndex];
-
-            setInterval(updateQuote, 10000);
-
-            if (newQuoteBtn) {
-                newQuoteBtn.addEventListener('click', updateQuote);
+          
+            const loader = document.getElementById('customLoader');
+            if (loader) {
+                loader.classList.add('hidden'); 
+                
+                loader.addEventListener('transitionend', function() {
+                    loader.style.display = 'none';
+                }, { once: true }); 
             }
         });
     </script>

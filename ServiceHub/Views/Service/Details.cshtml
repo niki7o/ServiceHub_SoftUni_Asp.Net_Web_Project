@@ -6,13 +6,25 @@
     var isAdmin = User.Identity.IsAuthenticated && User.IsInRole("Admin");
     var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-    // Променливи за пагинация на ревюта
+
     var currentReviewPage = Model.CurrentReviewPage;
     var totalReviewPages = Model.TotalReviewPages;
-    var serviceId = Model.Id; // За по-лесен достъп
+    var serviceId = Model.Id;
 }
 
 <style>
+
+    .role-admin {
+        color: #e74c3c; 
+        font-weight: bold;
+    }
+
+    .role-business {
+        color: #3498db; 
+        font-weight: bold;
+    }
+
+
     body {
         font-family: 'Inter', sans-serif;
         background: linear-gradient(135deg, #a8dadc 0%, #457b9d 100%);
@@ -45,7 +57,14 @@
         font-size: 1.1rem;
         color: #457b9d;
         text-align: center;
-        margin-bottom: 25px;
+        margin-bottom: 5px; 
+    }
+
+    .service-creator {
+        font-size: 1rem;
+        color: #6c757d;
+        text-align: center;
+        margin-bottom: 25px; 
     }
 
     .description-section {
@@ -307,7 +326,7 @@
             box-shadow: 0 6px 15px rgba(42, 157, 143, 0.4);
         }
 
-    /* Стилове за пагинация на ревюта */
+
     .review-pagination-container {
         margin-top: 20px;
         display: flex;
@@ -326,14 +345,14 @@
         font-weight: 500;
         transition: all 0.2s ease;
         box-shadow: 0 2px 8px rgba(29, 53, 87, 0.2);
-        text-decoration: none; /* За да изглежда като бутон, но да е линк */
+        text-decoration: none;
     }
 
         .review-pagination-btn:hover:not(:disabled) {
             background-color: #142840;
             transform: translateY(-1px);
             box-shadow: 0 4px 10px rgba(29, 53, 87, 0.3);
-            color: white; /* Запазва цвета на текста при ховър */
+            color: white;
         }
 
         .review-pagination-btn:disabled {
@@ -342,13 +361,13 @@
             cursor: not-allowed;
             opacity: 0.6;
             box-shadow: none;
-            pointer-events: none; /* Добавено: Предотвратява кликване на деактивирани линкове */
+            pointer-events: none;
         }
 
     .review-pagination-page-number {
         background-color: rgba(255, 255, 255, 0.2);
         border: 1px solid rgba(255, 255, 255, 0.4);
-        color: #1d3557; /* Цвят на текста за активна страница */
+        color: #1d3557;
         padding: 8px 14px;
         border-radius: 6px;
         font-size: 0.85rem;
@@ -359,7 +378,7 @@
 
         .review-pagination-page-number:hover {
             background-color: rgba(255, 255, 255, 0.3);
-            color: #1d3557; /* Запазва цвета на текста при ховър */
+            color: #1d3557;
         }
 
         .review-pagination-page-number.active {
@@ -368,11 +387,28 @@
             color: white;
             box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
         }
+
+    .under-development-message {
+        background-color: #fff3cd; 
+        border: 1px solid #ffeeba; 
+        color: #856404; 
+        padding: 15px;
+        border-radius: 8px;
+        margin-top: 20px;
+        text-align: center;
+        font-weight: 600;
+        font-size: 1.1rem;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
 </style>
 
 <div class="details-container">
     <h2 class="service-title">@Model.Title</h2>
     <p class="service-category">Категория: @(Model.CategoryName ?? "Неизвестна")</p>
+    @if (!string.IsNullOrEmpty(Model.CreatedByUserName))
+    {
+        <p class="service-creator">Създадена от: <span class="@Model.CreatedByUserRoleCssClass">@Model.CreatedByUserName</span></p> 
+    }
 
     <div class="description-section">
         <h4>Описание на услугата:</h4>
@@ -402,19 +438,17 @@
         </div>
     </div>
 
+   
     @if (Model.IsTemplate && !Model.IsApproved)
     {
-        <div class="alert alert-warning text-center" role="alert">
-            <i class="fas fa-exclamation-triangle"></i> Тази услуга е шаблон и все още не е одобрена.
-            @if (!string.IsNullOrEmpty(Model.CreatedByUserName))
-            {
-                <span>Създадена от: @Model.CreatedByUserName</span>
-            }
+        <div class="alert alert-warning text-center under-development-message" role="alert">
+            <i class="fas fa-exclamation-triangle"></i> Тази услуга е създадена от шаблон и е още в разработка.
         </div>
     }
 
     <div class="action-buttons-container">
-        @if (User.Identity.IsAuthenticated && !Model.IsTemplate && Model.IsApproved)
+     
+        @if (User.Identity.IsAuthenticated && !Model.IsTemplate && Model.IsApproved && !(currentUserId == Model.CreatedByUserId && User.IsInRole("BusinessUser")))
         {
             <a asp-action="UseService" asp-route-id="@Model.Id" class="btn btn-action btn-use-service">
                 <i class="fas fa-play-circle"></i> Използвай услугата
@@ -451,7 +485,7 @@
             {
                 <div class="review-item">
                     <div class="review-header">
-                        <span class="review-user">@review.UserName</span>
+                        <span class="review-user @review.UserRoleCssClass">@review.UserName</span> 
                         <span class="review-rating">
                             @for (int i = 0; i < review.Rating; i++)
                             {
@@ -463,17 +497,17 @@
                     <small class="text-muted">@review.CreatedOn.ToShortDateString()</small>
 
                     <div class="review-actions">
-                        @* Бутон за редактиране на ревю - видим за автора на ревюто *@
+
                         @if (User.Identity.IsAuthenticated && review.IsAuthor)
                         {
-                            <a asp-controller="Review" asp-action="EditReview" asp-route-reviewId="@review.Id" asp-route-serviceId="@Model.Id" asp-route-reviewPage="@currentReviewPage" class="edit-review-btn">
+                            <a asp-controller="Review" asp-action="EditReview" asp-route-reviewId="@review.Id" asp-route-serviceId="@Model.Id" asp-route-reviewPage="@Model.CurrentReviewPage" class="edit-review-btn">
                                 <i class="fas fa-pencil-alt"></i>
                             </a>
                         }
-                        @* Бутон за изтриване на ревю - видим за администратори ИЛИ за автора на ревюто *@
+
                         @if (User.Identity.IsAuthenticated && (isAdmin || review.IsAuthor))
                         {
-                            <form asp-controller="Review" asp-action="DeleteReview" asp-route-reviewId="@review.Id" asp-route-reviewPage="@currentReviewPage" method="post" class="d-inline">
+                            <form asp-controller="Review" asp-action="DeleteReview" asp-route-reviewId="@review.Id" asp-route-reviewPage="@Model.CurrentReviewPage" method="post" class="d-inline">
                                 <button type="submit" class="delete-review-btn" onclick="return confirm('Сигурни ли сте, че искате да изтриете това ревю?');">
                                     <i class="fas fa-times"></i>
                                 </button>
@@ -483,25 +517,25 @@
                 </div>
             }
 
-            @* Пагинация за ревюта *@
-            @if (totalReviewPages > 1)
+
+            @if (Model.TotalReviewPages > 1)
             {
                 <div class="review-pagination-container">
-                    <a asp-action="Details" asp-route-id="@serviceId" asp-route-reviewPage="@(currentReviewPage - 1)"
-                       class="btn review-pagination-btn @(currentReviewPage == 1 ? "disabled" : "")">
+                    <a asp-action="Details" asp-route-id="@serviceId" asp-route-reviewPage="@(Model.CurrentReviewPage - 1)"
+                       class="btn review-pagination-btn @(Model.CurrentReviewPage == 1 ? "disabled" : "")">
                         Предишна
                     </a>
 
-                    @for (int i = 1; i <= totalReviewPages; i++)
+                    @for (int i = 1; i <= Model.TotalReviewPages; i++)
                     {
                         <a asp-action="Details" asp-route-id="@serviceId" asp-route-reviewPage="@i"
-                           class="btn review-pagination-page-number @(i == currentReviewPage ? "active" : "")">
+                           class="btn review-pagination-page-number @(i == Model.CurrentReviewPage ? "active" : "")">
                             @i
                         </a>
                     }
 
-                    <a asp-action="Details" asp-route-id="@serviceId" asp-route-reviewPage="@(currentReviewPage + 1)"
-                       class="btn review-pagination-btn @(currentReviewPage == totalReviewPages ? "disabled" : "")">
+                    <a asp-action="Details" asp-route-id="@serviceId" asp-route-reviewPage="@(Model.CurrentReviewPage + 1)"
+                       class="btn review-pagination-btn @(Model.CurrentReviewPage == Model.TotalReviewPages ? "disabled" : "")">
                         Следваща
                     </a>
                 </div>
@@ -513,11 +547,11 @@
         }
     </div>
 
-    @* Бутон за писане на ревю - води към отделна страница *@
+
     @if (User.Identity.IsAuthenticated && !Model.IsTemplate && Model.IsApproved)
     {
         <div class="write-review-btn-container">
-            <a asp-controller="Review" asp-action="CreateReview" asp-route-serviceId="@Model.Id" asp-route-reviewPage="@currentReviewPage" class="btn btn-write-review">
+            <a asp-controller="Review" asp-action="CreateReview" asp-route-serviceId="@Model.Id" asp-route-reviewPage="@Model.CurrentReviewPage" class="btn btn-write-review">
                 <i class="fas fa-plus-circle"></i> Напиши ревю
             </a>
         </div>
@@ -539,7 +573,7 @@
 @section Scripts {
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            // Предотвратява кликване на деактивирани бутони за пагинация
+
             document.querySelectorAll('.review-pagination-btn.disabled').forEach(button => {
                 button.addEventListener('click', function (e) {
                     e.preventDefault();

@@ -141,17 +141,17 @@
             box-shadow: 0 4px 15px rgba(69, 123, 157, 0.4);
         }
 
-    /* Modal Styles */
+  
     .modal {
-        display: none; /* Hidden by default */
-        position: fixed; /* Stay in place */
-        z-index: 1000; /* Sit on top */
+        display: none; 
+        position: fixed; 
+        z-index: 1000;
         left: 0;
         top: 0;
-        width: 100%; /* Full width */
-        height: 100%; /* Full height */
-        overflow: auto; /* Enable scroll if needed */
-        background-color: rgba(0,0,0,0.6); /* Black w/ opacity */
+        width: 100%; 
+        height: 100%; 
+        overflow: auto; 
+        background-color: rgba(0,0,0,0.6);
         justify-content: center;
         align-items: center;
     }
@@ -348,30 +348,31 @@
     }
 
     <div class="plan-cards-wrapper">
-        <!-- Standard Plan Card -->
+     
         <div class="plan-card">
             <h3>Стандартен План</h3>
             <div class="price">Безплатно</div>
             <ul>
                 <li><i class="fas fa-check-circle"></i> Достъп до основни услуги</li>
                 <li><i class="fas fa-check-circle"></i> Ограничен брой използвания на премиум услуги</li>
-                <li><i class="fas fa-check-circle"></i> Поддръжка по имейл</li>
-                <li><i class="fas fa-times-circle" style="color: #e63946;"></i> Създаване на шаблони</li>
+                <li><i class="fas fa-times-circle" style="color: #e63946;"></i> Специално оцветено име</li>
+                <li><i class="fas fa-times-circle" style="color: #e63946;"></i> Създаване на шаблони услуги</li>
                 <li><i class="fas fa-times-circle" style="color: #e63946;"></i> Приоритетна поддръжка</li>
             </ul>
             <button class="btn-current" disabled>Текущ План</button>
         </div>
 
-        <!-- Business Plan Card -->
+     
         <div class="plan-card">
             <h3>Бизнес План</h3>
             <div class="price">€9.99 / месец</div>
             <ul>
                 <li><i class="fas fa-check-circle"></i> Неограничен достъп до всички услуги</li>
-                <li><i class="fas fa-check-circle"></i> Възможност за създаване на шаблони</li>
+                <li><i class="fas fa-check-circle"></i> Възможност за създаване на шаблони услуги</li>
                 <li><i class="fas fa-check-circle"></i> Приоритетна поддръжка</li>
-                <li><i class="fas fa-check-circle"></i> Достъп до нови функции по-рано</li>
-                <li><i class="fas fa-check-circle"></i> Специални отстъпки</li>
+                <li><i class="fas fa-check-circle"></i> Специално оцветено име</li>
+               
+                
             </ul>
             @if (isBusinessUser || isAdmin)
             {
@@ -385,7 +386,7 @@
     </div>
 </div>
 
-<!-- Payment Modal -->
+
 <div id="paymentModal" class="modal">
     <div class="modal-content">
         <span class="close-button">&times;</span>
@@ -444,35 +445,34 @@
             const expiryDateError = document.getElementById('expiryDateError');
             const cvcError = document.getElementById('cvcError');
 
-            // Show modal
+           
             if (openPaymentModalButton) {
                 openPaymentModalButton.addEventListener('click', function () {
                     paymentModal.style.display = 'flex';
-                    // Reset form and messages when opening
+                    
                     paymentForm.reset();
                     paymentMessage.style.display = 'none';
-                    paymentMessage.className = 'alert-message'; // Reset classes
+                    paymentMessage.className = 'alert-message';
                     hideAllValidationErrors();
                     payButton.disabled = false;
                     loadingSpinner.style.display = 'none';
                 });
             }
 
-            // Hide modal
+            
             closeButton.addEventListener('click', function () {
                 paymentModal.style.display = 'none';
             });
 
-            // Hide modal if clicked outside content
             window.addEventListener('click', function (event) {
                 if (event.target == paymentModal) {
                     paymentModal.style.display = 'none';
                 }
             });
 
-            // Input formatting for Card Number (add spaces)
+          
             cardNumberInput.addEventListener('input', function (e) {
-                let value = e.target.value.replace(/\s+/g, ''); // Remove existing spaces
+                let value = e.target.value.replace(/\s+/g, ''); 
                 let formattedValue = '';
                 for (let i = 0; i < value.length; i++) {
                     if (i > 0 && i % 4 === 0) {
@@ -483,9 +483,9 @@
                 e.target.value = formattedValue;
             });
 
-            // Input formatting for Expiry Date (add slash)
+            
             expiryDateInput.addEventListener('input', function (e) {
-                let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+                let value = e.target.value.replace(/\D/g, ''); 
                 if (value.length > 2) {
                     value = value.substring(0, 2) + '/' + value.substring(2, 4);
                 }
@@ -513,20 +513,20 @@
                 let isValid = true;
                 hideAllValidationErrors();
 
-                // Card Number Validation (Mastercard: 16 digits, starts with 51-55)
+               
                 const cardNumber = cardNumberInput.value.replace(/\s/g, '');
                 if (!/^(5[1-5]\d{14})$/.test(cardNumber) || cardNumber.length !== 16) {
                     showValidationError(cardNumberError, 'Невалиден номер на Mastercard (16 цифри, започва с 51-55).');
                     isValid = false;
                 }
 
-                // Card Name Validation
+               
                 if (cardNameInput.value.trim() === '') {
                     showValidationError(cardNameError, 'Името на картодържателя е задължително.');
                     isValid = false;
                 }
 
-                // Expiry Date Validation (MM/YY)
+                
                 const expiryDate = expiryDateInput.value;
                 const expiryRegex = /^(0[1-9]|1[0-2])\/?([0-9]{2})$/;
                 if (!expiryRegex.test(expiryDate)) {
@@ -534,8 +534,8 @@
                     isValid = false;
                 } else {
                     const [month, year] = expiryDate.split('/').map(Number);
-                    const currentYear = new Date().getFullYear() % 100; // Last two digits
-                    const currentMonth = new Date().getMonth() + 1; // 1-12
+                    const currentYear = new Date().getFullYear() % 100; 
+                    const currentMonth = new Date().getMonth() + 1; 
 
                     if (year < currentYear || (year === currentYear && month < currentMonth)) {
                         showValidationError(expiryDateError, 'Картата е изтекла.');
@@ -543,7 +543,7 @@
                     }
                 }
 
-                // CVC Validation (3 or 4 digits)
+             
                 const cvc = cvcInput.value;
                 if (!/^\d{3,4}$/.test(cvc)) {
                     showValidationError(cvcError, 'CVC трябва да е 3 или 4 цифри.');
@@ -554,30 +554,30 @@
             }
 
             paymentForm.addEventListener('submit', function (e) {
-                e.preventDefault(); // Prevent default form submission
+                e.preventDefault(); 
 
                 if (!validateForm()) {
-                    return; // Stop if validation fails
+                    return; 
                 }
 
                 payButton.disabled = true;
                 loadingSpinner.style.display = 'block';
                 paymentMessage.style.display = 'none';
 
-                // Simulate payment processing delay
+               
                 setTimeout(function () {
-                    // Simulate a successful payment
-                    const isPaymentSuccessful = true; // For simulation, always true
+                   
+                    const isPaymentSuccessful = true;
 
                     if (isPaymentSuccessful) {
-                        // Make an AJAX call to the backend to actually upgrade the user
+                        
                         fetch('/api/Subscription/subscribe', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
-                                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value // Include anti-forgery token
+                                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value 
                             },
-                            body: JSON.stringify({ confirmSubscription: true }) // Send confirmation to backend
+                            body: JSON.stringify({ confirmSubscription: true }) 
                         })
                         .then(response => {
                             if (!response.ok) {
@@ -591,16 +591,16 @@
                             if (data.success) {
                                 paymentMessage.textContent = data.message;
                                 paymentMessage.className = 'alert-message alert-success-custom';
-                                // Optionally, disable the upgrade button and change its text
+                            
                                 if (openPaymentModalButton) {
                                     openPaymentModalButton.disabled = true;
                                     openPaymentModalButton.textContent = 'Вече сте Бизнес Потребител';
-                                    openPaymentModalButton.className = 'btn-current'; // Apply current plan style
+                                    openPaymentModalButton.className = 'btn-current';
                                 }
-                                // Close modal after a short delay
+                                
                                 setTimeout(() => {
                                     paymentModal.style.display = 'none';
-                                    window.location.reload(); // Reload page to reflect role change
+                                    window.location.reload(); 
                                 }, 2000);
                             } else {
                                 paymentMessage.textContent = data.message;
@@ -624,7 +624,7 @@
                         paymentMessage.className = 'alert-message alert-danger-custom';
                         payButton.disabled = false;
                     }
-                }, 2000); // 2 second delay for simulation
+                }, 2000); 
             });
         });
     </script>

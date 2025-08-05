@@ -335,7 +335,7 @@
     .badge-free {
         background-color: #2ecc71;
         color: white;
-        margin-bottom:10px;
+        margin-bottom: 10px;
     }
 
     .badge-premium {
@@ -391,9 +391,9 @@
         }
 
     .favorite-btn {
-        background-color: #f1faee;
+        background-color: white; 
         border: 1px solid #a8dadc;
-        color: #1d3557;
+        color: #1d3557; 
         padding: 9px 18px;
         border-radius: 6px;
         font-size: 0.88rem;
@@ -404,16 +404,21 @@
     }
 
         .favorite-btn:hover {
-            background-color: #e0e0e0;
+            background-color: #e0e0e0; 
             transform: translateY(-1px);
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
         }
 
         .favorite-btn.active {
-            background-color: #e67e22;
+            background-color: #e67e22; 
             border-color: #e67e22;
             color: white;
         }
+
+            .favorite-btn.active:hover {
+                background-color: #d66a1a; 
+                border-color: #d66a1a;
+            }
 
     .stats-text {
         color: #457b9d;
@@ -513,16 +518,16 @@
             opacity: 0;
         }
 
-    
+
     .service-card-wrapper.single-visible-card {
-        flex: 0 0 auto !important; 
+        flex: 0 0 auto !important;
         width: 100% !important;
-        max-width: 400px !important; 
-        margin-left: auto !important; 
+        max-width: 400px !important;
+        margin-left: auto !important;
         margin-right: auto !important;
     }
 
-  
+
     #servicesListContainer:has(.service-card-wrapper:only-child) {
         display: flex;
         justify-content: center;
@@ -666,7 +671,7 @@
                                               asp-route-page="@currentPage"
                                               method="post" class="d-inline">
                                             <button type="submit" class="btn favorite-btn @(service.IsFavorite ? "active" : "")">
-                                                <i class="fas fa-star"></i> Любими
+                                                <i class="fas fa-star"></i> @(service.IsFavorite ? "Любими" : "Харесай")
                                             </button>
                                         </form>
                                     }
@@ -723,10 +728,33 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+         
             const categoryFilter = document.getElementById('categoryFilter');
             const accessTypeFilter = document.getElementById('accessTypeFilter');
             const sortFilter = document.getElementById('sort');
             const filterDropdown = document.getElementById('filter');
+            const searchInput = document.getElementById('searchInput');
+            const searchResultsDiv = document.getElementById('searchResults');
+            const noResultsMessageElement = searchResultsDiv.querySelector('.no-results');
+            const servicesListContainer = document.getElementById('servicesListContainer');
+            const allServiceCards = servicesListContainer.querySelectorAll('.service-card-wrapper');
+            const initialNoServicesMessage = servicesListContainer.querySelector('.no-services-message');
+            const paginationContainer = document.querySelector('.pagination-container');
+
+            let searchTimeout;
+            const transitionDuration = 300;
+
+           
+            function applySingleCardStyles() {
+                const visibleCards = Array.from(allServiceCards).filter(card => card.style.display !== 'none' && !card.classList.contains('hide'));
+
+                allServiceCards.forEach(card => card.classList.remove('single-visible-card'));
+
+                if (visibleCards.length === 1) {
+                    visibleCards[0].classList.add('single-visible-card');
+                }
+            }
+
 
             const currentCategory = "@(Model.CurrentCategoryFilter ?? "")";
             if (categoryFilter) {
@@ -748,31 +776,38 @@
                 filterDropdown.value = currentFilterValue;
             }
 
+            const successMessageExists = "@(TempData["SuccessMessage"] != null ? "true" : "false")" === "true";
+            const errorMessageExists = "@(TempData["ErrorMessage"] != null ? "true" : "false")" === "true";
+
+            if (successMessageExists || errorMessageExists) {
+                if (searchInput) {
+                    searchInput.value = '';
+
+                    allServiceCards.forEach(card => {
+                        card.style.display = '';
+                        card.classList.remove('hide');
+                    });
+                    noResultsMessageElement.textContent = '';
+                    searchResultsDiv.classList.remove('show');
+                    searchResultsDiv.style.display = 'none';
+
+                    if (initialNoServicesMessage) {
+                        initialNoServicesMessage.classList.add('hide');
+                        initialNoServicesMessage.style.display = 'none';
+                    }
+
+                    if (paginationContainer) {
+                        paginationContainer.style.display = '';
+                        paginationContainer.classList.remove('hide');
+                    }
+                    applySingleCardStyles();
+                }
+            }
+
+
             const connection = new signalR.HubConnectionBuilder()
                 .withUrl("/searchHub")
                 .build();
-
-            const searchInput = document.getElementById('searchInput');
-            const searchResultsDiv = document.getElementById('searchResults');
-            const noResultsMessageElement = searchResultsDiv.querySelector('.no-results');
-            const servicesListContainer = document.getElementById('servicesListContainer');
-            const allServiceCards = servicesListContainer.querySelectorAll('.service-card-wrapper');
-            const initialNoServicesMessage = servicesListContainer.querySelector('.no-services-message');
-            const paginationContainer = document.querySelector('.pagination-container');
-
-            let searchTimeout;
-            const transitionDuration = 300;
-
-            function applySingleCardStyles() {
-                const visibleCards = Array.from(allServiceCards).filter(card => card.style.display !== 'none' && !card.classList.contains('hide'));
-
-                
-                allServiceCards.forEach(card => card.classList.remove('single-visible-card'));
-
-                if (visibleCards.length === 1) {
-                    visibleCards[0].classList.add('single-visible-card');
-                }
-            }
 
             connection.on("ReceiveSearchResults", (services) => {
                 const foundServiceIds = new Set(services.map(s => s.id));
@@ -794,8 +829,8 @@
                     }
                 });
 
-               
-                setTimeout(applySingleCardStyles, transitionDuration + 50); 
+
+                setTimeout(applySingleCardStyles, transitionDuration + 50);
 
                 if (foundCount === 0 && searchInput.value.trim().length > 0) {
                     noResultsMessageElement.textContent = 'Няма намерени услуги.';
@@ -823,6 +858,7 @@
                         paginationContainer.style.display = '';
                         setTimeout(() => { paginationContainer.classList.remove('hide'); }, 10);
                     }
+                    applySingleCardStyles();
                 }
             });
 
@@ -876,7 +912,7 @@
                         paginationContainer.style.display = '';
                         setTimeout(() => { paginationContainer.classList.remove('hide'); }, 10);
                     }
-                    applySingleCardStyles(); 
+                    applySingleCardStyles();
                 }
             });
 
@@ -908,29 +944,12 @@
                 }
             });
 
-            document.addEventListener('click', (event) => {
-                if (!searchInput.contains(event.target) && !searchResultsDiv.contains(event.target)) {
-                    if (noResultsMessageElement.textContent !== '' || searchInput.value.trim().length === 0) {
-                        noResultsMessageElement.textContent = '';
-                        searchResultsDiv.classList.remove('show');
-                        setTimeout(() => { searchResultsDiv.style.display = 'none'; }, transitionDuration);
-
-                        if (searchInput.value.trim().length === 0) {
-                            allServiceCards.forEach(card => {
-                                card.style.display = '';
-                                setTimeout(() => { card.classList.remove('hide'); }, 10);
-                            });
-                            if (paginationContainer) {
-                                paginationContainer.style.display = '';
-                                setTimeout(() => { paginationContainer.classList.remove('hide'); }, 10);
-                            }
-                        }
-                    }
-                    applySingleCardStyles(); 
+            document.addEventListener('click', function(event) {
+                if (!searchResultsDiv.contains(event.target) && event.target !== searchInput) {
+                    searchResultsDiv.classList.remove('show');
+                    setTimeout(() => { searchResultsDiv.style.display = 'none'; }, transitionDuration);
                 }
             });
-            
-            applySingleCardStyles();
         });
     </script>
 }

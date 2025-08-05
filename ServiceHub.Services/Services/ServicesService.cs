@@ -8,7 +8,12 @@ using ServiceHub.Core.Models.Reviews;
 using ServiceHub.Core.Models.Service;
 using ServiceHub.Data.Models;
 using ServiceHub.Services.Interfaces;
-
+using ServiceHub.Services.Services.Repository;
+using System;
+using System.Collections.Generic; // Добавете този using
+using System.Linq;
+using System.Security.Claims; // Добавете този using
+using System.Threading.Tasks;
 
 namespace ServiceHub.Services.Services
 {
@@ -37,10 +42,26 @@ namespace ServiceHub.Services.Services
             _logger = logger;
         }
 
+       
+        private async Task<string?> GetUserRoleCssClass(string userId)
+        {
+            var user = await userManager.FindByIdAsync(userId);
+            if (user == null) return null;
+
+            var roles = await userManager.GetRolesAsync(user);
+            if (roles.Contains("Admin")) return "role-admin";
+            if (roles.Contains("BusinessUser")) return "role-business";
+          
+            return null; 
+        }
+
+
         public async Task<ServiceAllViewModel> GetAllAsync(string? categoryFilter = null, string? accessTypeFilter = null, string? filter = null, string? sort = null, string? currentUserId = null, int currentPage = 1, int servicesPerPage = 9)
         {
             try
             {
+                _logger.LogInformation($"GetAllAsync: Извикване за потребител ID: {currentUserId ?? "N/A"}.");
+
                 IQueryable<Service> servicesQuery = serviceRepo
                     .AllAsNoTracking()
                     .Include(s => s.Category)
@@ -49,17 +70,34 @@ namespace ServiceHub.Services.Services
                     .Include(s => s.Favorites)
                     .Include(s => s.CreatedByUser);
 
+                bool isCurrentUserAdmin = false;
                 if (currentUserId != null)
                 {
                     var user = await userManager.FindByIdAsync(currentUserId);
-                    if (user != null && !(await userManager.IsInRoleAsync(user, "Admin")))
+                    if (user != null)
                     {
-                        servicesQuery = servicesQuery.Where(s => !s.IsTemplate && s.IsApproved);
+                        isCurrentUserAdmin = await userManager.IsInRoleAsync(user, "Admin");
+                        _logger.LogInformation($"GetAllAsync: Потребител {user.UserName} (ID: {currentUserId}) е администратор: {isCurrentUserAdmin}.");
+                    }
+                    else
+                    {
+                        _logger.LogWarning($"GetAllAsync: Потребител с ID {currentUserId} не е намерен.");
                     }
                 }
                 else
                 {
-                    servicesQuery = servicesQuery.Where(s => !s.IsTemplate && s.IsApproved);
+                    _logger.LogInformation("GetAllAsync: Неавтентикиран потребител.");
+                }
+
+
+                if (!isCurrentUserAdmin)
+                {
+                    servicesQuery = servicesQuery.Where(s => s.IsApproved);
+                    _logger.LogInformation("GetAllAsync: Прилага се филтър за не-администратори: IsApproved = true.");
+                }
+                else
+                {
+                    _logger.LogInformation("GetAllAsync: Потребителят е администратор. Не се прилага филтър за IsTemplate/IsApproved в GetAllAsync.");
                 }
 
                 var allCategories = await categoryRepo.AllAsNoTracking().OrderBy(c => c.Name).ToListAsync();
@@ -74,6 +112,7 @@ namespace ServiceHub.Services.Services
                 if (!string.IsNullOrEmpty(categoryFilter) && categoryFilter != "Всички Категории" && categoryFilter != "All Categories")
                 {
                     servicesQuery = servicesQuery.Where(s => s.Category != null && s.Category.Name == categoryFilter);
+                    _logger.LogInformation($"GetAllAsync: Прилага се филтър за категория: '{categoryFilter}'.");
                 }
 
                 if (!string.IsNullOrEmpty(accessTypeFilter) && accessTypeFilter != "Всички Типове Достъп" && accessTypeFilter != "All Access Types")
@@ -81,6 +120,7 @@ namespace ServiceHub.Services.Services
                     if (Enum.TryParse<AccessType>(accessTypeFilter, true, out AccessType parsedAccessType))
                     {
                         servicesQuery = servicesQuery.Where(s => s.AccessType == parsedAccessType);
+                        _logger.LogInformation($"GetAllAsync: Прилага се филтър за тип достъп: '{accessTypeFilter}'.");
                     }
                     else
                     {
@@ -93,6 +133,7 @@ namespace ServiceHub.Services.Services
                     if (!string.IsNullOrEmpty(currentUserId))
                     {
                         servicesQuery = servicesQuery.Where(s => s.Favorites.Any(f => f.UserId == currentUserId));
+                        _logger.LogInformation($"GetAllAsync: Прилага се филтър за любими услуги за потребител: '{currentUserId}'.");
                     }
                 }
 
@@ -104,36 +145,57 @@ namespace ServiceHub.Services.Services
                     "mostviewed" => servicesQuery.OrderByDescending(s => s.ViewsCount),
                     _ => servicesQuery.OrderByDescending(s => s.CreatedOn)
                 };
+                _logger.LogInformation($"GetAllAsync: Прилага се сортиране: '{sort ?? "recent"}'.");
 
                 int totalServicesCount = await servicesQuery.CountAsync();
+                _logger.LogInformation($"GetAllAsync: Общ брой услуги след филтриране: {totalServicesCount}.");
+
                 var services = await servicesQuery
                     .Skip((currentPage - 1) * servicesPerPage)
                     .Take(servicesPerPage)
                     .ToListAsync();
 
-                var serviceViewModels = services.Select(s => new ServiceViewModel
+                _logger.LogInformation($"GetAllAsync: Извлечени {services.Count} услуги за страница {currentPage}.");
+
+                var serviceViewModels = new List<ServiceViewModel>();
+                foreach (var s in services)
                 {
-                    Id = s.Id,
-                    Title = s.Title,
-                    Description = s.Description,
-                    AccessType = s.AccessType,
-                    CategoryName = s.Category?.Name,
-                    CreatedByUserName = s.CreatedByUser?.UserName ?? "Unknown",
-                    ReviewCount = s.Reviews.Count,
-                    AverageRating = s.Reviews.Any() ? s.Reviews.Average(r => r.Rating) : 0,
-                    Reviews = s.Reviews.Select(r => new ReviewViewModel
+                    var serviceViewModel = new ServiceViewModel
                     {
-                        Id = r.Id,
-                        ServiceId = r.ServiceId,
-                        UserName = r.User?.UserName ?? "Anonymous",
-                        Rating = r.Rating,
-                        Comment = r.Comment,
-                        CreatedOn = r.CreatedOn,
-                        IsAuthor = currentUserId != null && r.UserId == currentUserId
-                    }).OrderByDescending(r => r.CreatedOn).ToList(),
-                    IsTemplate = s.IsTemplate,
-                    IsApproved = s.IsApproved
-                }).ToList();
+                        Id = s.Id,
+                        Title = s.Title,
+                        Description = s.Description,
+                        AccessType = s.AccessType,
+                        CategoryName = s.Category?.Name,
+                        CreatedByUserName = s.CreatedByUser?.UserName ?? "Unknown",
+                        CreatedByUserId = s.CreatedByUserId,
+                        CreatedByUserRoleCssClass = s.CreatedByUserId != null ? await GetUserRoleCssClass(s.CreatedByUserId) : null,
+                        ReviewCount = s.Reviews.Count,
+                        AverageRating = s.Reviews.Any() ? s.Reviews.Average(r => r.Rating) : 0,
+                        IsFavorite = currentUserId != null && s.Favorites.Any(f => f.UserId == currentUserId),
+                        ViewsCount = s.ViewsCount,
+                        IsTemplate = s.IsTemplate,
+                        IsApproved = s.IsApproved
+                    };
+
+                    var reviewViewModels = new List<ReviewViewModel>();
+                    foreach (var r in s.Reviews)
+                    {
+                        reviewViewModels.Add(new ReviewViewModel
+                        {
+                            Id = r.Id,
+                            ServiceId = r.ServiceId,
+                            UserName = r.User?.UserName ?? "Anonymous",
+                            UserRoleCssClass = r.UserId != null ? await GetUserRoleCssClass(r.UserId) : null, 
+                            Rating = r.Rating,
+                            Comment = r.Comment,
+                            CreatedOn = r.CreatedOn,
+                            IsAuthor = currentUserId != null && r.UserId == currentUserId
+                        });
+                    }
+                    serviceViewModel.Reviews = reviewViewModels.OrderByDescending(r => r.CreatedOn).ToList();
+                    serviceViewModels.Add(serviceViewModel);
+                }
 
                 return new ServiceAllViewModel
                 {
@@ -179,7 +241,8 @@ namespace ServiceHub.Services.Services
                 throw new ArgumentException("Service not found.");
             }
 
-            if (service.IsTemplate && !service.IsApproved)
+   
+            if (service.IsTemplate && !service.IsApproved) 
             {
                 if (currentUserId == null)
                 {
@@ -208,19 +271,22 @@ namespace ServiceHub.Services.Services
 
             _logger.LogInformation($"GetByIdAsync: ServiceId: {service.Id}. ViewsCount извлечен от DB: {service.ViewsCount}");
 
-            var allReviews = service.Reviews
-                                        .Select(r => new ReviewViewModel
-                                        {
-                                            Id = r.Id,
-                                            ServiceId = r.ServiceId,
-                                            UserName = r.User?.UserName ?? "Anonymous",
-                                            Rating = r.Rating,
-                                            Comment = r.Comment,
-                                            CreatedOn = r.CreatedOn,
-                                            IsAuthor = currentUserId != null && r.UserId == currentUserId
-                                        })
-                                        .OrderByDescending(r => r.CreatedOn)
-                                        .ToList();
+            var allReviews = new List<ReviewViewModel>();
+            foreach (var r in service.Reviews)
+            {
+                allReviews.Add(new ReviewViewModel
+                {
+                    Id = r.Id,
+                    ServiceId = r.ServiceId,
+                    UserName = r.User?.UserName ?? "Anonymous",
+                    UserRoleCssClass = r.UserId != null ? await GetUserRoleCssClass(r.UserId) : null, 
+                    Rating = r.Rating,
+                    Comment = r.Comment,
+                    CreatedOn = r.CreatedOn,
+                    IsAuthor = currentUserId != null && r.UserId == currentUserId
+                });
+            }
+            allReviews = allReviews.OrderByDescending(r => r.CreatedOn).ToList();
 
             int totalReviewCount = allReviews.Count;
             int totalReviewPages = (int)Math.Ceiling((double)totalReviewCount / reviewsPerPage);
@@ -246,6 +312,7 @@ namespace ServiceHub.Services.Services
 
             _logger.LogInformation($"Review Pagination Debug: ServiceId={id}, paginatedReviews.Count={paginatedReviews.Count}");
 
+            string? createdByUserRoleCssClass = service.CreatedByUserId != null ? await GetUserRoleCssClass(service.CreatedByUserId) : null; 
 
             return new ServiceViewModel
             {
@@ -255,6 +322,8 @@ namespace ServiceHub.Services.Services
                 AccessType = service.AccessType,
                 CategoryName = service.Category?.Name,
                 CreatedByUserName = service.CreatedByUser?.UserName ?? "Unknown",
+                CreatedByUserId = service.CreatedByUserId, 
+                CreatedByUserRoleCssClass = createdByUserRoleCssClass, 
                 ReviewCount = totalReviewCount,
                 AverageRating = service.Reviews.Any() ? service.Reviews.Average(r => r.Rating) : 0,
                 Reviews = paginatedReviews,
@@ -270,9 +339,12 @@ namespace ServiceHub.Services.Services
 
         public async Task CreateAsync(ServiceFormModel model, string userId)
         {
+            _logger.LogInformation($"CreateAsync: Извикване за потребител ID: {userId} за услуга '{model.Title}'.");
+
             var category = await categoryRepo.GetByIdAsync(model.CategoryId);
             if (category == null)
             {
+                _logger.LogWarning($"CreateAsync: Невалидна категория с ID {model.CategoryId}.");
                 throw new ArgumentException("Invalid category selected.");
             }
 
@@ -291,29 +363,37 @@ namespace ServiceHub.Services.Services
 
             await serviceRepo.AddAsync(service);
             await serviceRepo.SaveChangesAsync();
+            _logger.LogInformation($"CreateAsync: Услуга '{service.Title}' (ID: {service.Id}) създадена. IsTemplate: {service.IsTemplate}, IsApproved: {service.IsApproved}.");
         }
 
         public async Task UpdateAsync(Guid id, ServiceFormModel model, string editorId, bool isAdmin)
         {
+            _logger.LogInformation($"UpdateAsync: Извикване за услуга ID: {id} от потребител ID: {editorId} (isAdmin: {isAdmin}).");
+
             var service = await serviceRepo.GetByIdAsync(id);
             if (service == null)
             {
+                _logger.LogWarning($"UpdateAsync: Услуга с ID {id} не е намерена.");
                 throw new ArgumentException("Service not found.");
             }
 
             if (!isAdmin)
             {
+                _logger.LogWarning($"UpdateAsync: Потребител {editorId} не е оторизиран да редактира услуга ID: {id}.");
                 throw new UnauthorizedAccessException("You are not authorized to edit service settings.");
             }
 
+         
             if (service.IsTemplate)
             {
-                throw new InvalidOperationException("Templates cannot be edited via this method. Use approval/rejection.");
+                _logger.LogWarning($"UpdateAsync: Опит за редактиране на шаблон ID: {id} чрез неподходящ метод.");
+                throw new InvalidOperationException("Templates cannot be edited via this method.");
             }
 
             var category = await categoryRepo.GetByIdAsync(model.CategoryId);
             if (category == null)
             {
+                _logger.LogWarning($"UpdateAsync: Невалидна категория с ID {model.CategoryId}.");
                 throw new ArgumentException("Invalid category selected.");
             }
 
@@ -325,41 +405,52 @@ namespace ServiceHub.Services.Services
 
             serviceRepo.Update(service);
             await serviceRepo.SaveChangesAsync();
+            _logger.LogInformation($"UpdateAsync: Услуга '{service.Title}' (ID: {service.Id}) обновена.");
         }
 
         public async Task DeleteAsync(Guid id, string deleterId, bool isAdmin)
         {
+            _logger.LogInformation($"DeleteAsync: Извикване за услуга ID: {id} от потребител ID: {deleterId} (isAdmin: {isAdmin}).");
+
             var service = await serviceRepo.GetByIdAsync(id);
             if (service == null)
             {
+                _logger.LogWarning($"DeleteAsync: Услуга с ID {id} не е намерена.");
                 throw new ArgumentException("Service not found.");
             }
 
             if (!isAdmin)
             {
+                _logger.LogWarning($"DeleteAsync: Потребител {deleterId} не е оторизиран да изтрие услуга ID: {id}.");
                 throw new UnauthorizedAccessException("You are not authorized to delete this service.");
             }
 
             serviceRepo.Delete(service);
             await serviceRepo.SaveChangesAsync();
+            _logger.LogInformation($"DeleteAsync: Услуга '{service.Title}' (ID: {service.Id}) изтрита.");
         }
 
         public async Task AddReviewAsync(Guid serviceId, string userId, ReviewFormModel model)
         {
+            _logger.LogInformation($"AddReviewAsync: Извикване за услуга ID: {serviceId} от потребител ID: {userId}.");
+
             var service = await serviceRepo.GetByIdAsync(serviceId);
             if (service == null)
             {
+                _logger.LogWarning($"AddReviewAsync: Услуга с ID {serviceId} не е намерена.");
                 throw new ArgumentException("Service not found.");
             }
 
             if (service.IsTemplate && !service.IsApproved)
             {
+                _logger.LogWarning($"AddReviewAsync: Опит за добавяне на ревю към неодобрен шаблон ID: {serviceId}.");
                 throw new InvalidOperationException("Не може да оставяте ревюта за неодобрени шаблони.");
             }
 
             var user = await userManager.FindByIdAsync(userId);
             if (user == null)
             {
+                _logger.LogWarning($"AddReviewAsync: Потребител с ID {userId} не е намерен.");
                 throw new ArgumentException("User not found.");
             }
 
@@ -374,6 +465,7 @@ namespace ServiceHub.Services.Services
 
             await reviewRepo.AddAsync(review);
             await reviewRepo.SaveChangesAsync();
+            _logger.LogInformation($"AddReviewAsync: Ревю добавено за услуга ID: {serviceId} от потребител ID: {userId}. Рейтинг: {model.Rating}.");
         }
 
         public async Task IncrementViewsCount(Guid serviceId)
@@ -388,6 +480,7 @@ namespace ServiceHub.Services.Services
                 return;
             }
 
+           
             if (!service.IsTemplate && service.IsApproved)
             {
                 _logger.LogInformation($"IncrementViewsCount: ServiceId: {service.Id}. ViewsCount преди: {service.ViewsCount}");
@@ -508,7 +601,7 @@ namespace ServiceHub.Services.Services
                 CreatedByUserId = userId,
                 CreatedOn = DateTime.UtcNow,
                 IsTemplate = true,
-                IsApproved = isAdmin
+                IsApproved = isAdmin 
             };
 
             await serviceRepo.AddAsync(service);
@@ -521,32 +614,34 @@ namespace ServiceHub.Services.Services
             }
         }
 
-    
+
         public async Task<PaginatedServiceTemplatesResult> GetAllPendingTemplatesAsync(int pageNumber, int pageSize)
         {
             var query = serviceRepo.AllAsNoTracking()
                 .Where(s => s.IsTemplate && !s.IsApproved)
                 .Include(s => s.Category)
                 .Include(s => s.CreatedByUser)
-                .OrderByDescending(s => s.CreatedOn); 
+                .OrderByDescending(s => s.CreatedOn);
 
             int totalCount = await query.CountAsync();
 
-            var templates = await query
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .Select(s => new ServiceViewModel
+            var templates = new List<ServiceViewModel>();
+            foreach (var s in await query.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync())
+            {
+                templates.Add(new ServiceViewModel
                 {
                     Id = s.Id,
                     Title = s.Title,
                     Description = s.Description,
-                    CategoryName = s.Category.Name,
+                    CategoryName = s.Category?.Name,
                     AccessType = s.AccessType,
-                    CreatedByUserName = s.CreatedByUser.UserName,
+                    CreatedByUserName = s.CreatedByUser?.UserName,
+                    CreatedByUserId = s.CreatedByUserId, 
+                    CreatedByUserRoleCssClass = s.CreatedByUserId != null ? await GetUserRoleCssClass(s.CreatedByUserId) : null, 
                     IsTemplate = s.IsTemplate,
                     IsApproved = s.IsApproved
-                })
-                .ToListAsync();
+                });
+            }
 
             return new PaginatedServiceTemplatesResult
             {
@@ -569,7 +664,7 @@ namespace ServiceHub.Services.Services
             }
 
             service.IsApproved = true;
-            service.IsTemplate = false;
+            service.IsTemplate = false; 
             service.ModifiedOn = DateTime.UtcNow;
             service.ApprovedByUserId = adminId;
             service.ApprovedOn = DateTime.UtcNow;
@@ -605,23 +700,24 @@ namespace ServiceHub.Services.Services
 
             int totalCount = await query.CountAsync();
 
-            var services = await query
-                .OrderByDescending(s => s.CreatedOn) 
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .Select(s => new ServiceViewModel
+            var services = new List<ServiceViewModel>();
+            foreach (var s in await query.OrderByDescending(s => s.CreatedOn).Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync())
+            {
+                services.Add(new ServiceViewModel
                 {
                     Id = s.Id,
                     Title = s.Title,
                     Description = s.Description,
                     AccessType = s.AccessType,
-                    CategoryName = s.Category.Name,
-                    CreatedByUserName = s.CreatedByUser.UserName,
+                    CategoryName = s.Category?.Name,
+                    CreatedByUserName = s.CreatedByUser?.UserName,
+                    CreatedByUserId = s.CreatedByUserId, 
+                    CreatedByUserRoleCssClass = s.CreatedByUserId != null ? await GetUserRoleCssClass(s.CreatedByUserId) : null, 
                     ReviewCount = s.Reviews.Count,
                     AverageRating = s.Reviews.Any() ? s.Reviews.Average(r => r.Rating) : 0,
                     ViewsCount = s.ViewsCount
-                })
-                .ToListAsync();
+                });
+            }
 
             return new PaginatedServicesResult
             {
@@ -640,21 +736,21 @@ namespace ServiceHub.Services.Services
 
             int totalCount = await query.CountAsync();
 
-            var reviews = await query
-                .OrderByDescending(r => r.CreatedOn) 
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .Select(r => new ReviewViewModel
+            var reviews = new List<ReviewViewModel>();
+            foreach (var r in await query.OrderByDescending(r => r.CreatedOn).Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync())
+            {
+                reviews.Add(new ReviewViewModel
                 {
                     Id = r.Id,
-                    ServiceId = r.ServiceId,
+                    ServiceId = r.Service.Id, 
                     ServiceName = r.Service.Title,
-                    UserName = r.User.UserName,
+                    UserName = r.User?.UserName ?? "Anonymous",
+                    UserRoleCssClass = r.UserId != null ? await GetUserRoleCssClass(r.UserId) : null,
                     Rating = r.Rating,
                     Comment = r.Comment,
                     CreatedOn = r.CreatedOn
-                })
-                .ToListAsync();
+                });
+            }
 
             return new PaginatedReviewsResult
             {
@@ -665,28 +761,35 @@ namespace ServiceHub.Services.Services
 
         public async Task<IEnumerable<ServiceViewModel>> GetFavoriteServicesByUserIdAsync(string userId)
         {
-            return await favoriteRepo.AllAsNoTracking()
+            var services = new List<ServiceViewModel>();
+            var query = favoriteRepo.AllAsNoTracking()
                 .Where(f => f.UserId == userId)
                 .Include(f => f.Service)
                     .ThenInclude(s => s.Category)
                 .Include(f => f.Service)
                     .ThenInclude(s => s.Reviews)
                 .Include(f => f.Service)
-                    .ThenInclude(s => s.CreatedByUser)
-                .Select(f => new ServiceViewModel
+                    .ThenInclude(s => s.CreatedByUser);
+
+            foreach (var f in await query.ToListAsync())
+            {
+                services.Add(new ServiceViewModel
                 {
                     Id = f.Service.Id,
                     Title = f.Service.Title,
                     Description = f.Service.Description,
                     AccessType = f.Service.AccessType,
-                    CategoryName = f.Service.Category.Name,
-                    CreatedByUserName = f.Service.CreatedByUser.UserName,
+                    CategoryName = f.Service.Category?.Name,
+                    CreatedByUserName = f.Service.CreatedByUser?.UserName,
+                    CreatedByUserId = f.Service.CreatedByUserId, 
+                    CreatedByUserRoleCssClass = f.Service.CreatedByUserId != null ? await GetUserRoleCssClass(f.Service.CreatedByUserId) : null, 
                     ReviewCount = f.Service.Reviews.Count,
                     AverageRating = f.Service.Reviews.Any() ? f.Service.Reviews.Average(r => r.Rating) : 0,
                     ViewsCount = f.Service.ViewsCount,
                     IsFavorite = true
-                })
-                .ToListAsync();
+                });
+            }
+            return services;
         }
 
         public async Task<int> GetApprovedServicesCountByUserIdAsync(string userId)
@@ -696,23 +799,32 @@ namespace ServiceHub.Services.Services
         }
 
         public async Task<IEnumerable<ServiceViewModel>> SearchServicesByTitleAsync(string searchTerm)
-        { 
-            return await serviceRepo.AllAsNoTracking()
+        {
+            var services = new List<ServiceViewModel>();
+            var query = serviceRepo.AllAsNoTracking()
                 .Where(s => s.Title.Contains(searchTerm) && !s.IsTemplate && s.IsApproved)
                 .Include(s => s.Category)
-                .Select(s => new ServiceViewModel
+                .Include(s => s.CreatedByUser) 
+                .Include(s => s.Reviews); 
+
+            foreach (var s in await query.ToListAsync())
+            {
+                services.Add(new ServiceViewModel
                 {
                     Id = s.Id,
                     Title = s.Title,
                     Description = s.Description,
-                    CategoryName = s.Category.Name,
+                    CategoryName = s.Category?.Name,
                     AccessType = s.AccessType,
-                    CreatedByUserName = s.CreatedByUser.UserName,
+                    CreatedByUserName = s.CreatedByUser?.UserName,
+                    CreatedByUserId = s.CreatedByUserId, 
+                    CreatedByUserRoleCssClass = s.CreatedByUserId != null ? await GetUserRoleCssClass(s.CreatedByUserId) : null, 
                     ReviewCount = s.Reviews.Count,
                     AverageRating = s.Reviews.Any() ? s.Reviews.Average(r => r.Rating) : 0,
                     ViewsCount = s.ViewsCount
-                })
-                .ToListAsync();
+                });
+            }
+            return services;
         }
     }
 }

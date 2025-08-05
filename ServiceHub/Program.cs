@@ -49,6 +49,7 @@ namespace ServiceHub
             .AddEntityFrameworkStores<ServiceHubDbContext>();
             builder.Services.AddSignalR();
             builder.Services.AddControllersWithViews()
+               
                 .AddJsonOptions(options =>
                 {
                     options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;

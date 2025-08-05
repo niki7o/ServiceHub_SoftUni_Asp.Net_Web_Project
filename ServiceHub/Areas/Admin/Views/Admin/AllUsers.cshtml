@@ -5,7 +5,7 @@
 
 @{
     ViewData["Title"] = "Управление на потребители и услуги";
-    
+
     var currentUsersPage = Model.UsersCurrentPage;
     var totalUsersPages = Model.UsersTotalPages;
     var currentPendingTemplatesPage = Model.PendingServicesCurrentPage;
@@ -15,7 +15,19 @@
 <link rel="stylesheet" href="~/css/admin-users.css" asp-append-version="true" />
 
 <style>
- 
+  
+    .role-admin {
+        color: #e74c3c; 
+        font-weight: bold;
+    }
+
+    .role-business {
+        color: #3498db; 
+        font-weight: bold;
+    }
+
+  
+
     .pagination-container {
         display: flex;
         justify-content: center;
@@ -25,29 +37,29 @@
     }
 
     .pagination-button {
-        background-color: #3498db; 
+        background-color: #3498db;
         color: white;
         border: none;
         padding: 8px 16px;
         border-radius: 8px;
         cursor: pointer;
         transition: background-color 0.3s ease, transform 0.2s ease;
-        text-decoration: none; 
+        text-decoration: none;
         display: inline-flex;
         align-items: center;
         justify-content: center;
         font-weight: 500;
     }
 
-    .pagination-button:hover:not(:disabled) {
-        background-color: #2980b9; 
-        transform: translateY(-2px);
-    }
+        .pagination-button:hover:not(:disabled) {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+        }
 
-    .pagination-button:disabled {
-        background-color: #ccc;
-        cursor: not-allowed;
-    }
+        .pagination-button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
 
     .pagination-info {
         font-size: 1rem;
@@ -55,24 +67,24 @@
         font-weight: 500;
     }
 
-    
+
     body {
-        background-color: #f0f2f5; 
+        background-color: #f0f2f5;
     }
 
     .container {
         max-width: 960px;
-        margin: 40px auto; 
+        margin: 40px auto;
         padding: 20px;
         font-family: 'Inter', sans-serif;
     }
 
     .card {
         background-color: #ffffff;
-        border-radius: 15px; 
-        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15); 
+        border-radius: 15px;
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
         overflow: hidden;
-        border: none; 
+        border: none;
         transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
     }
 
@@ -94,27 +106,27 @@
     }
 
     h1 {
-        font-size: 2.8rem; 
-        font-weight: 900; 
-        color: #2c3e50; 
+        font-size: 2.8rem;
+        font-weight: 900;
+        color: #2c3e50;
         margin-bottom: 30px;
         text-align: center;
         text-shadow: 1px 1px 4px rgba(0,0,0,0.1);
     }
 
     .table {
-        margin-bottom: 0; 
+        margin-bottom: 0;
     }
 
     .table-responsive {
         border-radius: 10px;
-        overflow: hidden; 
+        overflow: hidden;
         border: 1px solid #e0e0e0;
     }
 
     .table thead th {
-        background-color: #ecf0f1; 
-        color: #34495e; 
+        background-color: #ecf0f1;
+        color: #34495e;
         font-weight: 600;
         border-bottom: 2px solid #bdc3c7;
     }
@@ -124,7 +136,7 @@
     }
 
         .table tbody tr:hover {
-            background-color: #f8f9fa; 
+            background-color: #f8f9fa;
         }
 
     .action-btn {
@@ -135,37 +147,67 @@
         transition: all 0.2s ease;
     }
 
-    .btn-danger { background-color: #e74c3c; border-color: #e74c3c; }
-    .btn-warning { background-color: #f39c12; border-color: #f39c12; }
-    .btn-success { background-color: #2ecc71; border-color: #2ecc71; }
-    .btn-info { background-color: #3498db; border-color: #3498db; }
+    .btn-danger {
+        background-color: #e74c3c;
+        border-color: #e74c3c;
+    }
 
-    .btn-danger:hover { background-color: #c0392b; border-color: #c0392b; }
-    .btn-warning:hover { background-color: #e67e22; border-color: #e67e22; }
-    .btn-success:hover { background-color: #27ae60; border-color: #27ae60; }
-    .btn-info:hover { background-color: #2980b9; border-color: #2980b9; }
+    .btn-warning {
+        background-color: #f39c12;
+        border-color: #f39c12;
+    }
 
-   
+    .btn-success {
+        background-color: #2ecc71;
+        border-color: #2ecc71;
+    }
+
+    .btn-info {
+        background-color: #3498db;
+        border-color: #3498db;
+    }
+
+    .btn-danger:hover {
+        background-color: #c0392b;
+        border-color: #c0392b;
+    }
+
+    .btn-warning:hover {
+        background-color: #e67e22;
+        border-color: #e67e22;
+    }
+
+    .btn-success:hover {
+        background-color: #27ae60;
+        border-color: #27ae60;
+    }
+
+    .btn-info:hover {
+        background-color: #2980b9;
+        border-color: #2980b9;
+    }
+
+
     .custom-modal {
         display: none;
-        position: fixed; 
-        z-index: 1050; 
+        position: fixed;
+        z-index: 1050;
         left: 0;
         top: 0;
         width: 100%;
-        height: 100%; 
-        overflow: auto; 
-        background-color: rgba(0,0,0,0.4); 
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0,0,0,0.4);
         padding-top: 60px;
     }
 
     .custom-modal-content {
         background-color: #fefefe;
-        margin: 5% auto; 
+        margin: 5% auto;
         padding: 20px;
         border: 1px solid #888;
-        width: 80%; 
-        max-width: 500px; 
+        width: 80%;
+        max-width: 500px;
         border-radius: 10px;
         box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2), 0 6px 20px 0 rgba(0,0,0,0.19);
         animation-name: animatetop;
@@ -173,8 +215,15 @@
     }
 
     @@keyframes animatetop {
-        from {top: -300px; opacity: 0}
-        to {top: 0; opacity: 1}
+        from {
+            top: -300px;
+            opacity: 0
+        }
+
+        to {
+            top: 0;
+            opacity: 1
+        }
     }
 
     .custom-modal-header {
@@ -186,11 +235,11 @@
         margin-bottom: 15px;
     }
 
-    .custom-modal-header .modal-title {
-        font-size: 1.5rem;
-        font-weight: bold;
-        color: #34495e;
-    }
+        .custom-modal-header .modal-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #34495e;
+        }
 
     .custom-modal-body {
         padding-bottom: 15px;
@@ -213,12 +262,12 @@
         cursor: pointer;
     }
 
-    .close-modal-btn:hover,
-    .close-modal-btn:focus {
-        color: black;
-        text-decoration: none;
-        cursor: pointer;
-    }
+        .close-modal-btn:hover,
+        .close-modal-btn:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
 </style>
 
 <div class="container mt-4">
@@ -271,7 +320,20 @@
                             @foreach (var user in Model.Users)
                             {
                                 <tr>
-                                    <td>@Html.DisplayFor(modelItem => user.UserName)</td>
+                                    <td>
+                                        @{
+                                            string userRoleClass = "";
+                                            if (user.Roles.Contains("Admin"))
+                                            {
+                                                userRoleClass = "role-admin";
+                                            }
+                                            else if (user.Roles.Contains("BusinessUser"))
+                                            {
+                                                userRoleClass = "role-business";
+                                            }
+                                        }
+                                        <span class="@userRoleClass">@Html.DisplayFor(modelItem => user.UserName)</span>
+                                    </td>
                                     <td>@Html.DisplayFor(modelItem => user.Email)</td>
                                     <td>@string.Join(", ", user.Roles)</td>
                                     <td class="text-center">
@@ -310,7 +372,7 @@
                     </table>
                 </div>
 
-             
+
                 @if (Model.TotalUsersCount > Model.UsersPageSize)
                 {
                     <div class="pagination-container">
@@ -359,10 +421,13 @@
                                     <td>@service.Title</td>
                                     <td>@(service.Description.Length > 100 ? service.Description.Substring(0, 100) + "..." : service.Description)</td>
                                     <td>@service.CategoryName</td>
-                                    <td>@service.CreatedByUserName</td>
+                                    <td>
+                                        <span class="@service.CreatedByUserRoleCssClass">@service.CreatedByUserName</span>
+                                    </td>
                                     <td>@service.AccessType</td>
                                     <td class="text-center">
                                         <div class="d-flex flex-wrap justify-content-center">
+                                        
                                             <a asp-action="Details" asp-controller="Service" asp-route-id="@service.Id" class="btn btn-info btn-sm me-1 mb-1">Детайли</a>
                                             <form asp-action="ApproveServiceTemplate" asp-route-id="@service.Id" method="post" class="me-1 mb-1">
                                                 @Html.AntiForgeryToken()
@@ -384,7 +449,7 @@
                     </table>
                 </div>
 
-              
+
                 @if (Model.TotalPendingServicesCount > Model.PendingServicesPageSize)
                 {
                     <div class="pagination-container">
@@ -423,7 +488,7 @@
 @section Scripts {
     <script src="~/js/admin-users.js" asp-append-version="true"></script>
     <script>
-        
+
         function showCustomConfirm(message, form) {
             const modal = document.getElementById('customConfirmModal');
             const confirmMessage = document.getElementById('modalConfirmMessage');
@@ -453,7 +518,7 @@
             cancelBtn.addEventListener('click', cancelAction);
             closeBtn.addEventListener('click', cancelAction);
 
-           
+
             window.onclick = function(event) {
                 if (event.target == modal) {
                     cancelAction();

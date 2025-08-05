@@ -16,8 +16,9 @@ namespace ServiceHub.Core.Models.Service
         public string Description { get; set; } = null!;
         public string CategoryName { get; set; } = null!;
         public AccessType AccessType { get; set; }
-   
-
+        public string? CreatedByUserName { get; set; }
+        public string? CreatedByUserId { get; set; } 
+        public string? CreatedByUserRoleCssClass { get; set; } 
         public int ReviewCount { get; set; }
         public double AverageRating { get; set; }
         public bool IsFavorite { get; set; }
@@ -30,6 +31,6 @@ namespace ServiceHub.Core.Models.Service
         public int ReviewsPerPage { get; set; }
         public bool IsTemplate { get; set; }
         public bool IsApproved { get; set; }
-        public string CreatedByUserName { get; set; } = null!;
+    
     }
 }

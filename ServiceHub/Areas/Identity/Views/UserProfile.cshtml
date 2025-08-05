@@ -1,7 +1,7 @@
 ﻿@model ServiceHub.Core.Models.User.UserProfileViewModel
 @using Microsoft.AspNetCore.Identity
 @using ServiceHub.Data.Models
-@using ServiceHub.Common.Enum 
+@using ServiceHub.Common.Enum
 @inject UserManager<ApplicationUser> UserManager
 
 @{
@@ -12,67 +12,67 @@
 }
 
 <style>
-    
+
     body {
-        background-color: #f0f2f5; 
+        background-color: #f0f2f5;
     }
 
     .profile-container {
         max-width: 960px;
-        margin: 40px auto; 
+        margin: 40px auto;
         padding: 20px;
         font-family: 'Inter', sans-serif;
     }
 
     .profile-card {
         background-color: #ffffff;
-        border-radius: 15px; 
-        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15); 
+        border-radius: 15px;
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
         overflow: hidden;
-        border: none; 
+        border: none;
         transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
     }
 
         .profile-card:hover {
-            transform: translateY(-5px); 
+            transform: translateY(-5px);
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
         }
 
     .profile-card-body {
-        padding: 40px; 
+        padding: 40px;
     }
 
-   
+
     .profile-title {
-        font-size: 2.8rem; 
-        font-weight: 900; 
-        color: #2c3e50; 
+        font-size: 2.8rem;
+        font-weight: 900;
+        color: #2c3e50;
         margin-bottom: 30px;
         text-align: center;
         text-shadow: 1px 1px 4px rgba(0,0,0,0.1);
     }
 
     .profile-title-current-user {
-        color: #3498db; 
+        color: #3498db;
         font-size: 1.8rem;
-        display: block; 
+        display: block;
         margin-top: 5px;
     }
 
     .section-heading {
-        font-size: 1.5rem; 
-        font-weight: 700; 
-        color: #34495e; 
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #34495e;
         margin-bottom: 15px;
-        border-bottom: 2px solid #ecf0f1; 
+        border-bottom: 2px solid #ecf0f1;
         padding-bottom: 8px;
     }
 
-   
+
     .grid-layout {
         display: grid;
         grid-template-columns: 1fr;
-        gap: 30px; 
+        gap: 30px;
         margin-bottom: 40px;
     }
 
@@ -82,38 +82,38 @@
         }
     }
 
-   
+
     .info-box {
-        background-color: #fdfefe; 
-        padding: 25px; 
-        border-radius: 12px; 
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08); 
+        background-color: #fdfefe;
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
         transition: transform 0.2s ease-in-out;
     }
 
         .info-box:hover {
-            transform: translateY(-3px); 
+            transform: translateY(-3px);
         }
 
     .info-text {
-        color: #555; 
+        color: #555;
         margin-bottom: 8px;
         font-size: 1.05rem;
-        display: flex; 
+        display: flex;
         align-items: center;
     }
 
         .info-text i {
-            margin-right: 10px; 
+            margin-right: 10px;
             color: #3498db;
         }
 
     .info-label {
-        font-weight: 600; 
+        font-weight: 600;
         color: #333;
     }
 
-   
+
     .list-style-disc {
         list-style-type: none;
         padding-left: 0;
@@ -122,14 +122,14 @@
     .list-item-spacing > li {
         margin-bottom: 10px;
         position: relative;
-        padding-left: 25px; 
+        padding-left: 25px;
     }
 
         .list-item-spacing > li::before {
-            content: "\f00c"; 
+            content: "\f00c";
             font-family: "Font Awesome 5 Free";
             font-weight: 900;
-            color: #27ae60; 
+            color: #27ae60;
             position: absolute;
             left: 0;
             top: 0;
@@ -147,7 +147,7 @@
             text-decoration: underline;
         }
 
-    
+
     .review-item {
         border-bottom: 1px dashed #e0e0e0;
         padding-bottom: 15px;
@@ -171,7 +171,7 @@
         margin-top: 5px;
     }
 
-   
+
     .pagination-container {
         display: flex;
         justify-content: center;
@@ -194,7 +194,7 @@
         justify-content: center;
         font-weight: 500;
     }
-     
+
         .pagination-button:hover:not(:disabled) {
             background-color: #6a5acd;
             transform: translateY(-2px);
@@ -211,7 +211,7 @@
         font-weight: 500;
     }
 
-    
+
     @@media (max-width: 600px) {
         .profile-card-body {
             padding: 20px;
@@ -263,7 +263,7 @@
                     <p class="info-text"><span class="info-label"><i class="fas fa-check-circle"></i> Одобрени услуги:</span> @Model.ApprovedServicesCount</p>
                 </div>
 
-              
+
                 <div class="info-box">
                     <h2 class="section-heading"><i class="fas fa-tools"></i> Създадени услуги (@Model.TotalCreatedServicesCount)</h2>
                     @if (Model.CreatedServices != null && Model.CreatedServices.Any())
@@ -272,7 +272,7 @@
                             @foreach (var service in Model.CreatedServices)
                             {
                                 <li>
-                                    <a asp-controller="Service" asp-action="Details" asp-route-id="@service.Id" class="link-style">
+                                    <a asp-controller="Service" asp-action="Details" asp-route-id="@service.Id" asp-area="" class="link-style">
                                         @service.Title
                                     </a>
                                     (@service.CategoryName) - Рейтинг: @service.AverageRating.ToString("F1") (@service.ReviewCount ревюта)
@@ -280,7 +280,7 @@
                             }
                         </ul>
 
-                       
+
                         <div class="pagination-container">
                             <a href="@Url.Action("UserProfile", "User", new { area = "Identity", id = Model.Id, createdServicesPage = Model.CreatedServicesCurrentPage - 1, reviewsPage = Model.ReviewsCurrentPage })"
                                class="pagination-button @(Model.CreatedServicesCurrentPage <= 1 ? "disabled" : "")">
@@ -300,7 +300,7 @@
                 </div>
             </div>
 
-            
+
             @if (Model.FavoriteServices != null && Model.FavoriteServices.Any())
             {
                 <div class="info-box" style="margin-bottom: 40px;">
@@ -309,7 +309,7 @@
                         @foreach (var service in Model.FavoriteServices)
                         {
                             <li>
-                                <a asp-controller="Service" asp-action="Details" asp-route-id="@service.Id" class="link-style">
+                                <a asp-controller="Service" asp-action="Details" asp-route-id="@service.Id" asp-area="" class="link-style">
                                     @service.Title
                                 </a>
                                 (@service.CategoryName)
@@ -335,7 +335,7 @@
                         {
                             <div class="review-item">
                                 <p class="text-gray-800 font-medium">
-                                    <a asp-controller="Service" asp-action="Details" asp-route-id="@review.ServiceId" class="link-style">
+                                    <a asp-controller="Service" asp-action="Details" asp-route-id="@review.ServiceId" asp-area="" class="link-style">
                                         @review.ServiceName
                                     </a>
                                     - Рейтинг: @review.Rating / 5
@@ -366,5 +366,3 @@
         </div>
     </div>
 </div>
-
-

@@ -20,14 +20,14 @@ namespace ServiceHub.Areas.Admin.Controllers
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly ILogger<AdminController> _logger;
         private readonly IServiceService _serviceService;
-        private readonly IUserService _userService; 
+        private readonly IUserService _userService;
 
         public AdminController(
             UserManager<ApplicationUser> userManager,
             RoleManager<IdentityRole> roleManager,
             ILogger<AdminController> logger,
             IServiceService serviceService,
-            IUserService userService) 
+            IUserService userService)
         {
             _userManager = userManager;
             _roleManager = roleManager;
@@ -38,26 +38,24 @@ namespace ServiceHub.Areas.Admin.Controllers
 
         public async Task<IActionResult> AllUsers(int usersPage = 1, int pendingTemplatesPage = 1)
         {
-            // Define page sizes
+          
             int usersPageSize = 5;
             int pendingTemplatesPageSize = 5;
 
-       
+        
             var paginatedUsersResult = await _userService.GetAllUsersAsync(usersPage, usersPageSize);
 
-           
             var paginatedPendingTemplatesResult = await _serviceService.GetAllPendingTemplatesAsync(pendingTemplatesPage, pendingTemplatesPageSize);
 
             var viewModel = new AdminDashboardViewModel
             {
-               
+                
                 Users = paginatedUsersResult.Users,
                 UsersCurrentPage = usersPage,
                 UsersPageSize = usersPageSize,
                 TotalUsersCount = paginatedUsersResult.TotalCount,
                 UsersTotalPages = (int)Math.Ceiling((double)paginatedUsersResult.TotalCount / usersPageSize),
 
-               
                 PendingServices = paginatedPendingTemplatesResult.Templates,
                 PendingServicesCurrentPage = pendingTemplatesPage,
                 PendingServicesPageSize = pendingTemplatesPageSize,
@@ -66,6 +64,47 @@ namespace ServiceHub.Areas.Admin.Controllers
             };
 
             return View(viewModel);
+        }
+
+     
+        [HttpGet]
+        public async Task<IActionResult> TemplateDetails(Guid id)
+        {
+            try
+            {
+              
+                var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+             
+                var model = await _serviceService.GetByIdAsync(id, currentUserId);
+
+               
+                if (!model.IsTemplate || model.IsApproved)
+                {
+                    TempData["ErrorMessage"] = "Тази услуга не е чакащ шаблон или вече е одобрена. Моля, разгледайте я в общия списък с услуги.";
+                    return RedirectToAction(nameof(AllUsers));
+                }
+
+                return View(model); 
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogError(ex, $"AdminController: TemplateDetails - Service with ID {id} not found.");
+                TempData["ErrorMessage"] = ex.Message;
+                return RedirectToAction(nameof(AllUsers));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogError(ex, $"AdminController: TemplateDetails - Unauthorized access attempt for service ID {id} by user {User.Identity?.Name}.");
+                TempData["ErrorMessage"] = ex.Message;
+                return RedirectToAction(nameof(AllUsers));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"AdminController: TemplateDetails - An unexpected error occurred while loading template details for ID {id}.");
+                TempData["ErrorMessage"] = "Възникна грешка при зареждане на детайлите на шаблона.";
+                return RedirectToAction(nameof(AllUsers));
+            }
         }
 
         [HttpPost]
@@ -247,8 +286,9 @@ namespace ServiceHub.Areas.Admin.Controllers
             {
                 TempData["ErrorMessage"] = ex.Message;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                _logger.LogError(ex, $"Error approving service template ID: {id}.");
                 TempData["ErrorMessage"] = "Възникна грешка при одобряване на шаблона.";
             }
 
@@ -279,8 +319,9 @@ namespace ServiceHub.Areas.Admin.Controllers
             {
                 TempData["ErrorMessage"] = ex.Message;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                _logger.LogError(ex, $"Error rejecting service template ID: {id}.");
                 TempData["ErrorMessage"] = "Възникна грешка при отхвърляне на шаблона.";
             }
 
