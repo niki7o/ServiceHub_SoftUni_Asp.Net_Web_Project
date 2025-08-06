@@ -3,7 +3,7 @@
     ViewData["Title"] = "Конвертор на Кодови Снипети";
     var supportedLanguages = ViewBag.SupportedLanguages as List<string> ?? new List<string> { "C#", "Python", "JavaScript", "PHP" };
 
- 
+    
     var isAuthenticated = User.Identity.IsAuthenticated;
     var isAdmin = User.IsInRole("Admin");
     var isBusinessUserOrAdmin = isAuthenticated && (User.IsInRole("BusinessUser") || isAdmin);
@@ -12,11 +12,117 @@
     var subscriptionPageUrl = "/Home/Plans";
 }
 
-<script src="~/js/codeSnippet.js" asp-append-version="true"></script>
-<link rel="stylesheet" href="~/css/codeSnippet.css" asp-append-version="true" />
 <style>
-  
    
+    .form-control-lg.rounded-pill {
+        border-radius: 50px;
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+
+    .btn-lg.rounded-pill {
+        border-radius: 50px;
+        padding: 15px 30px;
+        font-size: 1.25rem;
+    }
+
+    .card.shadow-lg.rounded-lg {
+        border-radius: 15px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    }
+
+    .card-body.p-4.p-md-5 {
+        padding: 2.5rem !important;
+    }
+
+    .text-primary {
+        color: #1d3557 !important;
+    }
+
+    .text-secondary {
+        color: #457b9d !important;
+    }
+
+    .btn-primary {
+        background-color: #1d3557;
+        border-color: #1d3557;
+    }
+
+        .btn-primary:hover {
+            background-color: #142840;
+            border-color: #142840;
+        }
+
+    .alert-info {
+        background-color: #d1ecf1;
+        color: #0c5460;
+    }
+
+    .alert-danger {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+
+    .alert-success {
+        background-color: #d4edda;
+        color: #155724;
+    }
+
+    .alert-warning {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+
+    select option:disabled {
+        background-color: #f0f0f0;
+        color: #a0a0a0;
+        cursor: not-allowed;
+    }
+
+    .premium-feature-message {
+        background-color: #fff3cd;
+        border: 1px solid #ffeeba;
+        color: #856404;
+        padding: 10px 15px;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        margin-top: 10px;
+    }
+
+        .premium-feature-message .badge {
+            font-size: 0.8em;
+            padding: 0.4em 0.7em;
+            border-radius: 5px;
+            background-color: #e9c46a;
+            color: #1d3557;
+            font-weight: 700;
+        }
+
+        .premium-feature-message a {
+            color: #007bff;
+            text-decoration: underline;
+            font-weight: bold;
+            transition: color 0.2s ease;
+        }
+
+            .premium-feature-message a:hover {
+                color: #0056b3;
+            }
+
+    .option-text-with-icon {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+        .option-text-with-icon .lock-icon {
+            color: #e76f51;
+            font-size: 0.8em;
+        }
 </style>
 
 <h2 class="text-center my-4 text-primary font-weight-bold">Конвертор на Кодови Снипети</h2>
@@ -32,7 +138,7 @@
                         <label for="sourceLanguage" class="form-label font-weight-bold">Изходен език:</label>
                         <select id="sourceLanguage" class="form-control form-control-lg rounded-pill">
                             <option value="">-- Изберете изходен език --</option>
-                        
+                           
                         </select>
                         <div id="sourceLanguagePremiumMessage" class="premium-feature-message" style="display:none;">
                             <i class="fas fa-crown me-2 text-warning"></i> Тази функция е част от <span class="badge bg-warning text-dark">ПРЕМИУМ</span> абонамента. <a href="@subscriptionPageUrl" class="text-info font-weight-bold">Абонирайте се сега!</a>
@@ -43,7 +149,7 @@
                         <label for="targetLanguage" class="form-label font-weight-bold">Целеви език:</label>
                         <select id="targetLanguage" class="form-control form-control-lg rounded-pill">
                             <option value="">-- Изберете целеви език --</option>
-                            
+
                         </select>
                         <div id="targetLanguagePremiumMessage" class="premium-feature-message" style="display:none;">
                             <i class="fas fa-crown me-2 text-warning"></i> Тази функция е част от <span class="badge bg-warning text-dark">ПРЕМИУМ</span> абонамента. <a href="@subscriptionPageUrl" class="text-info font-weight-bold">Абонирайте се сега!</a>
@@ -74,3 +180,157 @@
     </div>
 </div>
 
+@section Scripts {
+    <script>
+   
+        const isBusinessUser = @(isBusinessUserOrAdmin.ToString().ToLower()); 
+        const supportedLanguages = @Html.Raw(Json.Serialize(supportedLanguages));
+        const lockedLanguages = new Set(['JavaScript', 'PHP']);
+        const subscriptionPageUrl = "@subscriptionPageUrl";
+
+        function showConversionMessage(message, type) {
+            const conversionMessage = document.getElementById('conversionMessage');
+            conversionMessage.textContent = message;
+            conversionMessage.className = `mt-2 p-3 rounded alert alert-${type}`;
+            conversionMessage.style.display = 'block';
+        }
+
+        function handlePremiumMessage(selectElement, premiumMessageElement) {
+            const selectedLanguage = selectElement.value;
+        
+            if (lockedLanguages.has(selectedLanguage) && !isBusinessUser) { 
+                premiumMessageElement.style.display = 'flex';
+                showConversionMessage('Моля, надстройте акаунта си, за да използвате този език.', 'warning');
+            } else {
+                premiumMessageElement.style.display = 'none';
+                
+                if (document.getElementById('conversionMessage').classList.contains('alert-warning')) {
+                    showConversionMessage('', 'none');
+                }
+            }
+        }
+
+        function populateLanguageSelect(selectElement) {
+          
+            selectElement.innerHTML = '';
+
+            const defaultOption = document.createElement('option');
+            defaultOption.value = "";
+            defaultOption.textContent = "-- Изберете език --";
+            selectElement.appendChild(defaultOption);
+
+            supportedLanguages.forEach(lang => {
+                const option = document.createElement('option');
+                option.value = lang;
+                option.textContent = lang;
+
+                const isLocked = lockedLanguages.has(lang);
+                option.dataset.isLocked = isLocked.toString();
+
+               
+                if (isLocked && !isBusinessUser) { 
+                    option.disabled = true;
+                    option.textContent += ' (ПРЕМИУМ) \u{1F512}'; 
+                }
+                selectElement.appendChild(option);
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const sourceLanguageSelect = document.getElementById('sourceLanguage');
+            const targetLanguageSelect = document.getElementById('targetLanguage');
+            const sourceLanguagePremiumMessage = document.getElementById('sourceLanguagePremiumMessage');
+            const targetLanguagePremiumMessage = document.getElementById('targetLanguagePremiumMessage');
+
+            populateLanguageSelect(sourceLanguageSelect);
+            populateLanguageSelect(targetLanguageSelect);
+
+            sourceLanguageSelect.addEventListener('change', () => {
+                handlePremiumMessage(sourceLanguageSelect, sourceLanguagePremiumMessage);
+            });
+            targetLanguageSelect.addEventListener('change', () => {
+                handlePremiumMessage(targetLanguageSelect, targetLanguagePremiumMessage);
+            });
+
+        
+            handlePremiumMessage(sourceLanguageSelect, sourceLanguagePremiumMessage);
+            handlePremiumMessage(targetLanguageSelect, targetLanguagePremiumMessage);
+        });
+
+        document.getElementById('convertCodeButton').addEventListener('click', async () => {
+            const sourceCode = document.getElementById('sourceCode').value;
+            const sourceLanguage = document.getElementById('sourceLanguage').value;
+            const targetLanguage = document.getElementById('targetLanguage').value;
+            const convertedCodeOutput = document.getElementById('convertedCode');
+
+            convertedCodeOutput.value = '';
+            showConversionMessage('', 'none'); 
+
+          
+            if (!sourceCode.trim()) {
+                showConversionMessage('Моля, въведете изходен код.', 'danger');
+                return;
+            }
+            if (!sourceLanguage) {
+                showConversionMessage('Моля, изберете изходен език.', 'danger');
+                return;
+            }
+            if (!targetLanguage) {
+                showConversionMessage('Моля, изберете целеви език.', 'danger');
+                return;
+            }
+            if (sourceLanguage === targetLanguage) {
+                showConversionMessage('Изходният и целевият език не могат да бъдат еднакви. Върнат е оригиналният код.', 'warning');
+                convertedCodeOutput.value = sourceCode;
+                return;
+            }
+
+         
+            if (!isBusinessUser && (lockedLanguages.has(sourceLanguage) || lockedLanguages.has(targetLanguage))) { 
+                showConversionMessage('Достъпът до JavaScript и PHP конвертиране е само за Бизнес Потребители. Моля, надстройте акаунта си.', 'warning');
+                return;
+            }
+
+            try {
+                showConversionMessage('Конвертиране на кода... Моля, изчакайте.', 'info');
+                document.getElementById('convertCodeButton').disabled = true;
+
+                const response = await fetch('/api/CodeSnippetConverter/convert', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        sourceCode: sourceCode,
+                        sourceLanguage: sourceLanguage,
+                        targetLanguage: targetLanguage
+                    })
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    convertedCodeOutput.value = result.convertedCode;
+                    showConversionMessage(result.message || 'Конвертирането е успешно.', 'success');
+                } else {
+                    let errorMessage = `Грешка: ${response.status} ${response.statusText}`;
+                    try {
+                        const errorData = await response.json();
+                        errorMessage = errorData.errors ? Object.values(errorData.errors).flat().join('; ') : (errorData.message || errorData.title || errorMessage);
+                    } catch (jsonError) {
+                        errorMessage = `Грешка: ${response.status} ${response.statusText}. Невалиден отговор от сървъра.`;
+                        console.error('Failed to parse error response as JSON:', jsonError);
+                    }
+                    convertedCodeOutput.value = '';
+                    showConversionMessage(errorMessage, 'danger');
+                }
+            } catch (error) {
+                console.error('Fetch error:', error);
+                convertedCodeOutput.value = '';
+                showConversionMessage(`Възникна мрежова грешка: ${error.message}.`, 'danger');
+            } finally {
+                document.getElementById('convertCodeButton').disabled = false;
+            }
+        });
+    </script>
+}

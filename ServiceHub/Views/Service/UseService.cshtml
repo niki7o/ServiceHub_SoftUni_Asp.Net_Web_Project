@@ -1,13 +1,13 @@
-﻿@using ServiceHub.Common 
- 
+﻿﻿@using ServiceHub.Common
+
 
 @{
     ViewData["Title"] = "Използване на услуга";
-    
+
     Guid serviceIdToUse = ViewBag.ServiceIdToUse;
-    
+
     string serviceTitle = ViewBag.ServiceTitle ?? "Неизвестна услуга";
-   
+
     Guid serviceModelId = ViewBag.ServiceModelId;
 }
 
@@ -16,12 +16,12 @@
 <div id="serviceFormContainer">
     @if (serviceIdToUse == ServiceConstants.FileConverterServiceId)
     {
-    
+
         <partial name="_FileConverterForm" />
     }
-  
-   
-   
+
+
+
     else
     {
         <div class="alert alert-warning" role="alert">
@@ -31,11 +31,11 @@
 </div>
 
 <div>
-    
+
     <a asp-action="Details" asp-controller="Service" asp-route-id="@serviceModelId" class="btn btn-secondary mt-3">Назад към Детайли</a>
 </div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-  
+
 }
