@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace ServiceHub.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class AddServiceTemplateAndPremiumFieldsFinal : Migration
+    public partial class Initials : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -34,6 +34,7 @@ namespace ServiceHub.Data.Migrations
                     Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     IsBusiness = table.Column<bool>(type: "bit", nullable: false),
                     BusinessExpiresOn = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    LastServiceCreationDate = table.Column<DateTime>(type: "datetime2", nullable: true),
                     UserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     NormalizedUserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     Email = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
@@ -186,12 +187,29 @@ namespace ServiceHub.Data.Migrations
                     AccessType = table.Column<int>(type: "int", nullable: false),
                     ViewsCount = table.Column<int>(type: "int", nullable: false),
                     ServiceConfigJson = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    IsTemplate = table.Column<bool>(type: "bit", nullable: false),
+                    IsApproved = table.Column<bool>(type: "bit", nullable: false),
+                    CreatedByUserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     CreatedOn = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    ModifiedOn = table.Column<DateTime>(type: "datetime2", nullable: true)
+                    ModifiedOn = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    ApprovedByUserId = table.Column<string>(type: "nvarchar(450)", nullable: true),
+                    ApprovedOn = table.Column<DateTime>(type: "datetime2", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Services", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Services_AspNetUsers_ApprovedByUserId",
+                        column: x => x.ApprovedByUserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
+                    table.ForeignKey(
+                        name: "FK_Services_AspNetUsers_CreatedByUserId",
+                        column: x => x.CreatedByUserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Services_Categories_CategoryId",
                         column: x => x.CategoryId,
@@ -261,19 +279,19 @@ namespace ServiceHub.Data.Migrations
                 columns: new[] { "Id", "ConcurrencyStamp", "Name", "NormalizedName" },
                 values: new object[,]
                 {
-                    { "0c8b3e8e-c25e-44d7-84f9-2c7b5a1b3e4f", "fe74c9d2-fc5c-4058-b95f-5c40a2a3c3f4", "BusinessUser", "BUSINESSUSER" },
-                    { "1d9c4f9f-a36a-4d6b-b5e0-3d8c6b2a5f7e", "9879ecec-d1b8-48aa-9895-665e8f1df7ec", "User", "USER" },
-                    { "99049752-95b1-477d-944a-f34589d31b09", "ab30b278-1fe4-4058-bdf5-c97b0317bb49", "Admin", "ADMIN" }
+                    { "0c8b3e8e-c25e-44d7-84f9-2c7b5a1b3e4f", "8a9b1750-8670-48ce-a1d1-55467364d659", "BusinessUser", "BUSINESSUSER" },
+                    { "1d9c4f9f-a36a-4d6b-b5e0-3d8c6b2a5f7e", "f7eb7149-a955-4ea8-a1c1-9deeaa3bc15e", "User", "USER" },
+                    { "99049752-95b1-477d-944a-f34589d31b09", "f19540ea-e6e3-4a1f-9bca-b56e408e75d9", "Admin", "ADMIN" }
                 });
 
             migrationBuilder.InsertData(
                 table: "AspNetUsers",
-                columns: new[] { "Id", "AccessFailedCount", "BusinessExpiresOn", "ConcurrencyStamp", "Email", "EmailConfirmed", "IsBusiness", "LockoutEnabled", "LockoutEnd", "NormalizedEmail", "NormalizedUserName", "PasswordHash", "PhoneNumber", "PhoneNumberConfirmed", "SecurityStamp", "TwoFactorEnabled", "UserName" },
+                columns: new[] { "Id", "AccessFailedCount", "BusinessExpiresOn", "ConcurrencyStamp", "Email", "EmailConfirmed", "IsBusiness", "LastServiceCreationDate", "LockoutEnabled", "LockoutEnd", "NormalizedEmail", "NormalizedUserName", "PasswordHash", "PhoneNumber", "PhoneNumberConfirmed", "SecurityStamp", "TwoFactorEnabled", "UserName" },
                 values: new object[,]
                 {
-                    { "2e7a5b6c-d4e5-4f7g-h8i9-0j1k2l3m4n5o", 0, null, "17f2c00d-127e-4a60-8b55-b7d857a45938", "admin@servicehub.com", true, false, false, null, "ADMIN@SERVICEHUB.COM", "ADMINUSER", "AQAAAAIAAYagAAAAEHDyY+bWGj5b4NCEQ22sdDwwgOXUGzd14Jna1PWwgUGuAT5uDIm3rppo3ro8FK2jdw==", null, false, "81b41e60-bbfd-426e-a451-b324afac9042", false, "adminuser" },
-                    { "3f8b6c7d-e5f6-4g8h-i9j0-1k2l3m4n5o6p", 0, null, "bb81e0bc-25e2-4eda-9092-eaefb8045765", "business@servicehub.com", true, false, false, null, "BUSINESS@SERVICEHUB.COM", "BUSINESSUSER", "AQAAAAIAAYagAAAAEDvbXwCicbCkwIgkmtihHz+xB9VVltKmrmML+xT00yGnQH57wYtvDJ18a/xQQWvCXA==", null, false, "91973d3d-b866-422d-b759-6dc734d7fad2", false, "businessuser" },
-                    { "4g9c7d8e-f6g7-4h9i-j0k1-2l3m4n5o6p7q", 0, null, "960af341-2093-42d2-9174-7a28273b0431", "user@servicehub.com", true, false, false, null, "USER@SERVICEHUB.COM", "REGULARUSER", "AQAAAAIAAYagAAAAEKY0c1iTAtyn5l0NSl/Trn0F1PZ9MRgXUKO2ErqWpvmLb0X7LhGC0RoeprNGZ2paXg==", null, false, "11d5fbe2-e03e-4300-869c-4c72a147b85b", false, "regularuser" }
+                    { "2e7a5b6c-d4e5-4f7g-h8i9-0j1k2l3m4n5o", 0, null, "ba7772da-efb2-483a-8210-88e6ee633e96", "admin@servicehub.com", true, false, null, false, null, "ADMIN@SERVICEHUB.COM", "ADMINUSER", "AQAAAAIAAYagAAAAEHDyY+bWGj5b4NCEQ22sdDwwgOXUGzd14Jna1PWwgUGuAT5uDIm3rppo3ro8FK2jdw==", null, false, "d7cc2e1d-d60c-42b6-9938-e67274de1e4e", false, "adminuser" },
+                    { "3f8b6c7d-e5f6-4g8h-i9j0-1k2l3m4n5o6p", 0, null, "a474e182-c16a-4d30-8251-ff86a8e4e2cf", "business@servicehub.com", true, false, null, false, null, "BUSINESS@SERVICEHUB.COM", "BUSINESSUSER", "AQAAAAIAAYagAAAAEDvbXwCicbCkwIgkmtihHz+xB9VVltKmrmML+xT00yGnQH57wYtvDJ18a/xQQWvCXA==", null, false, "ab4f39d7-e260-44d5-b5be-641791cb3291", false, "businessuser" },
+                    { "4g9c7d8e-f6g7-4h9i-j0k1-2l3m4n5o6p7q", 0, null, "075f81d2-6a6b-40da-8967-8e3642efe00c", "user@servicehub.com", true, false, null, false, null, "USER@SERVICEHUB.COM", "REGULARUSER", "AQAAAAIAAYagAAAAEKY0c1iTAtyn5l0NSl/Trn0F1PZ9MRgXUKO2ErqWpvmLb0X7LhGC0RoeprNGZ2paXg==", null, false, "5b0aa9ad-43a6-475f-b3d2-b80cc1abfea0", false, "regularuser" }
                 });
 
             migrationBuilder.InsertData(
@@ -281,8 +299,8 @@ namespace ServiceHub.Data.Migrations
                 columns: new[] { "Id", "CreatedOn", "Description", "ModifiedOn", "Name" },
                 values: new object[,]
                 {
-                    { new Guid("a0a0a0a0-a0a0-a0a0-a0a0-000000000001"), new DateTime(2025, 8, 1, 13, 5, 48, 82, DateTimeKind.Utc).AddTicks(3671), "Инструменти за работа с документи.", null, "Документи" },
-                    { new Guid("b1b1b1b1-b1b1-b1b1-b1b1-000000000002"), new DateTime(2025, 8, 1, 13, 5, 48, 82, DateTimeKind.Utc).AddTicks(3689), "Различни общи инструменти.", null, "Инструменти" }
+                    { new Guid("a0a0a0a0-a0a0-a0a0-a0a0-000000000001"), new DateTime(2025, 8, 5, 22, 5, 23, 851, DateTimeKind.Utc).AddTicks(9997), "Инструменти за работа с документи.", null, "Документи" },
+                    { new Guid("b1b1b1b1-b1b1-b1b1-b1b1-000000000002"), new DateTime(2025, 8, 5, 22, 5, 23, 852, DateTimeKind.Utc).AddTicks(2), "Различни общи инструменти.", null, "Инструменти" }
                 });
 
             migrationBuilder.InsertData(
@@ -297,18 +315,18 @@ namespace ServiceHub.Data.Migrations
 
             migrationBuilder.InsertData(
                 table: "Services",
-                columns: new[] { "Id", "AccessType", "CategoryId", "CreatedOn", "Description", "ModifiedOn", "ServiceConfigJson", "Title", "ViewsCount" },
+                columns: new[] { "Id", "AccessType", "ApprovedByUserId", "ApprovedOn", "CategoryId", "CreatedByUserId", "CreatedOn", "Description", "IsApproved", "IsTemplate", "ModifiedOn", "ServiceConfigJson", "Title", "ViewsCount" },
                 values: new object[,]
                 {
-                    { new Guid("1d4ae40b-c305-47b7-beed-163c4a0aeb40"), 1, new Guid("a0a0a0a0-a0a0-a0a0-a0a0-000000000001"), new DateTime(2025, 8, 1, 13, 5, 48, 83, DateTimeKind.Utc).AddTicks(613), "Конвертира различни файлови формати (напр. PDF към DOCX, JPG към PNG).", null, "{\"toolName\": \"FileConverter\", \"endpoint\": \"/api/FileConverter/convert\", \"method\": \"POST\"}", "Конвертор на Файлове", 0 },
-                    { new Guid("2ef43d87-d749-4d7d-9b7d-f7c4f527bea7"), 2, new Guid("b1b1b1b1-b1b1-b1b1-b1b1-000000000002"), new DateTime(2025, 8, 1, 13, 5, 48, 83, DateTimeKind.Utc).AddTicks(640), "Изчислява ROI, бюджети, прогнозни приходи и разходи.", null, "{\"toolName\": \"FinancialCalculator\", \"endpoint\": \"/api/FinancialCalculator/calculate\", \"method\": \"POST\"}", "Финансов Калкулатор / Анализатор", 0 },
-                    { new Guid("3a7b8b0c-1d2e-4f5a-a837-3d5e9f1a2b0c"), 0, new Guid("b1b1b1b1-b1b1-b1b1-b1b1-000000000002"), new DateTime(2025, 8, 1, 13, 5, 48, 83, DateTimeKind.Utc).AddTicks(735), "Преброява думи, символи и редове във въведен текст.", null, "{\"toolName\": \"WordCharacterCounter\", \"endpoint\": \"/api/WordCharacter/count\", \"method\": \"POST\"}", "Брояч на Думи и Символи", 0 },
-                    { new Guid("8edc2d04-00f5-4630-b5a9-4fa499fc7210"), 2, new Guid("a0a0a0a0-a0a0-a0a0-a0a0-000000000001"), new DateTime(2025, 8, 1, 13, 5, 48, 83, DateTimeKind.Utc).AddTicks(739), "Генерира автоматично договори с шаблони (наем, труд и др.).", null, "{\"toolName\": \"ContractGenerator\", \"endpoint\": \"/api/ContractGenerator/generate\", \"method\": \"POST\"}", "Генератор на Договори", 0 },
-                    { new Guid("b422f89b-e7a3-4130-b899-7b56010007e0"), 2, new Guid("a0a0a0a0-a0a0-a0a0-a0a0-000000000001"), new DateTime(2025, 8, 1, 13, 5, 48, 83, DateTimeKind.Utc).AddTicks(636), "Въвеждаш данни и получаваш изчислена фактура.", null, "{\"toolName\": \"InvoiceGenerator\", \"endpoint\": \"/api/InvoiceGenerator/generate\", \"method\": \"POST\"}", "Генератор на Инвойси/Фактури", 0 },
-                    { new Guid("c10de2fa-b49b-4c0d-9e8f-142b3cd40e6f"), 0, new Guid("b1b1b1b1-b1b1-b1b1-b1b1-000000000002"), new DateTime(2025, 8, 1, 13, 5, 48, 83, DateTimeKind.Utc).AddTicks(624), "Преобразува текст в главни букви, малки букви или заглавен регистър.", null, "{\"toolName\": \"TextCaseConverter\", \"endpoint\": \"/api/TextCaseConverter/convert\", \"method\": \"POST\"}", "Конвертор на Текст (Главни/Малки букви)", 0 },
-                    { new Guid("e11e539c-0290-4171-b606-16628d1790b0"), 1, new Guid("b1b1b1b1-b1b1-b1b1-b1b1-000000000002"), new DateTime(2025, 8, 1, 13, 5, 48, 83, DateTimeKind.Utc).AddTicks(621), "Преобразува код между програмни езици (напр. C# към Python).", null, "{\"toolName\": \"CodeConverter\", \"endpoint\": \"/api/CodeConverter/convert\", \"method\": \"POST\"}", "Конвертор на Кодови Снипети", 0 },
-                    { new Guid("f0c72c7b-709d-44b7-81c1-1e5ab73305ec"), 2, new Guid("a0a0a0a0-a0a0-a0a0-a0a0-000000000001"), new DateTime(2025, 8, 1, 13, 5, 48, 83, DateTimeKind.Utc).AddTicks(628), "Въвеждаш данни и получаваш готово CV в PDF формат.", null, "{\"toolName\": \"CVGenerator\", \"endpoint\": \"/api/CVGenerator/generate\", \"method\": \"POST\"}", "Автоматично CV/Резюме", 0 },
-                    { new Guid("f5e402c0-91ba-4f8e-97d0-3b443fe10d3c"), 0, new Guid("b1b1b1b1-b1b1-b1b1-b1b1-000000000002"), new DateTime(2025, 8, 1, 13, 5, 48, 83, DateTimeKind.Utc).AddTicks(631), "Генерира силни, случайни пароли с конфигурируеми опции.", null, "{\"toolName\": \"PasswordGenerator\", \"endpoint\": \"/api/PasswordGenerator/generate\", \"method\": \"GET\"}", "Генератор на Случайни Пароли", 0 }
+                    { new Guid("1d4ae40b-c305-47b7-beed-163c4a0aeb40"), 1, "2e7a5b6c-d4e5-4f7g-h8i9-0j1k2l3m4n5o", new DateTime(2025, 8, 5, 22, 5, 23, 854, DateTimeKind.Utc).AddTicks(848), new Guid("a0a0a0a0-a0a0-a0a0-a0a0-000000000001"), "2e7a5b6c-d4e5-4f7g-h8i9-0j1k2l3m4n5o", new DateTime(2025, 8, 5, 22, 5, 23, 854, DateTimeKind.Utc).AddTicks(846), "Конвертира различни файлови формати (напр. PDF към DOCX, JPG към PNG).", true, false, null, "{\"toolName\": \"FileConverter\", \"endpoint\": \"/api/FileConverter/convert\", \"method\": \"POST\"}", "Конвертор на Файлове", 0 },
+                    { new Guid("2ef43d87-d749-4d7d-9b7d-f7c4f527bea7"), 2, "2e7a5b6c-d4e5-4f7g-h8i9-0j1k2l3m4n5o", new DateTime(2025, 8, 5, 22, 5, 23, 854, DateTimeKind.Utc).AddTicks(886), new Guid("b1b1b1b1-b1b1-b1b1-b1b1-000000000002"), "2e7a5b6c-d4e5-4f7g-h8i9-0j1k2l3m4n5o", new DateTime(2025, 8, 5, 22, 5, 23, 854, DateTimeKind.Utc).AddTicks(886), "Изчислява ROI, бюджети, прогнозни приходи и разходи.", true, false, null, "{\"toolName\": \"FinancialCalculator\", \"endpoint\": \"/api/FinancialCalculator/calculate\", \"method\": \"POST\"}", "Финансов Калкулатор / Анализатор", 0 },
+                    { new Guid("3a7b8b0c-1d2e-4f5a-a837-3d5e9f1a2b0c"), 0, "2e7a5b6c-d4e5-4f7g-h8i9-0j1k2l3m4n5o", new DateTime(2025, 8, 5, 22, 5, 23, 854, DateTimeKind.Utc).AddTicks(891), new Guid("b1b1b1b1-b1b1-b1b1-b1b1-000000000002"), "2e7a5b6c-d4e5-4f7g-h8i9-0j1k2l3m4n5o", new DateTime(2025, 8, 5, 22, 5, 23, 854, DateTimeKind.Utc).AddTicks(890), "Преброява думи, символи и редове във въведен текст.", true, false, null, "{\"toolName\": \"WordCharacterCounter\", \"endpoint\": \"/api/WordCharacter/count\", \"method\": \"POST\"}", "Брояч на Думи и Символи", 0 },
+                    { new Guid("8edc2d04-00f5-4630-b5a9-4fa499fc7210"), 2, "2e7a5b6c-d4e5-4f7g-h8i9-0j1k2l3m4n5o", new DateTime(2025, 8, 5, 22, 5, 23, 854, DateTimeKind.Utc).AddTicks(898), new Guid("a0a0a0a0-a0a0-a0a0-a0a0-000000000001"), "2e7a5b6c-d4e5-4f7g-h8i9-0j1k2l3m4n5o", new DateTime(2025, 8, 5, 22, 5, 23, 854, DateTimeKind.Utc).AddTicks(898), "Генерира автоматично договори с шаблони (наем, труд и др.).", true, false, null, "{\"toolName\": \"ContractGenerator\", \"endpoint\": \"/api/ContractGenerator/generate\", \"method\": \"POST\"}", "Генератор на Договори", 0 },
+                    { new Guid("b422f89b-e7a3-4130-b899-7b56010007e0"), 2, "2e7a5b6c-d4e5-4f7g-h8i9-0j1k2l3m4n5o", new DateTime(2025, 8, 5, 22, 5, 23, 854, DateTimeKind.Utc).AddTicks(881), new Guid("a0a0a0a0-a0a0-a0a0-a0a0-000000000001"), "2e7a5b6c-d4e5-4f7g-h8i9-0j1k2l3m4n5o", new DateTime(2025, 8, 5, 22, 5, 23, 854, DateTimeKind.Utc).AddTicks(881), "Въвеждаш данни и получаваш изчислена фактура.", true, false, null, "{\"toolName\": \"InvoiceGenerator\", \"endpoint\": \"/api/InvoiceGenerator/generate\", \"method\": \"POST\"}", "Генератор на Инвойси/Фактури", 0 },
+                    { new Guid("c10de2fa-b49b-4c0d-9e8f-142b3cd40e6f"), 0, "2e7a5b6c-d4e5-4f7g-h8i9-0j1k2l3m4n5o", new DateTime(2025, 8, 5, 22, 5, 23, 854, DateTimeKind.Utc).AddTicks(867), new Guid("b1b1b1b1-b1b1-b1b1-b1b1-000000000002"), "2e7a5b6c-d4e5-4f7g-h8i9-0j1k2l3m4n5o", new DateTime(2025, 8, 5, 22, 5, 23, 854, DateTimeKind.Utc).AddTicks(866), "Преобразува текст в главни букви, малки букви или заглавен регистър.", true, false, null, "{\"toolName\": \"TextCaseConverter\", \"endpoint\": \"/api/TextCaseConverter/convert\", \"method\": \"POST\"}", "Конвертор на Текст (Главни/Малки букви)", 0 },
+                    { new Guid("e11e539c-0290-4171-b606-16628d1790b0"), 1, "2e7a5b6c-d4e5-4f7g-h8i9-0j1k2l3m4n5o", new DateTime(2025, 8, 5, 22, 5, 23, 854, DateTimeKind.Utc).AddTicks(862), new Guid("b1b1b1b1-b1b1-b1b1-b1b1-000000000002"), "2e7a5b6c-d4e5-4f7g-h8i9-0j1k2l3m4n5o", new DateTime(2025, 8, 5, 22, 5, 23, 854, DateTimeKind.Utc).AddTicks(861), "Преобразува код между програмни езици (напр. C# към Python).", true, false, null, "{\"toolName\": \"CodeConverter\", \"endpoint\": \"/api/CodeConverter/convert\", \"method\": \"POST\"}", "Конвертор на Кодови Снипети", 0 },
+                    { new Guid("f0c72c7b-709d-44b7-81c1-1e5ab73305ec"), 2, "2e7a5b6c-d4e5-4f7g-h8i9-0j1k2l3m4n5o", new DateTime(2025, 8, 5, 22, 5, 23, 854, DateTimeKind.Utc).AddTicks(871), new Guid("a0a0a0a0-a0a0-a0a0-a0a0-000000000001"), "2e7a5b6c-d4e5-4f7g-h8i9-0j1k2l3m4n5o", new DateTime(2025, 8, 5, 22, 5, 23, 854, DateTimeKind.Utc).AddTicks(871), "Въвеждаш данни и получаваш готово CV в PDF формат.", true, false, null, "{\"toolName\": \"CVGenerator\", \"endpoint\": \"/api/CVGenerator/generate\", \"method\": \"POST\"}", "Автоматично CV/Резюме", 0 },
+                    { new Guid("f5e402c0-91ba-4f8e-97d0-3b443fe10d3c"), 0, "2e7a5b6c-d4e5-4f7g-h8i9-0j1k2l3m4n5o", new DateTime(2025, 8, 5, 22, 5, 23, 854, DateTimeKind.Utc).AddTicks(875), new Guid("b1b1b1b1-b1b1-b1b1-b1b1-000000000002"), "2e7a5b6c-d4e5-4f7g-h8i9-0j1k2l3m4n5o", new DateTime(2025, 8, 5, 22, 5, 23, 854, DateTimeKind.Utc).AddTicks(875), "Генерира силни, случайни пароли с конфигурируеми опции.", true, false, null, "{\"toolName\": \"PasswordGenerator\", \"endpoint\": \"/api/PasswordGenerator/generate\", \"method\": \"GET\"}", "Генератор на Случайни Пароли", 0 }
                 });
 
             migrationBuilder.CreateIndex(
@@ -371,9 +389,19 @@ namespace ServiceHub.Data.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Services_ApprovedByUserId",
+                table: "Services",
+                column: "ApprovedByUserId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Services_CategoryId",
                 table: "Services",
                 column: "CategoryId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Services_CreatedByUserId",
+                table: "Services",
+                column: "CreatedByUserId");
         }
 
         /// <inheritdoc />
@@ -404,10 +432,10 @@ namespace ServiceHub.Data.Migrations
                 name: "AspNetRoles");
 
             migrationBuilder.DropTable(
-                name: "AspNetUsers");
+                name: "Services");
 
             migrationBuilder.DropTable(
-                name: "Services");
+                name: "AspNetUsers");
 
             migrationBuilder.DropTable(
                 name: "Categories");

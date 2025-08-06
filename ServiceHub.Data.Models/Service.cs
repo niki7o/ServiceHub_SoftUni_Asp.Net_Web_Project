@@ -1,4 +1,5 @@
-﻿using ServiceHub.Common.Enum;
+﻿using ServiceHub.Common;
+using ServiceHub.Common.Enum;
 using ServiceHub.Data.Models.Repository;
 using System;
 using System.Collections.Generic;
@@ -16,9 +17,11 @@ namespace ServiceHub.Data.Models
         public Guid Id { get; set; }
 
         [Required]
+        [StringLength(ValidationConstants.ServiceTitleMaxLength, MinimumLength = ValidationConstants.ServiceTitleMinLength)] 
         public string Title { get; set; } = null!;
 
         [Required]
+        [StringLength(ValidationConstants.ServiceDescriptionMaxLength, MinimumLength = ValidationConstants.ServiceDescriptionMinLength)] 
         public string Description { get; set; } = null!;
 
         public Guid CategoryId { get; set; }
@@ -32,23 +35,23 @@ namespace ServiceHub.Data.Models
         public int ViewsCount { get; set; } = 0;
         public string? ServiceConfigJson { get; set; }
 
-        public bool IsTemplate { get; set; } = false; 
-        public bool IsApproved { get; set; } = true; 
+        public bool IsTemplate { get; set; } = false;
+        public bool IsApproved { get; set; } = true;
 
         [Required]
-        public string CreatedByUserId { get; set; } = null!; 
+        public string CreatedByUserId { get; set; } = null!;
         [ForeignKey(nameof(CreatedByUserId))]
         public virtual ApplicationUser CreatedByUser { get; set; } = null!;
-
-        
 
         public DateTime CreatedOn { get; set; } = DateTime.UtcNow;
         public DateTime? ModifiedOn { get; set; }
 
-       
-        public string? ApprovedByUserId { get; set; } 
+        public string? ApprovedByUserId { get; set; }
         [ForeignKey(nameof(ApprovedByUserId))]
         public virtual ApplicationUser? ApprovedByUser { get; set; }
         public DateTime? ApprovedOn { get; set; }
+
+        [MaxLength(ValidationConstants.ServiceImageUrlMaxLength)]
+        public string? ImageUrl { get; set; }
     }
 }

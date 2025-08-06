@@ -1,4 +1,5 @@
-﻿using ServiceHub.Data.Models.Repository;
+﻿using ServiceHub.Common;
+using ServiceHub.Data.Models.Repository;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -11,7 +12,7 @@ namespace ServiceHub.Data.Models
     public class Category :BaseEntity
     {
         [Required]
-        [MaxLength(100)]
+        [MaxLength(ValidationConstants.CategoryNameMaxLength)] 
         public string Name { get; set; } = null!;
 
         public string? Description { get; set; }

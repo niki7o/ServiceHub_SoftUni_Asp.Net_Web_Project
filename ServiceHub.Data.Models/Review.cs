@@ -1,4 +1,5 @@
-﻿using ServiceHub.Data.Models.Repository;
+﻿using ServiceHub.Common;
+using ServiceHub.Data.Models.Repository;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -11,9 +12,10 @@ namespace ServiceHub.Data.Models
     public class Review : BaseEntity
 
     {
-        [Range(1, 5)]
+        [Range(ValidationConstants.ReviewRatingMin, ValidationConstants.ReviewRatingMax)] 
         public int Rating { get; set; }
 
+       
         public string Comment { get; set; } = null!;
 
         public Guid ServiceId { get; set; }
