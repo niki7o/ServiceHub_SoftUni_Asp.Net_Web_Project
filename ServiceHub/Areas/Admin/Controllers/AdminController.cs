@@ -67,45 +67,7 @@ namespace ServiceHub.Areas.Admin.Controllers
         }
 
      
-        [HttpGet]
-        public async Task<IActionResult> TemplateDetails(Guid id)
-        {
-            try
-            {
-              
-                var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-             
-                var model = await _serviceService.GetByIdAsync(id, currentUserId);
-
-               
-                if (!model.IsTemplate || model.IsApproved)
-                {
-                    TempData["ErrorMessage"] = "Тази услуга не е чакащ шаблон или вече е одобрена. Моля, разгледайте я в общия списък с услуги.";
-                    return RedirectToAction(nameof(AllUsers));
-                }
-
-                return View(model); 
-            }
-            catch (ArgumentException ex)
-            {
-                _logger.LogError(ex, $"AdminController: TemplateDetails - Service with ID {id} not found.");
-                TempData["ErrorMessage"] = ex.Message;
-                return RedirectToAction(nameof(AllUsers));
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                _logger.LogError(ex, $"AdminController: TemplateDetails - Unauthorized access attempt for service ID {id} by user {User.Identity?.Name}.");
-                TempData["ErrorMessage"] = ex.Message;
-                return RedirectToAction(nameof(AllUsers));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"AdminController: TemplateDetails - An unexpected error occurred while loading template details for ID {id}.");
-                TempData["ErrorMessage"] = "Възникна грешка при зареждане на детайлите на шаблона.";
-                return RedirectToAction(nameof(AllUsers));
-            }
-        }
+        
 
         [HttpPost]
         [ValidateAntiForgeryToken]

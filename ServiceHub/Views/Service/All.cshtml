@@ -1,6 +1,7 @@
 ﻿@model ServiceHub.Core.Models.ServiceAllViewModel
 @using ServiceHub.Common.Enum
 @using System.Text.RegularExpressions
+@using Newtonsoft.Json 
 
 @{
     ViewData["Title"] = "Всички Услуги";
@@ -13,12 +14,10 @@
     var totalPages = Model.TotalPages;
 }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
-<script src="~/js/all.js" asp-append-version="true"></script>
+
 <link rel="stylesheet" href="~/css/all.css" asp-append-version="true" />
 
-<style>
-    
-</style>
+
 
 <div class="services-page-container">
     <h2 class="page-title">Всички Услуги</h2>
@@ -54,7 +53,6 @@
     <div class="filter-sort-section mb-4">
         <form asp-action="All" method="get" id="filterForm">
             <input type="hidden" name="page" value="1" />
-
 
             <div class="row">
                 <div class="col-md-3 mb-3">
@@ -200,3 +198,21 @@
 </div>
 
 
+<script>
+    window.AppConfig = window.AppConfig || {};
+    window.AppMessages = window.AppMessages || {};
+
+    window.AppConfig.currentCategory = @Html.Raw(Json.Serialize(Model.CurrentCategoryFilter ?? ""));
+    window.AppConfig.currentAccessType = @Html.Raw(Json.Serialize(Model.CurrentAccessTypeFilter ?? ""));
+    window.AppConfig.currentSort = @Html.Raw(Json.Serialize(Model.CurrentSort ?? ""));
+    window.AppConfig.currentFilter = @Html.Raw(Json.Serialize(Model.CurrentFilter ?? ""));
+    window.AppConfig.modelServicesLength = @(Model.Services?.Count() ?? 0);
+
+    window.AppMessages.successMessage = @Html.Raw(Json.Serialize(TempData["SuccessMessage"] as string));
+    window.AppMessages.errorMessage = @Html.Raw(Json.Serialize(TempData["ErrorMessage"] as string));
+    window.AppMessages.hasSuccessMessage = @Html.Raw(Json.Serialize(TempData["SuccessMessage"] != null));
+    window.AppMessages.hasErrorMessage = @Html.Raw(Json.Serialize(TempData["ErrorMessage"] != null));
+</script>
+
+
+<script src="~/js/all.js" asp-append-version="true"></script>

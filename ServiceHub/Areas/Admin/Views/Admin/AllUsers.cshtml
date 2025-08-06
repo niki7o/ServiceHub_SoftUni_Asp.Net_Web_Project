@@ -428,7 +428,7 @@
                                     <td class="text-center">
                                         <div class="d-flex flex-wrap justify-content-center">
                                         
-                                            <a asp-action="Details" asp-controller="Service" asp-route-id="@service.Id" class="btn btn-info btn-sm me-1 mb-1">Детайли</a>
+                                        
                                             <form asp-action="ApproveServiceTemplate" asp-route-id="@service.Id" method="post" class="me-1 mb-1">
                                                 @Html.AntiForgeryToken()
                                                 <button type="button" class="btn btn-success btn-sm action-btn" onclick="showCustomConfirm('Сигурни ли сте, че искате да одобрите този шаблон?', this.form);">

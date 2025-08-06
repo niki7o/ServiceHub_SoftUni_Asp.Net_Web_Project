@@ -84,9 +84,12 @@
 
         @if (isAdmin)
         {
-            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-action btn-edit">
-                <i class="fas fa-edit"></i> Редактирай
-            </a>
+            if (!Model.IsTemplate)
+            {
+                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-action btn-edit">
+                    <i class="fas fa-edit"></i> Редактирай
+                </a>
+            }
             <form asp-action="Delete" asp-route-id="@Model.Id" method="post" class="d-inline" onsubmit="return confirm('Сигурни ли сте, че искате да изтриете тази услуга?');">
                 <button type="submit" class="btn btn-action btn-delete">
                     <i class="fas fa-trash-alt"></i> Изтрий

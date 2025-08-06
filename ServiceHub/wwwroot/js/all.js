@@ -15,7 +15,6 @@
     let searchTimeout;
     const transitionDuration = 300;
 
-
     function applySingleCardStyles() {
         const visibleCards = Array.from(allServiceCards).filter(card => card.style.display !== 'none' && !card.classList.contains('hide'));
 
@@ -26,29 +25,30 @@
         }
     }
 
-
-    const currentCategory = "@(Model.CurrentCategoryFilter ?? "")";
+   
+    const currentCategory = window.AppConfig.currentCategory;
     if (categoryFilter) {
         categoryFilter.value = currentCategory;
     }
 
-    const currentAccessType = "@(Model.CurrentAccessTypeFilter ?? "")";
+    const currentAccessType = window.AppConfig.currentAccessType;
     if (accessTypeFilter) {
         accessTypeFilter.value = currentAccessType;
     }
 
-    const currentSort = "@(Model.CurrentSort ?? "")";
+    const currentSort = window.AppConfig.currentSort;
     if (sortFilter) {
         sortFilter.value = currentSort;
     }
 
-    const currentFilterValue = "@(Model.CurrentFilter ?? "")";
+    const currentFilterValue = window.AppConfig.currentFilter;
     if (filterDropdown) {
         filterDropdown.value = currentFilterValue;
     }
 
-    const successMessageExists = "@(TempData["SuccessMessage"] != null ? "true" : "false")" === "true";
-    const errorMessageExists = "@(TempData["ErrorMessage"] != null ? "true" : "false")" === "true";
+    // Използвайте глобалните променливи за TempData съобщенията
+    const successMessageExists = window.AppMessages.hasSuccessMessage;
+    const errorMessageExists = window.AppMessages.hasErrorMessage;
 
     if (successMessageExists || errorMessageExists) {
         if (searchInput) {
@@ -75,7 +75,6 @@
         }
     }
 
-
     const connection = new signalR.HubConnectionBuilder()
         .withUrl("/searchHub")
         .build();
@@ -100,7 +99,6 @@
             }
         });
 
-
         setTimeout(applySingleCardStyles, transitionDuration + 50);
 
         if (foundCount === 0 && searchInput.value.trim().length > 0) {
@@ -117,7 +115,7 @@
             searchResultsDiv.classList.remove('show');
             setTimeout(() => { searchResultsDiv.style.display = 'none'; }, transitionDuration);
 
-            if (initialNoServicesMessage && allServiceCards.length === 0 && searchInput.value.trim().length === 0) {
+            if (initialNoServicesMessage && window.AppConfig.modelServicesLength === 0 && searchInput.value.trim().length === 0) {
                 initialNoServicesMessage.classList.remove('hide');
                 initialNoServicesMessage.style.display = 'block';
             } else if (initialNoServicesMessage) {
@@ -152,7 +150,7 @@
             searchResultsDiv.classList.remove('show');
             setTimeout(() => { searchResultsDiv.style.display = 'none'; }, transitionDuration);
 
-            if (initialNoServicesMessage && Model.Services.length === 0) {
+            if (initialNoServicesMessage && window.AppConfig.modelServicesLength === 0) {
                 initialNoServicesMessage.classList.remove('hide');
                 initialNoServicesMessage.style.display = 'block';
             } else if (initialNoServicesMessage) {
@@ -200,7 +198,7 @@
             searchResultsDiv.classList.remove('show');
             setTimeout(() => { searchResultsDiv.style.display = 'none'; }, transitionDuration);
 
-            if (initialNoServicesMessage && allServiceCards.length === 0) {
+            if (initialNoServicesMessage && window.AppConfig.modelServicesLength === 0) {
                 initialNoServicesMessage.classList.remove('hide');
                 initialNoServicesMessage.style.display = 'block';
             } else if (initialNoServicesMessage) {
