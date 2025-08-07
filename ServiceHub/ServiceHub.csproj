@@ -46,6 +46,12 @@
   <ItemGroup>
     <None Include="wwwroot\json\quotes.json" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="wwwroot\libs\libwkhtmltox.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 	
 
 </Project>

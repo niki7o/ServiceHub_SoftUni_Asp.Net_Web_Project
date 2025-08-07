@@ -3,10 +3,9 @@
     "mssql1": {
       "serviceConnectorResourceId": "/subscriptions/[parameters('subscriptionId')]/resourcegroups/[parameters('serviceConnectorResourceGroupName')]/providers/Microsoft.Web/sites/ServiceHub/providers/Microsoft.ServiceLinker/linkers/ConnectionStringsServiceHubDbContextConn_2B84FB4EEA",
       "secretStore": "AzureAppSettings",
-      "resourceId": "/subscriptions/[parameters('subscriptionId')]/resourcegroups/[parameters('resourceGroupName')]/providers/Microsoft.Sql/servers/servicehubdbserver/databases/ServiceHub_db",
+      "resourceId": "/subscriptions/[parameters('subscriptionId')]/resourceGroups/[parameters('resourceGroupName')]/providers/Microsoft.Sql/servers/servicehubdbserver/databases/ServiceHub_db",
       "type": "mssql.azure",
-      "connectionId": "ConnectionStrings:ServiceHubDbContextConnection",
-      "dynamicId": null
+      "connectionId": "ConnectionStrings:ServiceHubDbContextConnection"
     }
   }
 }

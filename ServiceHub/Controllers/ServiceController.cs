@@ -91,7 +91,7 @@ namespace ServiceHub.Controllers
             {
                 _logger.LogWarning($"Attempted to use non-existent service with ID: {id}");
                 TempData["ErrorMessage"] = "Услугата не е намерена.";
-                // Коригиран път към Error View
+            
                 return View("~/Views/Shared/Error.cshtml", new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
             }
             catch (UnauthorizedAccessException)

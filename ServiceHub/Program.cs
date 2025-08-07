@@ -17,6 +17,8 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using ServiceHub.Areas.Admin.Services.Interface;
 using ServiceHub.Areas.Admin.Services.Service;
+using System.Runtime.Loader;
+using System.Reflection;
 
 namespace ServiceHub
 {
@@ -25,6 +27,9 @@ namespace ServiceHub
         public static async Task Main(string[] args)
         {
             WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+            var wkhtmlPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "libs", "libwkhtmltox.dll");
+            var context = new CustomAssemblyLoadContext();
+            context.LoadUnmanagedLibrary(wkhtmlPath);
 
             builder.Services.AddSingleton(typeof(IConverter), new SynchronizedConverter(new PdfTools()));
 
@@ -57,7 +62,8 @@ namespace ServiceHub
                     options.JsonSerializerOptions.WriteIndented = true;
                 });
             builder.Services.AddRazorPages();
-
+       
+            
             builder.Services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
             builder.Services.AddScoped<IServiceService, ServicesService>();
             builder.Services.AddScoped<IReviewService, ReviewsService>();
