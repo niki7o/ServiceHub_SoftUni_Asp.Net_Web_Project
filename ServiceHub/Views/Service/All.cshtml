@@ -201,6 +201,13 @@
   
 
 <script>
+         window.AppConfig = {
+                currentCategory: '@Model.CurrentCategoryFilter',
+                currentAccessType: '@Model.CurrentAccessTypeFilter',
+                currentSort: '@Model.CurrentSort',
+                currentFilter: '@Model.CurrentFilter',
+                modelServicesLength: @Model.Services.Count() 
+            };
        document.addEventListener('DOMContentLoaded', function () {
 
         const categoryFilter = document.getElementById('categoryFilter');
