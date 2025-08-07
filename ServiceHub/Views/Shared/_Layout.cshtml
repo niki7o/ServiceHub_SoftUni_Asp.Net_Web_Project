@@ -16,7 +16,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
     <style>
-    
+
         html {
             height: 100%;
         }
@@ -147,24 +147,24 @@
                 transform: translateY(0);
             }
 
-       
+
         .loader-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(255, 255, 255, 0.9); 
+            background-color: rgba(255, 255, 255, 0.9);
             display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 9999; 
+            z-index: 9999;
             transition: opacity 0.5s ease-out;
         }
 
             .loader-overlay.hidden {
                 opacity: 0;
-                pointer-events: none; 
+                pointer-events: none;
             }
 
         .loader-container {
@@ -176,8 +176,8 @@
             width: 20px;
             height: 20px;
             border-radius: 50%;
-            background-color: #3498db; 
-            animation: bounce 1.2s infinite ease-in-out both; 
+            background-color: #3498db;
+            animation: bounce 1.2s infinite ease-in-out both;
         }
 
             .loader-circle.circle-1 {
@@ -185,12 +185,12 @@
             }
 
             .loader-circle.circle-2 {
-                background-color: #f39c12; 
+                background-color: #f39c12;
                 animation-delay: -0.3s;
             }
 
             .loader-circle.circle-3 {
-                background-color: #2ecc71; 
+                background-color: #2ecc71;
                 animation-delay: -0.6s;
             }
 
@@ -206,7 +206,7 @@
     </style>
 </head>
 <body>
-  
+
     <div id="customLoader" class="loader-overlay">
         <div class="loader-container">
             <div class="loader-circle circle-1"></div>
@@ -299,19 +299,18 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
-    <script src="~/js/footer-quotes.js" asp-append-version="true"></script>
 
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-          
+
             const loader = document.getElementById('customLoader');
             if (loader) {
-                loader.classList.add('hidden'); 
-                
+                loader.classList.add('hidden');
+
                 loader.addEventListener('transitionend', function() {
                     loader.style.display = 'none';
-                }, { once: true }); 
+                }, { once: true });
             }
         });
     </script>
